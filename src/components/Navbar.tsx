@@ -13,7 +13,29 @@ export default function Navbar() {
           <span className="text-lg tracking-tight">Alwaidh</span>
         </Link>
 
-        <nav className="hidden gap-1 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `rounded-md px-3 py-2 text-sm font-medium transition ${
+                isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/shop"
+            className={({ isActive }) =>
+              `rounded-md px-3 py-2 text-sm font-medium transition ${
+                isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            Shop
+          </NavLink>
+          <span className="mx-2 h-5 w-px bg-slate-200" aria-hidden="true" />
           {categories.map((c) => (
             <NavLink
               key={c.slug}

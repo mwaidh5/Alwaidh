@@ -24,7 +24,7 @@ export default function Home() {
               shipping and expert support.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/category/computers" className="btn-primary">Shop Computers</Link>
+              <Link to="/shop" className="btn-primary">Shop all products</Link>
               <Link to="/category/solar" className="btn-secondary">Explore Solar</Link>
             </div>
           </div>
@@ -59,8 +59,8 @@ export default function Home() {
       <section className="container-page py-8">
         <div className="mb-6 flex items-end justify-between">
           <h2 className="text-2xl font-extrabold text-slate-900">Featured products</h2>
-          <Link to="/category/computers" className="text-sm font-semibold text-brand-700 hover:underline">
-            See more →
+          <Link to="/shop" className="text-sm font-semibold text-brand-700 hover:underline">
+            See all →
           </Link>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
