@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getProduct } from '../data/products';
+import { useProducts } from '../lib/useProducts';
 import { getCategory } from '../data/categories';
 import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 
 export default function ProductDetail() {
   const { id = '' } = useParams();
-  const product = getProduct(id);
+  const { products, loading } = useProducts();
+  const product = products.find((p) => p.id === id);
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
+  if (loading) {
+    return <p className="container-page py-20 text-center text-slate-500">Loading product…</p>;
+  }
 
   if (!product) {
     return (

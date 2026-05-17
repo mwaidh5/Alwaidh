@@ -1,0 +1,428 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createProduct,
+  deleteProduct,
+  resetProductsToSeed,
+  subscribeProducts,
+  upsertProduct,
+} from '../../lib/productStore';
+import { categories } from '../../data/categories';
+import { formatPrice } from '../../lib/format';
+import type { Product, CategorySlug } from '../../types/product';
+
+type FormState = Omit<Product, 'specs'> & { specsText: string };
+
+const EMPTY_FORM: FormState = {
+  id: '',
+  name: '',
+  category: 'computers',
+  brand: '',
+  price: 0,
+  currency: 'USD',
+  image: '',
+  rating: 0,
+  inStock: true,
+  shortDescription: '',
+  description: '',
+  specsText: '',
+};
+
+export default function AdminProducts() {
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [error, setError] = useState('');
+  const [editing, setEditing] = useState<FormState | null>(null);
+  const [filter, setFilter] = useState<'all' | CategorySlug>('all');
+  const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    return subscribeProducts((list) => setProducts(list));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const list = products ?? [];
+    return list.filter((p) => {
+      if (filter !== 'all' && p.category !== filter) return false;
+      if (query.trim()) {
+        const q = query.trim().toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.id.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [products, filter, query]);
+
+  function startCreate() {
+    setError('');
+    setEditing({ ...EMPTY_FORM });
+  }
+
+  function startEdit(p: Product) {
+    setError('');
+    setEditing({
+      ...p,
+      specsText: Object.entries(p.specs)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\n'),
+    });
+  }
+
+  async function handleSave() {
+    if (!editing) return;
+    setError('');
+    setBusy(true);
+    try {
+      const specs = parseSpecs(editing.specsText);
+      const isNew = !editing.id;
+      const payload = {
+        name: editing.name.trim(),
+        category: editing.category,
+        brand: editing.brand.trim(),
+        price: Number(editing.price) || 0,
+        currency: editing.currency.trim().toUpperCase() || 'USD',
+        image: editing.image.trim(),
+        rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
+        inStock: editing.inStock,
+        shortDescription: editing.shortDescription.trim(),
+        description: editing.description.trim(),
+        specs,
+      };
+      if (!payload.name) throw new Error('Name is required.');
+      if (isNew) {
+        await createProduct(payload);
+      } else {
+        await upsertProduct({ id: editing.id, ...payload });
+      }
+      setEditing(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this product?')) return;
+    try {
+      await deleteProduct(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed.');
+    }
+  }
+
+  async function handleReset() {
+    if (!confirm('Reset all products back to the built-in seed catalogue? This deletes any custom products.')) return;
+    setBusy(true);
+    try {
+      await resetProductsToSeed();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Reset failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900">Products</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {products ? `${products.length} total · ${filtered.length} shown` : 'Loading…'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={handleReset} disabled={busy} className="btn-secondary">
+            Reset to seed
+          </button>
+          <button type="button" onClick={startCreate} className="btn-primary">
+            + Add product
+          </button>
+        </div>
+      </header>
+
+      <div className="card p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, brand, or id"
+            className="input max-w-xs"
+          />
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as typeof filter)}
+            className="input max-w-xs"
+          >
+            <option value="all">All categories</option>
+            {categories.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {error && (
+        <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      )}
+
+      {products === null ? (
+        <p className="text-center text-sm text-slate-500">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <p className="card p-10 text-center text-sm text-slate-500">No products match.</p>
+      ) : (
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Product</th>
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3">Price</th>
+                <th className="px-4 py-3">Stock</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {filtered.map((p) => (
+                <tr key={p.id}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt=""
+                          className="h-10 w-10 rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-md bg-slate-100" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{p.name}</p>
+                        <p className="text-xs text-slate-500">{p.brand} · {p.id}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{p.category}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-900">
+                    {formatPrice(p.price, p.currency)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        p.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {p.inStock ? 'In stock' : 'Out'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(p)}
+                      className="text-sm font-semibold text-brand-700 hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id)}
+                      className="ml-3 text-sm font-semibold text-red-700 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {editing && (
+        <ProductDialog
+          state={editing}
+          setState={setEditing}
+          busy={busy}
+          onCancel={() => setEditing(null)}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProductDialog({
+  state,
+  setState,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  state: FormState;
+  setState: (s: FormState) => void;
+  busy: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const isNew = !state.id;
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
+      <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-xl max-h-[90vh]">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
+          <h2 className="font-bold text-slate-900">{isNew ? 'New product' : 'Edit product'}</h2>
+          <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </div>
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          <Field label="Name" full>
+            <input
+              className="input"
+              value={state.name}
+              onChange={(e) => setState({ ...state, name: e.target.value })}
+            />
+          </Field>
+          <Field label="Brand">
+            <input
+              className="input"
+              value={state.brand}
+              onChange={(e) => setState({ ...state, brand: e.target.value })}
+            />
+          </Field>
+          <Field label="Category">
+            <select
+              className="input"
+              value={state.category}
+              onChange={(e) =>
+                setState({ ...state, category: e.target.value as CategorySlug })
+              }
+            >
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Price">
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={state.price}
+              onChange={(e) => setState({ ...state, price: Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Currency">
+            <input
+              className="input"
+              value={state.currency}
+              onChange={(e) => setState({ ...state, currency: e.target.value })}
+            />
+          </Field>
+          <Field label="Rating (0–5)">
+            <input
+              type="number"
+              min={0}
+              max={5}
+              step={0.1}
+              className="input"
+              value={state.rating}
+              onChange={(e) => setState({ ...state, rating: Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="In stock">
+            <label className="flex items-center gap-2 pt-2 text-sm">
+              <input
+                type="checkbox"
+                checked={state.inStock}
+                onChange={(e) => setState({ ...state, inStock: e.target.checked })}
+              />
+              Available for purchase
+            </label>
+          </Field>
+          <Field label="Image URL" full>
+            <input
+              className="input"
+              value={state.image}
+              onChange={(e) => setState({ ...state, image: e.target.value })}
+              placeholder="https://…"
+            />
+          </Field>
+          <Field label="Short description" full>
+            <input
+              className="input"
+              value={state.shortDescription}
+              onChange={(e) => setState({ ...state, shortDescription: e.target.value })}
+            />
+          </Field>
+          <Field label="Description" full>
+            <textarea
+              className="input min-h-[100px]"
+              value={state.description}
+              onChange={(e) => setState({ ...state, description: e.target.value })}
+            />
+          </Field>
+          <Field label="Specs (one per line, key: value)" full>
+            <textarea
+              className="input min-h-[120px] font-mono"
+              value={state.specsText}
+              onChange={(e) => setState({ ...state, specsText: e.target.value })}
+              placeholder={'CPU: Intel Core i7\nRAM: 16 GB'}
+            />
+          </Field>
+        </div>
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
+          <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
+            Cancel
+          </button>
+          <button type="button" onClick={onSave} className="btn-primary" disabled={busy}>
+            {busy ? 'Saving…' : isNew ? 'Create' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+  full,
+}: {
+  label: string;
+  children: ReactNode;
+  full?: boolean;
+}) {
+  return (
+    <div className={full ? 'sm:col-span-2' : ''}>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function parseSpecs(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const idx = line.indexOf(':');
+    if (idx < 0) continue;
+    const k = line.slice(0, idx).trim();
+    const v = line.slice(idx + 1).trim();
+    if (k && v) out[k] = v;
+  }
+  return out;
+}

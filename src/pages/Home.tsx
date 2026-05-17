@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom';
 import CategoryTile from '../components/CategoryTile';
 import ProductCard from '../components/ProductCard';
 import { categories } from '../data/categories';
-import { products } from '../data/products';
+import { useProducts } from '../lib/useProducts';
 
 export default function Home() {
+  const { products } = useProducts();
   const featured = products.filter((p) => p.inStock).slice(0, 6);
 
   return (
@@ -25,7 +26,7 @@ export default function Home() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/shop" className="btn-primary">Shop all products</Link>
-              <Link to="/category/solar" className="btn-secondary">Explore Solar</Link>
+              <Link to="/solar-calculator" className="btn-secondary">Build a solar system</Link>
             </div>
           </div>
           <div className="relative">

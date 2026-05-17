@@ -1,17 +1,6 @@
-/**
- * Firebase client init.
- *
- * Fill in `.env` (see `.env.example`) with your Firebase config from the
- * Firebase Console > Project Settings > Web app. The values are exposed
- * to the browser via Vite's `import.meta.env.VITE_*` convention.
- *
- * Firestore and Auth imports below are commented out — uncomment when you
- * are ready to wire them up to your UI.
- */
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-// import { getFirestore, type Firestore } from 'firebase/firestore';
-// import { getAuth, type Auth } from 'firebase/auth';
-// import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -28,8 +17,15 @@ export const firebaseApp: FirebaseApp | null = hasFirebaseConfig
   ? initializeApp(firebaseConfig)
   : null;
 
-// export const db: Firestore | null = firebaseApp ? getFirestore(firebaseApp) : null;
-// export const auth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;
-// export const storage: FirebaseStorage | null = firebaseApp ? getStorage(firebaseApp) : null;
+export const db: Firestore | null = firebaseApp ? getFirestore(firebaseApp) : null;
+export const auth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;
+export const googleProvider = new GoogleAuthProvider();
 
 export const firebaseReady = hasFirebaseConfig;
+
+export const ADMIN_EMAILS: string[] = ['mwaidh5@gmail.com'];
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}

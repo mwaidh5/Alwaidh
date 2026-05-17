@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function Footer() {
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
@@ -12,17 +14,17 @@ export default function Footer() {
           </p>
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">Shop</h4>
+          <h4 className="font-semibold text-slate-900">Browse</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li><a className="hover:text-brand-700" href="/category/computers">Computers</a></li>
-            <li><a className="hover:text-brand-700" href="/category/solar">Solar Energy</a></li>
-            <li><a className="hover:text-brand-700" href="/category/tiandy-cameras">Tiandy Cameras</a></li>
+            <li><Link className="hover:text-brand-700" to="/shop">Shop</Link></li>
+            <li><Link className="hover:text-brand-700" to="/solar-calculator">Solar Calculator</Link></li>
+            <li><Link className="hover:text-brand-700" to="/cart">Cart</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-semibold text-slate-900">Support</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>Contact</li>
+            <li><Link className="hover:text-brand-700" to="/about">Contact us</Link></li>
             <li>Shipping &amp; Returns</li>
             <li>Warranty</li>
           </ul>
@@ -30,7 +32,7 @@ export default function Footer() {
         <div>
           <h4 className="font-semibold text-slate-900">Company</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>About</li>
+            <li><Link className="hover:text-brand-700" to="/about">About</Link></li>
             <li>Privacy</li>
             <li>Terms</li>
           </ul>

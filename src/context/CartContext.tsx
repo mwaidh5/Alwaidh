@@ -5,10 +5,11 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 import type { CartItem, Product } from '../types/product';
-import { products } from '../data/products';
+import { subscribeProducts } from '../lib/productStore';
 
 interface CartState {
   items: CartItem[];
@@ -63,6 +64,7 @@ interface CartContextValue {
   remove: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   clear: () => void;
+  buildOrderLines: () => { lines: { productId: string; name: string; price: number; quantity: number }[]; subtotal: number; currency: string };
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -71,6 +73,7 @@ const STORAGE_KEY = 'alwaidh.cart.v1';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, { items: [] });
+  const [productList, setProductList] = useState<Product[]>([]);
 
   // Hydrate from localStorage
   useEffect(() => {
@@ -87,6 +90,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Subscribe to live products for pricing/lookup
+  useEffect(() => subscribeProducts(setProductList), []);
+
   // Persist
   useEffect(() => {
     try {
@@ -98,9 +104,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const productLookup = useMemo(() => {
     const map: Record<string, Product> = {};
-    for (const p of products) map[p.id] = p;
+    for (const p of productList) map[p.id] = p;
     return map;
-  }, []);
+  }, [productList]);
 
   const itemCount = state.items.reduce((n, i) => n + i.quantity, 0);
   const subtotal = state.items.reduce((sum, i) => {
@@ -124,6 +130,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
   const clear = useCallback(() => dispatch({ type: 'CLEAR' }), []);
 
+  const buildOrderLines = useCallback(() => {
+    const lines = state.items
+      .map((item) => {
+        const p = productLookup[item.productId];
+        if (!p) return null;
+        return {
+          productId: p.id,
+          name: p.name,
+          price: p.price,
+          quantity: item.quantity,
+        };
+      })
+      .filter((x): x is { productId: string; name: string; price: number; quantity: number } => x !== null);
+    const sub = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
+    const cur = state.items[0] ? productLookup[state.items[0].productId]?.currency ?? 'USD' : 'USD';
+    return { lines, subtotal: sub, currency: cur };
+  }, [state.items, productLookup]);
+
   const value: CartContextValue = {
     items: state.items,
     itemCount,
@@ -134,6 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     remove,
     setQuantity,
     clear,
+    buildOrderLines,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

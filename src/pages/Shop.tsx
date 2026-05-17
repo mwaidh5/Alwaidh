@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import ProductCard from '../components/ProductCard';
 import { categories } from '../data/categories';
-import { products } from '../data/products';
+import { useProducts } from '../lib/useProducts';
 
 type SortKey = 'featured' | 'price-asc' | 'price-desc' | 'rating';
 type CategoryFilter = 'all' | string;
 
 export default function Shop() {
+  const { products, loading } = useProducts();
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
   const [sort, setSort] = useState<SortKey>('featured');
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -43,7 +44,7 @@ export default function Shop() {
         break;
     }
     return list;
-  }, [activeCategory, sort, inStockOnly, query]);
+  }, [activeCategory, sort, inStockOnly, query, products]);
 
   const filterPills: { key: CategoryFilter; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: products.length },
@@ -136,7 +137,9 @@ export default function Shop() {
           {products.length} products
         </p>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <p className="py-16 text-center text-slate-500">Loading products…</p>
+        ) : filtered.length === 0 ? (
           <p className="py-16 text-center text-slate-600">No products match your filters.</p>
         ) : (
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
