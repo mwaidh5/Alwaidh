@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Write(C:\\\\Users\\\\mwaid\\\\OneDrive\\\\Documents\\\\GitHub\\\\Alwaidh)"
+      "Write(C:\\\\Users\\\\mwaid\\\\OneDrive\\\\Documents\\\\GitHub\\\\Alwaidh)",
+      "Bash(npx tsc *)",
+      "Bash(npx tsc)",
+      "Bash(firebase functions:log*)",
+      "Bash(firebase projects:list)",
+      "Bash(firebase functions:list)"
     ]
   }
 }

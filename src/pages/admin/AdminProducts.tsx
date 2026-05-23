@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   createProduct,
   deleteProduct,
@@ -6,6 +6,7 @@ import {
   subscribeProducts,
   upsertProduct,
 } from '../../lib/productStore';
+import { uploadProductImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import { formatPrice } from '../../lib/format';
 import type { Product, CategorySlug } from '../../types/product';
@@ -274,6 +275,23 @@ function ProductDialog({
   onSave: () => void;
 }) {
   const isNew = !state.id;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  async function handleUpload(file: File) {
+    setUploadError('');
+    setUploading(true);
+    try {
+      const { url } = await uploadProductImage(file, state.id || undefined);
+      setState({ ...state, image: url });
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-xl max-h-[90vh]">
@@ -350,13 +368,59 @@ function ProductDialog({
               Available for purchase
             </label>
           </Field>
-          <Field label="Image URL" full>
-            <input
-              className="input"
-              value={state.image}
-              onChange={(e) => setState({ ...state, image: e.target.value })}
-              placeholder="https://…"
-            />
+          <Field label="Product image" full>
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+                {state.image ? (
+                  <img src={state.image} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center text-xs text-slate-400">
+                    No image
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInput.current?.click()}
+                    disabled={uploading}
+                    className="btn-secondary"
+                  >
+                    {uploading ? 'Uploading…' : 'Upload image'}
+                  </button>
+                  {state.image && (
+                    <button
+                      type="button"
+                      onClick={() => setState({ ...state, image: '' })}
+                      className="text-sm font-semibold text-red-700 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleUpload(f);
+                  }}
+                />
+                <input
+                  className="input"
+                  value={state.image}
+                  onChange={(e) => setState({ ...state, image: e.target.value })}
+                  placeholder="…or paste an image URL"
+                />
+                {uploadError && (
+                  <p className="text-xs text-red-700">{uploadError}</p>
+                )}
+                <p className="text-xs text-slate-500">JPG, PNG, WEBP, AVIF, or GIF · max 5 MB.</p>
+              </div>
+            </div>
           </Field>
           <Field label="Short description" full>
             <input

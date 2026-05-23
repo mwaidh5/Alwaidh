@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'mwaidh5@gmail.com'
+        ];
+    }
+
+    // Product catalogue: public read, admin write.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: guests can place orders; only admins can read/update/delete.
+    match /orders/{id} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // User profiles: each user reads/writes their own doc; admins see everyone.
+    match /users/{uid} {
+      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Contact form submissions: anyone can submit; admins manage.
+    match /contactSubmissions/{id} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Site settings (incl. extraAdminEmails) — public read so the app can
+    // resolve admin overrides before sign-in; admin write.
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

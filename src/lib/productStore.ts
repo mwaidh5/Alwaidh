@@ -90,11 +90,17 @@ export async function listProducts(): Promise<Product[]> {
 export function subscribeProducts(cb: (list: Product[]) => void): () => void {
   const database = db;
   if (database) {
-    seedIfEmpty(database);
+    seedIfEmpty(database).catch((e) =>
+      console.warn('Product seed skipped:', e instanceof Error ? e.message : e),
+    );
     const unsub = onSnapshot(
       query(collection(database, COLLECTION), orderBy('name', 'asc')),
       (snap) => {
         cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id)));
+      },
+      (err) => {
+        console.error('Products subscription failed; falling back to empty list:', err);
+        cb([]);
       },
     );
     return unsub;
