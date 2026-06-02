@@ -1,89 +1,167 @@
 import { Link } from 'react-router-dom';
-import CategoryTile from '../components/CategoryTile';
-import ProductCard from '../components/ProductCard';
+import type { CategorySlug } from '../types/product';
 import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
+import { formatPrice } from '../lib/format';
+
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1100&q=80';
+const SOLAR_IMAGE =
+  'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1600&q=80';
 
 export default function Home() {
   const { products } = useProducts();
-  const featured = products.filter((p) => p.inStock).slice(0, 6);
+  const collection = products.slice(0, 8);
+
+  const imageFor = (slug: CategorySlug) =>
+    products.find((p) => p.category === slug)?.image ?? HERO_IMAGE;
 
   return (
-    <div>
+    <div className="bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-b from-brand-50 to-white">
-        <div className="container-page grid items-center gap-10 py-14 md:grid-cols-2 md:py-20">
+      <section className="bg-white">
+        <div className="container-page grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-brand-700">
-              Welcome to Alwaidh
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+              Your Tech Destination
             </p>
-            <h1 className="mt-3 text-4xl font-extrabold leading-tight text-slate-900 sm:text-5xl">
-              Power your work, your home, and your security — all in one shop.
+            <h1 className="mt-4 text-5xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-6xl">
+              New Season
+              <br />
+              Collection
             </h1>
-            <p className="mt-5 max-w-prose text-lg text-slate-600">
-              Quality computers, solar energy systems, and Tiandy security cameras with fast
-              shipping and expert support.
+            <p className="mt-6 max-w-md text-slate-600">
+              Quality computers, solar energy systems, and Tiandy security cameras — chosen for
+              performance and built to last.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/shop" className="btn-primary">Shop all products</Link>
-              <Link to="/solar-calculator" className="btn-secondary">Build a solar system</Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/shop"
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700"
+              >
+                Shop Now
+              </Link>
+              <Link
+                to="/about"
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+              >
+                Read More
+              </Link>
             </div>
           </div>
           <div className="relative">
-            <div className="rounded-3xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
-              <img
-                src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=900&q=80"
-                alt="Featured"
-                className="aspect-[4/3] w-full rounded-2xl object-cover"
-              />
-            </div>
+            <img
+              src={HERO_IMAGE}
+              alt="Featured products"
+              className="aspect-[5/4] w-full rounded-3xl object-cover shadow-sm"
+            />
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="container-page py-16">
-        <div className="mb-8 flex items-end justify-between">
+      {/* Category promo tiles */}
+      <section className="container-page grid gap-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            to="/shop"
+            className="group flex items-center gap-5 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md"
+          >
+            <img
+              src={imageFor(c.slug)}
+              alt={c.name}
+              className="h-28 w-28 flex-none rounded-2xl object-contain"
+            />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                {c.name}
+              </p>
+              <span className="mt-1 inline-block text-base font-semibold text-slate-900 underline-offset-4 group-hover:underline">
+                Shop Now
+              </span>
+            </div>
+          </Link>
+        ))}
+        <Link
+          to="/shop"
+          className="group flex items-center gap-5 rounded-3xl bg-slate-900 p-8 text-white shadow-sm transition hover:bg-slate-800"
+        >
+          <span className="text-6xl">🛍️</span>
           <div>
-            <h2 className="text-2xl font-extrabold text-slate-900">Shop by category</h2>
-            <p className="mt-1 text-slate-600">Three product lines, one trusted store.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+              All Products
+            </p>
+            <span className="mt-1 inline-block text-base font-semibold underline-offset-4 group-hover:underline">
+              Shop Now
+            </span>
           </div>
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {categories.map((c) => (
-            <CategoryTile key={c.slug} category={c} />
+        </Link>
+      </section>
+
+      {/* Latest collection grid */}
+      <section className="container-page py-16">
+        <h2 className="text-center text-3xl font-extrabold tracking-tight text-slate-900">
+          Latest Collection
+        </h2>
+        <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {collection.map((p) => (
+            <Link key={p.id} to={`/product/${p.id}`} className="group">
+              <div className="aspect-square overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition group-hover:shadow-md">
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  loading="lazy"
+                  className="h-full w-full rounded-2xl object-contain transition duration-500 group-hover:scale-105"
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="line-clamp-1 text-sm text-slate-700 group-hover:text-slate-900">
+                  {p.name}
+                </span>
+                <span className="flex-none text-sm font-bold text-orange-500">
+                  {formatPrice(p.price, p.currency)}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
-      </section>
-
-      {/* Featured products */}
-      <section className="container-page py-8">
-        <div className="mb-6 flex items-end justify-between">
-          <h2 className="text-2xl font-extrabold text-slate-900">Featured products</h2>
-          <Link to="/shop" className="text-sm font-semibold text-brand-700 hover:underline">
-            See all →
+        <div className="mt-12 text-center">
+          <Link
+            to="/shop"
+            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+          >
+            View All Products
           </Link>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
       </section>
 
-      {/* Value props */}
-      <section className="bg-slate-50">
-        <div className="container-page grid gap-6 py-12 sm:grid-cols-3">
-          {[
-            { title: 'Fast shipping', body: 'Same-day dispatch on in-stock items.' },
-            { title: 'Genuine products', body: 'Authorised reseller for Tiandy and partner brands.' },
-            { title: 'Expert support', body: 'Help selecting solar, IT, and CCTV systems.' },
-          ].map((v) => (
-            <div key={v.title} className="card p-6">
-              <h3 className="font-semibold text-slate-900">{v.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">{v.body}</p>
-            </div>
-          ))}
+      {/* Solar energy banner */}
+      <section className="container-page pb-20">
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
+          <img
+            src={SOLAR_IMAGE}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover opacity-40"
+          />
+          <div className="relative px-8 py-28 text-center md:max-w-2xl md:px-16 md:py-36 md:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
+              Clean Energy
+            </p>
+            <h2 className="mt-4 text-4xl font-extrabold uppercase tracking-[0.12em] sm:text-6xl">
+              Go Solar
+            </h2>
+            <p className="mt-5 max-w-xl text-lg text-white/85">
+              Cut your power bills and run on clean, reliable energy. We supply panels, inverters,
+              and batteries — and help you size the right system for your home or business.
+            </p>
+            <Link
+              to="/solar-calculator"
+              className="mt-8 inline-flex items-center justify-center rounded-full border border-white/70 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-slate-900"
+            >
+              Build a Solar System
+            </Link>
+          </div>
         </div>
       </section>
     </div>
