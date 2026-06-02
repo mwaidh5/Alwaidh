@@ -5,9 +5,9 @@ import { useProducts } from '../lib/useProducts';
 import { formatPrice } from '../lib/format';
 
 const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80';
-const BANNER_IMAGE =
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80';
+  'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1100&q=80';
+const SOLAR_IMAGE =
+  'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1600&q=80';
 
 export default function Home() {
   const { products } = useProducts();
@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="bg-slate-100">
+      <section className="bg-white">
         <div className="container-page grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
@@ -37,13 +37,13 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center justify-center bg-slate-900 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700"
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700"
               >
                 Shop Now
               </Link>
               <Link
                 to="/about"
-                className="inline-flex items-center justify-center border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
               >
                 Read More
               </Link>
@@ -53,7 +53,7 @@ export default function Home() {
             <img
               src={HERO_IMAGE}
               alt="Featured products"
-              className="aspect-[4/3] w-full object-cover"
+              className="aspect-[5/4] w-full rounded-3xl object-cover shadow-sm"
             />
           </div>
         </div>
@@ -65,18 +65,18 @@ export default function Home() {
           <Link
             key={c.slug}
             to="/shop"
-            className="group flex items-center gap-4 bg-slate-50 p-6 transition hover:bg-slate-100"
+            className="group flex items-center gap-5 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md"
           >
             <img
               src={imageFor(c.slug)}
               alt={c.name}
-              className="h-20 w-20 flex-none object-contain"
+              className="h-28 w-28 flex-none rounded-2xl object-contain"
             />
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {c.name}
               </p>
-              <span className="mt-1 inline-block text-sm font-semibold text-slate-900 underline-offset-4 group-hover:underline">
+              <span className="mt-1 inline-block text-base font-semibold text-slate-900 underline-offset-4 group-hover:underline">
                 Shop Now
               </span>
             </div>
@@ -84,14 +84,14 @@ export default function Home() {
         ))}
         <Link
           to="/shop"
-          className="group flex items-center gap-4 bg-slate-900 p-6 text-white transition hover:bg-slate-800"
+          className="group flex items-center gap-5 rounded-3xl bg-slate-900 p-8 text-white shadow-sm transition hover:bg-slate-800"
         >
-          <span className="text-4xl">🛍️</span>
+          <span className="text-6xl">🛍️</span>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
               All Products
             </p>
-            <span className="mt-1 inline-block text-sm font-semibold underline-offset-4 group-hover:underline">
+            <span className="mt-1 inline-block text-base font-semibold underline-offset-4 group-hover:underline">
               Shop Now
             </span>
           </div>
@@ -106,12 +106,12 @@ export default function Home() {
         <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {collection.map((p) => (
             <Link key={p.id} to={`/product/${p.id}`} className="group">
-              <div className="aspect-square overflow-hidden bg-slate-100 p-6">
+              <div className="aspect-square overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition group-hover:shadow-md">
                 <img
                   src={p.image}
                   alt={p.name}
                   loading="lazy"
-                  className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
+                  className="h-full w-full rounded-2xl object-contain transition duration-500 group-hover:scale-105"
                 />
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -128,35 +128,40 @@ export default function Home() {
         <div className="mt-12 text-center">
           <Link
             to="/shop"
-            className="inline-flex items-center justify-center border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
           >
             View All Products
           </Link>
         </div>
       </section>
 
-      {/* Dark promo banner */}
-      <section className="relative overflow-hidden bg-slate-900 text-white">
-        <img
-          src={BANNER_IMAGE}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover opacity-30"
-        />
-        <div className="container-page relative py-24 text-center md:max-w-xl md:text-left">
-          <h2 className="text-4xl font-extrabold uppercase tracking-[0.15em] sm:text-5xl">
-            Alwaidh
-          </h2>
-          <p className="mt-4 text-white/80">
-            Improve your setup with technology chosen for reliability — and backed by expert support
-            from a store that knows the gear.
-          </p>
-          <Link
-            to="/about"
-            className="mt-8 inline-flex items-center justify-center border border-white/70 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-slate-900"
-          >
-            View More
-          </Link>
+      {/* Solar energy banner */}
+      <section className="container-page pb-20">
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
+          <img
+            src={SOLAR_IMAGE}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover opacity-40"
+          />
+          <div className="relative px-8 py-28 text-center md:max-w-2xl md:px-16 md:py-36 md:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
+              Clean Energy
+            </p>
+            <h2 className="mt-4 text-4xl font-extrabold uppercase tracking-[0.12em] sm:text-6xl">
+              Go Solar
+            </h2>
+            <p className="mt-5 max-w-xl text-lg text-white/85">
+              Cut your power bills and run on clean, reliable energy. We supply panels, inverters,
+              and batteries — and help you size the right system for your home or business.
+            </p>
+            <Link
+              to="/solar-calculator"
+              className="mt-8 inline-flex items-center justify-center rounded-full border border-white/70 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-slate-900"
+            >
+              Build a Solar System
+            </Link>
+          </div>
         </div>
       </section>
     </div>
