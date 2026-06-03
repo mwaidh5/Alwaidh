@@ -8,7 +8,7 @@ const panels = solarProducts.filter((p) => /panel/i.test(p.name));
 const inverters = solarProducts.filter((p) => /inverter/i.test(p.name));
 const batteries = solarProducts.filter((p) => /battery/i.test(p.name));
 
-const currency = solarProducts[0]?.currency ?? 'USD';
+const currency = solarProducts[0]?.currency ?? 'IQD';
 
 export default function SolarCalculator() {
   const [panelId, setPanelId] = useState<string>(panels[0]?.id ?? '');

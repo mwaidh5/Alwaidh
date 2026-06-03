@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   storeName: 'Alwaidh',
   contactEmail: 'hello@alwaidh.com',
   supportPhone: '',
-  defaultCurrency: 'USD',
+  defaultCurrency: 'IQD',
   taxRatePercent: 0,
   shippingFlat: 0,
   enableCheckout: true,

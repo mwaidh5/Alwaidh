@@ -47,7 +47,7 @@ export default function Overview() {
   }, [orders, products]);
 
   const mode = productStorageMode();
-  const currency = orders[0]?.currency ?? 'USD';
+  const currency = orders[0]?.currency ?? 'IQD';
 
   return (
     <div className="space-y-6">

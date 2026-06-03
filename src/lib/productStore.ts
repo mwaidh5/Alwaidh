@@ -47,7 +47,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     category: (data.category as Product['category']) ?? 'computers',
     brand: String(data.brand ?? ''),
     price: Number(data.price ?? 0),
-    currency: String(data.currency ?? 'USD'),
+    currency: String(data.currency ?? 'IQD'),
     image: String(data.image ?? ''),
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
