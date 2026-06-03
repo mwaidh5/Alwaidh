@@ -1,4 +1,7 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { recordPageView } from './lib/analyticsStore';
+import { logPageView } from './firebase';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -15,9 +18,19 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import NotFound from './pages/NotFound';
 
 export default function App() {
+  const location = useLocation();
+
+  // Record each page view for in-app analytics and Google Analytics.
+  useEffect(() => {
+    const path = location.pathname + location.search;
+    recordPageView(path);
+    logPageView(path);
+  }, [location.pathname]);
+
   return (
     <Routes>
       <Route element={<Layout />}>
@@ -36,6 +49,7 @@ export default function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="submissions" element={<AdminSubmissions />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

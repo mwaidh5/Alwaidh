@@ -19,7 +19,7 @@ const EMPTY_FORM: FormState = {
   category: 'computers',
   brand: '',
   price: 0,
-  currency: 'USD',
+  currency: 'IQD',
   image: '',
   rating: 0,
   inStock: true,
@@ -35,10 +35,66 @@ export default function AdminProducts() {
   const [filter, setFilter] = useState<'all' | CategorySlug>('all');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     return subscribeProducts((list) => setProducts(list));
   }, []);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const ids = filtered.map((p) => p.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selected.has(id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  async function applyToSelected(label: string, transform: (p: Product) => Product) {
+    if (selected.size === 0) return;
+    setError('');
+    setBusy(true);
+    try {
+      const list = products ?? [];
+      await Promise.all(
+        [...selected].map((id) => {
+          const p = list.find((x) => x.id === id);
+          return p ? upsertProduct(transform(p)) : Promise.resolve();
+        }),
+      );
+      setSelected(new Set());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : `${label} failed.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} selected product(s)? This cannot be undone.`)) return;
+    setError('');
+    setBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => deleteProduct(id)));
+      setSelected(new Set());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Bulk delete failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const list = products ?? [];
@@ -83,7 +139,7 @@ export default function AdminProducts() {
         category: editing.category,
         brand: editing.brand.trim(),
         price: Number(editing.price) || 0,
-        currency: editing.currency.trim().toUpperCase() || 'USD',
+        currency: editing.currency.trim().toUpperCase() || 'IQD',
         image: editing.image.trim(),
         rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
         inStock: editing.inStock,
@@ -169,6 +225,82 @@ export default function AdminProducts() {
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm">
+          <span className="font-semibold text-brand-800">{selected.size} selected</span>
+          <span className="text-slate-400">·</span>
+          <select
+            className="rounded border border-slate-300 bg-white px-2 py-1"
+            value=""
+            disabled={busy}
+            onChange={(e) => {
+              const v = e.target.value as CategorySlug;
+              if (v) applyToSelected('Set category', (p) => ({ ...p, category: v }));
+            }}
+          >
+            <option value="">Set category…</option>
+            {categories.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => applyToSelected('Set stock', (p) => ({ ...p, inStock: true }))}
+            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50"
+          >
+            In stock
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => applyToSelected('Set stock', (p) => ({ ...p, inStock: false }))}
+            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50"
+          >
+            Out of stock
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => applyToSelected('Set currency', (p) => ({ ...p, currency: 'IQD' }))}
+            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50"
+          >
+            Set currency → IQD
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const f = prompt('Multiply selected prices by (e.g. 1310 to convert USD → IQD):');
+              const factor = Number(f);
+              if (f && factor > 0) {
+                applyToSelected('Adjust price', (p) => ({ ...p, price: Math.round(p.price * factor) }));
+              }
+            }}
+            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50"
+          >
+            Multiply price ×…
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={deleteSelected}
+            className="rounded border border-red-300 bg-white px-2 py-1 font-semibold text-red-700 hover:bg-red-50"
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-slate-500 hover:underline"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           {error}
@@ -184,6 +316,15 @@ export default function AdminProducts() {
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all"
+                    checked={filtered.length > 0 && filtered.every((p) => selected.has(p.id))}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                </th>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Price</th>
@@ -193,7 +334,16 @@ export default function AdminProducts() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filtered.map((p) => (
-                <tr key={p.id}>
+                <tr key={p.id} className={selected.has(p.id) ? 'bg-brand-50/40' : undefined}>
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${p.name}`}
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {p.image ? (
@@ -278,6 +428,7 @@ function ProductDialog({
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [removingBg, setRemovingBg] = useState(false);
 
   async function handleUpload(file: File) {
     setUploadError('');
@@ -290,6 +441,24 @@ function ProductDialog({
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  async function handleRemoveBackground() {
+    if (!state.image) return;
+    setUploadError('');
+    setRemovingBg(true);
+    try {
+      // Loaded on demand — the model downloads on first use, then is cached.
+      const { removeBackground } = await import('@imgly/background-removal');
+      const blob = await removeBackground(state.image);
+      const file = new File([blob], 'bg-removed.png', { type: 'image/png' });
+      const { url } = await uploadProductImage(file, state.id || undefined);
+      setState({ ...state, image: url });
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Background removal failed.');
+    } finally {
+      setRemovingBg(false);
     }
   }
   return (
@@ -384,11 +553,21 @@ function ProductDialog({
                   <button
                     type="button"
                     onClick={() => fileInput.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading || removingBg}
                     className="btn-secondary"
                   >
                     {uploading ? 'Uploading…' : 'Upload image'}
                   </button>
+                  {state.image && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveBackground}
+                      disabled={uploading || removingBg}
+                      className="btn-secondary"
+                    >
+                      {removingBg ? 'Removing…' : 'Remove background'}
+                    </button>
+                  )}
                   {state.image && (
                     <button
                       type="button"
@@ -418,7 +597,10 @@ function ProductDialog({
                 {uploadError && (
                   <p className="text-xs text-red-700">{uploadError}</p>
                 )}
-                <p className="text-xs text-slate-500">JPG, PNG, WEBP, AVIF, or GIF · max 5 MB.</p>
+                <p className="text-xs text-slate-500">
+                  JPG, PNG, WEBP, AVIF, or GIF · max 5 MB. “Remove background” uses an in-browser AI
+                  model that downloads on first use (may take a moment).
+                </p>
               </div>
             </div>
           </Field>

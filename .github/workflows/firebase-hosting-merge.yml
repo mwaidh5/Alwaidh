@@ -20,3 +20,12 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ALWAIDH_BAEB5 }}
           channelId: live
           projectId: alwaidh-baeb5
+      # Publish Firestore & Storage security rules (the hosting action above
+      # only deploys the website, not the database rules).
+      - name: Deploy Firestore & Storage rules
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/gcp-sa.json"
+          npx --yes firebase-tools@latest deploy --only firestore:rules,storage --project alwaidh-baeb5 --non-interactive
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ALWAIDH_BAEB5 }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-sa.json

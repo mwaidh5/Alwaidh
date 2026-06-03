@@ -1,4 +1,4 @@
-export function formatPrice(amount: number, currency = 'USD'): string {
+export function formatPrice(amount: number, currency = 'IQD'): string {
   try {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',

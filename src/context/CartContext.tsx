@@ -113,7 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const p = productLookup[i.productId];
     return sum + (p ? p.price * i.quantity : 0);
   }, 0);
-  const currency = state.items[0] ? productLookup[state.items[0].productId]?.currency ?? 'USD' : 'USD';
+  const currency = state.items[0] ? productLookup[state.items[0].productId]?.currency ?? 'IQD' : 'IQD';
 
   const add = useCallback(
     (productId: string, quantity = 1) => dispatch({ type: 'ADD', productId, quantity }),
@@ -144,7 +144,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       })
       .filter((x): x is { productId: string; name: string; price: number; quantity: number } => x !== null);
     const sub = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
-    const cur = state.items[0] ? productLookup[state.items[0].productId]?.currency ?? 'USD' : 'USD';
+    const cur = state.items[0] ? productLookup[state.items[0].productId]?.currency ?? 'IQD' : 'IQD';
     return { lines, subtotal: sub, currency: cur };
   }, [state.items, productLookup]);
 

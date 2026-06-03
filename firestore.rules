@@ -41,5 +41,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Analytics page-view events: any visitor can record a view; only admins
+    // can read them back. Events are immutable (no update/delete).
+    match /analytics_events/{id} {
+      allow create: if true;
+      allow read: if isAdmin();
+    }
   }
 }

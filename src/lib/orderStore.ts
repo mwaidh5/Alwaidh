@@ -79,7 +79,7 @@ function normalize(data: Record<string, unknown>, id: string): Order {
     notes: data.notes ? String(data.notes) : undefined,
     lines: Array.isArray(data.lines) ? (data.lines as OrderLine[]) : [],
     subtotal: Number(data.subtotal ?? 0),
-    currency: String(data.currency ?? 'USD'),
+    currency: String(data.currency ?? 'IQD'),
     status: (data.status as OrderStatus) ?? 'pending',
     createdAt,
     userUid: data.userUid ? String(data.userUid) : undefined,
