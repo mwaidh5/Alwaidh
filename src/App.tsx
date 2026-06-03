@@ -5,6 +5,7 @@ import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import SolarCalculator from './pages/SolarCalculator';
+import SolarProjects from './pages/SolarProjects';
 import About from './pages/About';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/solar-calculator" element={<SolarCalculator />} />
+        <Route path="/projects/solar" element={<SolarProjects />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />}>
