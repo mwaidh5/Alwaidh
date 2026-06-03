@@ -70,7 +70,7 @@ export default function Home() {
             <img
               src={imageFor(c.slug)}
               alt={c.name}
-              className="h-28 w-28 flex-none rounded-2xl object-contain"
+              className="h-28 w-28 flex-none rounded-2xl object-cover"
             />
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -106,12 +106,12 @@ export default function Home() {
         <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {collection.map((p) => (
             <Link key={p.id} to={`/product/${p.id}`} className="group">
-              <div className="aspect-square overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition group-hover:shadow-md">
+              <div className="aspect-square overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition group-hover:shadow-md">
                 <img
                   src={p.image}
                   alt={p.name}
                   loading="lazy"
-                  className="h-full w-full rounded-2xl object-contain transition duration-500 group-hover:scale-105"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
