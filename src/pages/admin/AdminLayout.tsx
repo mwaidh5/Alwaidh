@@ -10,6 +10,7 @@ const navItems = [
   { to: '/admin/orders', label: 'Orders', icon: '🧾' },
   { to: '/admin/users', label: 'Users', icon: '👥' },
   { to: '/admin/submissions', label: 'Submissions', icon: '✉️' },
+  { to: '/admin/analytics', label: 'Analytics', icon: '📈' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 

@@ -1,8 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut as fbSignOut,
+  updateProfile,
   type User,
 } from 'firebase/auth';
 import { auth, firebaseReady, googleProvider, isAdminEmail } from '../firebase';
@@ -14,6 +18,9 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   configured: boolean;
 }
@@ -65,6 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
         await signInWithPopup(auth, googleProvider);
+      },
+      async signInWithEmail(email: string, password: string) {
+        if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
+        await signInWithEmailAndPassword(auth, email, password);
+      },
+      async signUpWithEmail(email: string, password: string, displayName?: string) {
+        if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (displayName && cred.user) {
+          await updateProfile(cred.user, { displayName });
+        }
+      },
+      async sendPasswordReset(email: string) {
+        if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
+        await sendPasswordResetEmail(auth, email);
       },
       async signOut() {
         if (!auth) return;
