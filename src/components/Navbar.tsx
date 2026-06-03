@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../lib/useProducts';
+import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 
 const navLinks = [
@@ -19,6 +20,7 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, signOut } = useAuth();
   const { products } = useProducts();
+  const settings = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -81,8 +83,14 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2 font-extrabold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">A</span>
-          <span className="text-lg tracking-tight">Alwaidh</span>
+          {settings.logoImage ? (
+            <img src={settings.logoImage} alt={settings.storeName || 'Alwaidh'} className="h-9 w-auto" />
+          ) : (
+            <>
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">A</span>
+              <span className="text-lg tracking-tight">{settings.storeName || 'Alwaidh'}</span>
+            </>
+          )}
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

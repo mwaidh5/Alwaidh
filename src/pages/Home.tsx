@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { CategorySlug } from '../types/product';
 import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
+import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 
 const HERO_IMAGE =
@@ -11,7 +12,10 @@ const SOLAR_IMAGE =
 
 export default function Home() {
   const { products } = useProducts();
+  const settings = useSettings();
   const collection = products.slice(0, 8);
+  const heroImage = settings.heroImage || HERO_IMAGE;
+  const bannerImage = settings.solarBannerImage || SOLAR_IMAGE;
 
   const imageFor = (slug: CategorySlug) =>
     products.find((p) => p.category === slug)?.image ?? HERO_IMAGE;
@@ -51,7 +55,7 @@ export default function Home() {
           </div>
           <div className="relative">
             <img
-              src={HERO_IMAGE}
+              src={heroImage}
               alt="Featured products"
               className="aspect-[5/4] w-full rounded-3xl object-cover shadow-sm"
             />
@@ -139,7 +143,7 @@ export default function Home() {
       <section className="container-page pb-20">
         <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
           <img
-            src={SOLAR_IMAGE}
+            src={bannerImage}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover opacity-40"

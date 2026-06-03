@@ -18,6 +18,9 @@ export interface SiteSettings {
   maintenanceMode: boolean;
   bannerMessage: string;
   extraAdminEmails: string[];
+  heroImage: string;
+  solarBannerImage: string;
+  logoImage: string;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -32,6 +35,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   maintenanceMode: false,
   bannerMessage: '',
   extraAdminEmails: [],
+  heroImage: '',
+  solarBannerImage: '',
+  logoImage: '',
 };
 
 const SINGLETON_PATH = ['settings', 'site'] as const;
