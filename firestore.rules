@@ -48,5 +48,11 @@ service cloud.firestore {
       allow create: if true;
       allow read: if isAdmin();
     }
+
+    // Solar projects showcase: public read, admin write.
+    match /solarProjects/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_SETTINGS,
   loadSettings,
   saveSettings,
   type SiteSettings,
 } from '../../lib/settingsStore';
+import { uploadImage } from '../../lib/imageUpload';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -168,6 +169,30 @@ export default function AdminSettings() {
           </Field>
         </Section>
 
+        <Section title="Site images">
+          <p className="text-sm text-slate-600">
+            Replace the main images used across the website. Changes go live as soon as you save.
+          </p>
+          <ImageField
+            label="Homepage hero image"
+            value={settings.heroImage}
+            folder="site"
+            onChange={(url) => update('heroImage', url)}
+          />
+          <ImageField
+            label="Homepage solar banner image"
+            value={settings.solarBannerImage}
+            folder="site"
+            onChange={(url) => update('solarBannerImage', url)}
+          />
+          <ImageField
+            label="Logo (navbar)"
+            value={settings.logoImage}
+            folder="site"
+            onChange={(url) => update('logoImage', url)}
+          />
+        </Section>
+
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
           <button type="button" onClick={resetDefaults} className="text-sm text-slate-500 hover:underline">
             Reset to defaults
@@ -201,6 +226,93 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  folder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  folder: string;
+  onChange: (url: string) => void;
+}) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function handle(file: File) {
+    setErr('');
+    setUploading(true);
+    try {
+      const { url } = await uploadImage(file, folder);
+      onChange(url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </label>
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="h-20 w-32 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+          {value ? (
+            <img src={value} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-xs text-slate-400">
+              Default
+            </div>
+          )}
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+              className="btn-secondary"
+            >
+              {uploading ? 'Uploading…' : 'Upload image'}
+            </button>
+            {value && (
+              <button
+                type="button"
+                onClick={() => onChange('')}
+                className="text-sm font-semibold text-red-700 hover:underline"
+              >
+                Use default
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handle(f);
+            }}
+          />
+          <input
+            className="input"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="…or paste an image URL"
+          />
+          {err && <p className="text-xs text-red-700">{err}</p>}
+        </div>
+      </div>
     </div>
   );
 }
