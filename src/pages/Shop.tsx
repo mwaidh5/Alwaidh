@@ -330,6 +330,30 @@ export default function Shop() {
           )}
         </section>
       </div>
+
+      {/* Solar calculator banner */}
+      <section className="container-page pb-12">
+        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500 to-amber-400 px-8 py-12 text-center shadow-sm md:flex md:items-center md:justify-between md:gap-6 md:text-left">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+              Solar Energy
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
+              Not sure which solar system you need?
+            </h2>
+            <p className="mt-2 max-w-xl text-white/90">
+              Use our calculator to size the right panels, inverters, and batteries for your home or
+              business in minutes.
+            </p>
+          </div>
+          <Link
+            to="/solar-calculator"
+            className="mt-6 inline-flex flex-none items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-50 md:mt-0"
+          >
+            Open the Solar Calculator
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
@@ -426,8 +450,8 @@ function PageButton({
 
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
   return (
-    <div className="card group flex flex-col overflow-hidden text-center">
-      <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-6">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-center shadow-sm transition hover:shadow-md">
+      <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden p-6">
         <img
           src={product.image}
           alt={product.name}
