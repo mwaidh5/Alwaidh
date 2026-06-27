@@ -333,7 +333,7 @@ export default function Shop() {
 
       {/* Solar calculator banner */}
       <section className="container-page pb-12">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500 to-amber-400 px-8 py-12 text-center shadow-sm md:flex md:items-center md:justify-between md:gap-6 md:text-left">
+        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-brand-700 to-brand-500 px-8 py-12 text-center shadow-sm md:flex md:items-center md:justify-between md:gap-6 md:text-left">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
               Solar Energy
@@ -348,7 +348,7 @@ export default function Shop() {
           </div>
           <Link
             to="/solar-calculator"
-            className="mt-6 inline-flex flex-none items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-50 md:mt-0"
+            className="mt-6 inline-flex flex-none items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-brand-700 transition hover:bg-brand-50 md:mt-0"
           >
             Open the Solar Calculator
           </Link>
