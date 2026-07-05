@@ -22,6 +22,7 @@ export interface Job {
   address: string;
   type: JobType;
   system: string; // e.g. "6 kW rooftop system"
+  installer: string; // technician assigned to the job
   notes: string;
   status: JobStatus;
   order: number; // position within its column
@@ -65,6 +66,7 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     address: String(data.address ?? ''),
     type: (data.type as JobType) === 'repair' ? 'repair' : 'install',
     system: String(data.system ?? ''),
+    installer: String(data.installer ?? ''),
     notes: String(data.notes ?? ''),
     status: (['new', 'scheduled', 'in_progress', 'done'].includes(String(data.status))
       ? data.status

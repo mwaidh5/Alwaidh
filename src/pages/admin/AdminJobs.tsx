@@ -34,9 +34,37 @@ const EMPTY: FormState = {
   address: '',
   type: 'install',
   system: '',
+  installer: '',
   notes: '',
   status: 'new',
   order: 0,
+};
+
+const STATUS_STYLES: Record<JobStatus, { column: string; header: string; dot: string; badge: string }> = {
+  new: {
+    column: 'border-blue-200 bg-blue-50',
+    header: 'text-blue-700',
+    dot: 'bg-blue-500',
+    badge: 'bg-blue-100 text-blue-700',
+  },
+  scheduled: {
+    column: 'border-amber-200 bg-amber-50',
+    header: 'text-amber-700',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-100 text-amber-700',
+  },
+  in_progress: {
+    column: 'border-violet-200 bg-violet-50',
+    header: 'text-violet-700',
+    dot: 'bg-violet-500',
+    badge: 'bg-violet-100 text-violet-700',
+  },
+  done: {
+    column: 'border-green-200 bg-green-50',
+    header: 'text-green-700',
+    dot: 'bg-green-500',
+    badge: 'bg-green-100 text-green-700',
+  },
 };
 
 export default function AdminJobs() {
@@ -84,6 +112,7 @@ export default function AdminJobs() {
         address: editing.address.trim(),
         type: editing.type,
         system: editing.system.trim(),
+        installer: editing.installer.trim(),
         notes: editing.notes.trim(),
         status: editing.status,
         order: editing.order || Date.now(),
@@ -189,16 +218,20 @@ function Column({
   onDelete: (j: Job) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const style = STATUS_STYLES[status];
   return (
     <div
       ref={setNodeRef}
       className={`rounded-xl border p-3 transition ${
-        isOver ? 'border-brand-400 bg-brand-50' : 'border-slate-200 bg-slate-50'
-      }`}
+        isOver ? 'border-brand-500 ring-2 ring-brand-200' : ''
+      } ${style.column}`}
     >
       <div className="mb-3 flex items-center justify-between px-1">
-        <h2 className="text-sm font-bold text-slate-800">{label}</h2>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">
+        <h2 className={`flex items-center gap-2 text-sm font-bold ${style.header}`}>
+          <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
+          {label}
+        </h2>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${style.badge}`}>
           {jobs.length}
         </span>
       </div>
@@ -275,6 +308,7 @@ function JobCardView({
       </div>
       <p className="mt-1 font-semibold text-slate-900">{job.customer || 'Unnamed'}</p>
       {job.system && <p className="text-xs text-slate-600">{job.system}</p>}
+      {job.installer && <p className="mt-1 truncate text-xs font-medium text-slate-600">👷 {job.installer}</p>}
       {job.address && <p className="mt-1 truncate text-xs text-slate-500">📍 {job.address}</p>}
       {job.phone && <p className="truncate text-xs text-slate-500">📞 {job.phone}</p>}
       {job.notes && <p className="mt-1 line-clamp-2 text-xs text-slate-600">{job.notes}</p>}
@@ -348,14 +382,24 @@ function JobDialog({
               onChange={(e) => setState({ ...state, address: e.target.value })}
             />
           </Field>
-          <Field label="System / details">
-            <input
-              className="input"
-              value={state.system}
-              onChange={(e) => setState({ ...state, system: e.target.value })}
-              placeholder="e.g. 6 kW rooftop system"
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="System / details">
+              <input
+                className="input"
+                value={state.system}
+                onChange={(e) => setState({ ...state, system: e.target.value })}
+                placeholder="e.g. 6 kW rooftop system"
+              />
+            </Field>
+            <Field label="Installer">
+              <input
+                className="input"
+                value={state.installer}
+                onChange={(e) => setState({ ...state, installer: e.target.value })}
+                placeholder="Technician name"
+              />
+            </Field>
+          </div>
           <Field label="Status">
             <select
               className="input"
