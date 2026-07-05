@@ -8,6 +8,7 @@ const navItems = [
   { to: '/admin', label: 'Overview', icon: '📊', end: true },
   { to: '/admin/products', label: 'Products', icon: '📦' },
   { to: '/admin/projects', label: 'Solar Projects', icon: '🔆' },
+  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️' },
   { to: '/admin/media', label: 'Media', icon: '🖼️' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾' },
   { to: '/admin/users', label: 'Users', icon: '👥' },
