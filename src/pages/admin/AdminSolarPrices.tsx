@@ -1,231 +1,177 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  createSolarPrice,
-  deleteSolarPrice,
-  subscribeSolarPrices,
-  upsertSolarPrice,
-  type SolarPrice,
+  subscribePriceRows,
+  createPriceRow,
+  upsertPriceRow,
+  deletePriceRow,
+  type PriceColumn,
+  type PriceRow,
 } from '../../lib/solarPricesStore';
-
-type FormState = SolarPrice;
-
-const EMPTY: FormState = {
-  id: '',
-  capacity: '',
-  inverter: '',
-  panels: '',
-  batteries: '',
-  backup: '',
-  price: '',
-  priceWithInverter: '',
-  order: 0,
-};
+import { useSettings } from '../../lib/useSettings';
+import { updateSettingsField } from '../../lib/settingsStore';
 
 export default function AdminSolarPrices() {
-  const [prices, setPrices] = useState<SolarPrice[] | null>(null);
-  const [editing, setEditing] = useState<FormState | null>(null);
+  const settings = useSettings();
+  const [columns, setColumns] = useState<PriceColumn[]>(settings.solarPriceColumns);
+  const [rows, setRows] = useState<PriceRow[]>([]);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
 
-  useEffect(() => subscribeSolarPrices(setPrices), []);
+  useEffect(() => setColumns(settings.solarPriceColumns), [settings.solarPriceColumns]);
+  useEffect(() => subscribePriceRows(setRows), []);
 
-  async function handleSave() {
-    if (!editing) return;
-    setError('');
-    setBusy(true);
-    try {
-      const payload = {
-        capacity: editing.capacity.trim(),
-        inverter: editing.inverter.trim(),
-        panels: editing.panels.trim(),
-        batteries: editing.batteries.trim(),
-        backup: editing.backup.trim(),
-        price: editing.price.trim(),
-        priceWithInverter: editing.priceWithInverter.trim(),
-        order: Number(editing.order) || 0,
-      };
-      if (!payload.capacity) throw new Error('Capacity is required.');
-      if (editing.id) await upsertSolarPrice({ id: editing.id, ...payload });
-      else await createSolarPrice(payload);
-      setEditing(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed.');
-    } finally {
-      setBusy(false);
-    }
+  const fail = (e: unknown) => setError(e instanceof Error ? e.message : 'Something went wrong.');
+
+  /* ---- column operations (persisted in site settings) ---- */
+  function persistColumns(next: PriceColumn[]) {
+    setColumns(next);
+    updateSettingsField('solarPriceColumns', next).catch(fail);
+  }
+  function persistColumnLabels() {
+    setColumns((prev) => {
+      updateSettingsField('solarPriceColumns', prev).catch(fail);
+      return prev;
+    });
+  }
+  function setColumnLabel(idx: number, label: string) {
+    setColumns((prev) => prev.map((c, i) => (i === idx ? { ...c, label } : c)));
+  }
+  function addColumn() {
+    persistColumns([
+      ...columns,
+      { key: `col_${Date.now().toString(36)}`, label: 'عمود جديد' },
+    ]);
+  }
+  function deleteColumn(idx: number) {
+    if (!confirm('Delete this column from the price sheet?')) return;
+    persistColumns(columns.filter((_, i) => i !== idx));
   }
 
-  async function handleDelete(id: string) {
+  /* ---- row operations (persisted in the solarPrices collection) ---- */
+  function setCell(rowId: string, key: string, value: string) {
+    setRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, values: { ...r.values, [key]: value } } : r)),
+    );
+  }
+  function saveRow(rowId: string) {
+    setRows((prev) => {
+      const r = prev.find((x) => x.id === rowId);
+      if (r) upsertPriceRow(r).catch(fail);
+      return prev;
+    });
+  }
+  function addRow() {
+    createPriceRow(rows.length).catch(fail);
+  }
+  function deleteRow(id: string) {
     if (!confirm('Delete this row?')) return;
-    try {
-      await deleteSolarPrice(id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Delete failed.');
-    }
+    deletePriceRow(id).catch(fail);
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Solar Prices</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Manage the rows shown on the public Solar Prices sheet.
+            Click any cell to edit — changes save when you click away. Add or remove rows and columns
+            freely.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setError('');
-            setEditing({ ...EMPTY, order: prices?.length ?? 0 });
-          }}
-          className="btn-primary"
-        >
-          + Add row
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={addColumn} className="btn-secondary">
+            + Column
+          </button>
+          <button type="button" onClick={addRow} className="btn-primary">
+            + Row
+          </button>
+        </div>
       </header>
 
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
       )}
 
-      {prices === null ? (
-        <p className="text-center text-sm text-slate-500">Loading…</p>
-      ) : prices.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">No rows yet.</p>
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-3">Capacity</th>
-                <th className="px-3 py-3">Inverter</th>
-                <th className="px-3 py-3">Panels</th>
-                <th className="px-3 py-3">Batteries</th>
-                <th className="px-3 py-3">Backup</th>
-                <th className="px-3 py-3">Price</th>
-                <th className="px-3 py-3">+ Inverter</th>
-                <th className="px-3 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {prices.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-3 py-3 font-semibold text-slate-900">{p.capacity}</td>
-                  <td className="px-3 py-3 text-slate-700">{p.inverter}</td>
-                  <td className="px-3 py-3 text-slate-700">{p.panels}</td>
-                  <td className="px-3 py-3 text-slate-700">{p.batteries}</td>
-                  <td className="px-3 py-3 text-slate-700">{p.backup}</td>
-                  <td className="px-3 py-3 font-semibold text-slate-900">{p.price || '-'}</td>
-                  <td className="px-3 py-3 font-semibold text-slate-900">{p.priceWithInverter || '-'}</td>
-                  <td className="px-3 py-3 text-right">
+      <div className="card overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-slate-50">
+              <th className="w-8 border-b border-slate-200 p-2 text-xs text-slate-400">#</th>
+              {columns.map((c, idx) => (
+                <th key={c.key} className="min-w-[130px] border-b border-slate-200 p-2 align-top">
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={c.label}
+                      onChange={(e) => setColumnLabel(idx, e.target.value)}
+                      onBlur={persistColumnLabels}
+                      dir="auto"
+                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-800 focus:border-brand-500 focus:outline-none"
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        setError('');
-                        setEditing({ ...p });
-                      }}
-                      className="text-sm font-semibold text-brand-700 hover:underline"
+                      onClick={() => deleteColumn(idx)}
+                      title="Delete column"
+                      className="flex-none rounded px-1 text-red-500 hover:bg-red-50"
                     >
-                      Edit
+                      ✕
                     </button>
+                  </div>
+                </th>
+              ))}
+              <th className="w-10 border-b border-slate-200 p-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + 2} className="p-8 text-center text-sm text-slate-400">
+                  No rows yet — click “+ Row” to add one.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, ri) => (
+                <tr key={row.id} className="hover:bg-slate-50/50">
+                  <td className="border-b border-slate-100 text-center text-xs text-slate-400">
+                    {ri + 1}
+                  </td>
+                  {columns.map((c) => (
+                    <td key={c.key} className="border-b border-slate-100 p-1">
+                      <input
+                        value={row.values[c.key] ?? ''}
+                        onChange={(e) => setCell(row.id, c.key, e.target.value)}
+                        onBlur={() => saveRow(row.id)}
+                        dir="auto"
+                        className="w-full rounded border border-transparent px-2 py-1.5 hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none"
+                      />
+                    </td>
+                  ))}
+                  <td className="border-b border-slate-100 text-center">
                     <button
                       type="button"
-                      onClick={() => handleDelete(p.id)}
-                      className="ml-3 text-sm font-semibold text-red-700 hover:underline"
+                      onClick={() => deleteRow(row.id)}
+                      title="Delete row"
+                      className="rounded px-2 py-1 text-red-500 hover:bg-red-50"
                     >
-                      Delete
+                      🗑
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {editing && (
-        <PriceDialog
-          state={editing}
-          setState={setEditing}
-          busy={busy}
-          onCancel={() => setEditing(null)}
-          onSave={handleSave}
-        />
-      )}
-    </div>
-  );
-}
-
-function PriceDialog({
-  state,
-  setState,
-  busy,
-  onCancel,
-  onSave,
-}: {
-  state: FormState;
-  setState: (s: FormState) => void;
-  busy: boolean;
-  onCancel: () => void;
-  onSave: () => void;
-}) {
-  const set = (k: keyof FormState, v: string) => setState({ ...state, [k]: v });
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-          <h2 className="font-bold text-slate-900">{state.id ? 'Edit row' : 'New row'}</h2>
-          <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-800">
-            ✕
-          </button>
-        </div>
-        <div className="grid gap-4 p-5 sm:grid-cols-2">
-          <Field label="Capacity (السعة)">
-            <input className="input" value={state.capacity} onChange={(e) => set('capacity', e.target.value)} placeholder="4 أمبير" />
-          </Field>
-          <Field label="Inverter (العاكسة)">
-            <input className="input" value={state.inverter} onChange={(e) => set('inverter', e.target.value)} placeholder="2 كيلو واط" />
-          </Field>
-          <Field label="Panels (عدد الألواح)">
-            <input className="input" value={state.panels} onChange={(e) => set('panels', e.target.value)} placeholder="2" />
-          </Field>
-          <Field label="Batteries (البطاريات)">
-            <input className="input" value={state.batteries} onChange={(e) => set('batteries', e.target.value)} placeholder="ليثيوم 5 كيلو واط" />
-          </Field>
-          <Field label="Backup (ساعات التغذية)">
-            <input className="input" value={state.backup} onChange={(e) => set('backup', e.target.value)} placeholder="4 ساعة" />
-          </Field>
-          <Field label="Display order">
-            <input type="number" className="input" value={state.order} onChange={(e) => setState({ ...state, order: Number(e.target.value) })} />
-          </Field>
-          <Field label="Price (السعر)">
-            <input className="input" value={state.price} onChange={(e) => set('price', e.target.value)} placeholder="2,150,000" />
-          </Field>
-          <Field label="Price + IP65 inverter">
-            <input className="input" value={state.priceWithInverter} onChange={(e) => set('priceWithInverter', e.target.value)} placeholder="6,000,000 or -" />
-          </Field>
-        </div>
-        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
-          <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
-            Cancel
-          </button>
-          <button type="button" onClick={onSave} className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    </div>
-  );
-}
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </label>
-      {children}
+      <div className="flex gap-2">
+        <button type="button" onClick={addRow} className="btn-secondary">
+          + Add row
+        </button>
+        <button type="button" onClick={addColumn} className="btn-secondary">
+          + Add column
+        </button>
+      </div>
+      <p className="text-xs text-slate-500">
+        Tip: the columns and their order here are exactly what shows on the public price sheet.
+      </p>
     </div>
   );
 }
