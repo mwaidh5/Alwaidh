@@ -3,7 +3,6 @@ import { subscribePriceRows, SEED_PRICE_ROWS, type PriceRow } from '../lib/solar
 import { useSettings } from '../lib/useSettings';
 
 const COMPANY = 'شركة الواعظ للقدرة';
-const SUBTITLE = 'المنظومات المخفضة';
 const PHONE = '0781 0150 876';
 const WEBSITE = 'www.alwaidhpower.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
@@ -56,17 +55,14 @@ export default function SolarPrices() {
           <div
             id="price-sheet"
             dir="rtl"
+            style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
             className="mx-auto w-[1100px] max-w-none bg-gradient-to-b from-sky-400 via-sky-300 to-sky-100 p-10 text-slate-900"
           >
             {/* Header */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                {settings.logoImage ? (
+                {settings.logoImage && (
                   <img src={settings.logoImage} alt="" className="h-16 w-auto" />
-                ) : (
-                  <div className="grid h-16 w-16 place-items-center rounded-xl bg-white/70 text-2xl font-black text-sky-700">
-                    ☀
-                  </div>
                 )}
                 <div className="text-right leading-tight">
                   <p className="text-xl font-black text-slate-800">SolarMax®</p>
@@ -75,7 +71,6 @@ export default function SolarPrices() {
               </div>
               <div className="text-center">
                 <h2 className="text-4xl font-black text-slate-900">{COMPANY}</h2>
-                <p className="mt-1 text-lg font-extrabold text-red-600">{SUBTITLE}</p>
               </div>
               <div className="w-24" />
             </div>
@@ -116,9 +111,9 @@ export default function SolarPrices() {
 
             {/* Footer */}
             <div className="mt-8 flex items-end justify-between text-sm font-bold text-slate-800">
-              <div className="space-y-1">
-                <p>📞 {PHONE}</p>
-                <p>🌐 {WEBSITE}</p>
+              <div className="space-y-1 text-left">
+                <p dir="ltr">📞 {PHONE}</p>
+                <p dir="ltr">{WEBSITE}</p>
               </div>
               <div className="text-left leading-snug">
                 <p>العنوان : {ADDRESS}</p>
