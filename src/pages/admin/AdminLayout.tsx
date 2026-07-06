@@ -4,21 +4,24 @@ import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 
-const navItems = [
-  { to: '/admin', label: 'Overview', icon: '📊', end: true },
-  { to: '/admin/products', label: 'Products', icon: '📦' },
-  { to: '/admin/prices', label: 'Solar Prices', icon: '💲' },
-  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️' },
-  { to: '/admin/media', label: 'Media', icon: '🖼️' },
-  { to: '/admin/orders', label: 'Orders', icon: '🧾' },
-  { to: '/admin/users', label: 'Users', icon: '👥' },
-  { to: '/admin/submissions', label: 'Submissions', icon: '✉️' },
-  { to: '/admin/analytics', label: 'Analytics', icon: '📈' },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
+// access: which role may see each page. 'admin' = admins only,
+// 'products' = product editors (computer or solar staff), 'solar' = solar staff.
+type Access = 'admin' | 'products' | 'solar';
+const navItems: { to: string; label: string; icon: string; end?: boolean; access: Access }[] = [
+  { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin' },
+  { to: '/admin/products', label: 'Products', icon: '📦', access: 'products' },
+  { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar' },
+  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'solar' },
+  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin' },
+  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
+  { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
+  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin' },
+  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin' },
+  { to: '/admin/settings', label: 'Settings', icon: '⚙️', access: 'admin' },
 ];
 
 export default function AdminLayout() {
-  const { user, loading, isAdmin, signOut } = useAuth();
+  const { user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess, signOut } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -35,10 +38,26 @@ export default function AdminLayout() {
   }
 
   const extra = settings?.extraAdminEmails ?? [];
-  const allowed = isAdmin || (!!user.email && extra.includes(user.email.toLowerCase()));
 
-  if (!allowed) {
+  if (!hasAdminAccess) {
     return <NotAuthorized email={user.email} extraAdmins={extra} />;
+  }
+
+  const canSee = (access: Access) => {
+    if (isAdmin) return true;
+    if (access === 'products') return isComputerStaff || isSolarStaff;
+    if (access === 'solar') return isSolarStaff;
+    return false;
+  };
+  const visibleItems = navItems.filter((i) => canSee(i.access));
+
+  // Keep staff out of pages they can't see (also handles the /admin index).
+  const path = location.pathname;
+  const pathAllowed = visibleItems.some(
+    (i) => i.to === path || (i.to !== '/admin' && path.startsWith(i.to)),
+  );
+  if (!pathAllowed) {
+    return <Navigate to={visibleItems[0]?.to ?? '/'} replace />;
   }
 
   return (
@@ -62,7 +81,7 @@ export default function AdminLayout() {
               </button>
               <nav className={`${open ? 'block' : 'hidden'} lg:block`}>
                 <ul className="py-2">
-                  {navItems.map((item) => (
+                  {visibleItems.map((item) => (
                     <li key={item.to}>
                       <NavLink
                         to={item.to}

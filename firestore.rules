@@ -3,18 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function settingsData() {
+      return get(/databases/$(database)/documents/settings/site).data;
+    }
+    function emailVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    // The hardcoded owner never depends on the settings doc existing.
+    function isOwner() {
+      return emailVerified() && request.auth.token.email == 'mwaidh5@gmail.com';
+    }
     function isAdmin() {
-      return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email in [
-          'mwaidh5@gmail.com'
-        ];
+      return isOwner()
+        || (emailVerified()
+            && request.auth.token.email in settingsData().get('extraAdminEmails', []));
+    }
+    function isComputerStaff() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('computerStaffEmails', []);
+    }
+    function isSolarStaff() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('solarStaffEmails', []);
     }
 
-    // Product catalogue: public read, admin write.
+    // Product catalogue: public read. Admins write anything; computer staff may
+    // write computer/camera products; solar staff may write solar products.
     match /products/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAdmin()
+        || (isComputerStaff() && request.resource.data.category in ['computers', 'tiandy-cameras'])
+        || (isSolarStaff() && request.resource.data.category == 'solar');
+      allow update: if isAdmin()
+        || (isComputerStaff()
+            && resource.data.category in ['computers', 'tiandy-cameras']
+            && request.resource.data.category in ['computers', 'tiandy-cameras'])
+        || (isSolarStaff()
+            && resource.data.category == 'solar'
+            && request.resource.data.category == 'solar');
+      allow delete: if isAdmin()
+        || (isComputerStaff() && resource.data.category in ['computers', 'tiandy-cameras'])
+        || (isSolarStaff() && resource.data.category == 'solar');
     }
 
     // Orders: guests can place orders; only admins can read/update/delete.
@@ -35,29 +64,28 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Site settings (incl. extraAdminEmails) — public read so the app can
-    // resolve admin overrides before sign-in; admin write.
+    // Site settings (incl. role assignments) — public read so the app can
+    // resolve roles before sign-in; admin write only.
     match /settings/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Analytics page-view events: any visitor can record a view; only admins
-    // can read them back. Events are immutable (no update/delete).
+    // Analytics page-view events: any visitor can record a view; admins read.
     match /analytics_events/{id} {
       allow create: if true;
       allow read: if isAdmin();
     }
 
-    // Solar system price list: public read, admin write.
+    // Solar system price list: public read; admins and solar staff write.
     match /solarPrices/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSolarStaff();
     }
 
-    // Solar install/repair jobs (admin work board): admin only.
+    // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdmin() || isSolarStaff();
     }
   }
 }

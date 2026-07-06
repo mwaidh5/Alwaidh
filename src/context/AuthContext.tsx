@@ -17,6 +17,9 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  isComputerStaff: boolean; // admin OR listed as computer staff
+  isSolarStaff: boolean; // admin OR listed as solar staff
+  hasAdminAccess: boolean; // any role that can open the dashboard
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<void>;
@@ -56,18 +59,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, []);
 
+  const email = user?.email?.toLowerCase() ?? null;
+
   const isAdmin = useMemo(() => {
-    const email = user?.email ?? null;
     if (isAdminEmail(email)) return true;
     if (!email) return false;
-    return (settings?.extraAdminEmails ?? []).includes(email.toLowerCase());
-  }, [user, settings]);
+    return (settings?.extraAdminEmails ?? []).includes(email);
+  }, [email, settings]);
+
+  const isComputerStaff = useMemo(
+    () => isAdmin || (!!email && (settings?.computerStaffEmails ?? []).includes(email)),
+    [isAdmin, email, settings],
+  );
+
+  const isSolarStaff = useMemo(
+    () => isAdmin || (!!email && (settings?.solarStaffEmails ?? []).includes(email)),
+    [isAdmin, email, settings],
+  );
+
+  const hasAdminAccess = isAdmin || isComputerStaff || isSolarStaff;
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       loading,
       isAdmin,
+      isComputerStaff,
+      isSolarStaff,
+      hasAdminAccess,
       configured: firebaseReady && auth !== null,
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
@@ -93,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fbSignOut(auth);
       },
     }),
-    [user, loading, isAdmin],
+    [user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
