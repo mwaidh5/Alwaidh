@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   closestCorners,
   DndContext,
@@ -24,6 +24,7 @@ import {
   type JobStatus,
   type JobType,
 } from '../../lib/jobsStore';
+import { uploadInvoice } from '../../lib/imageUpload';
 
 type FormState = Job;
 
@@ -36,6 +37,8 @@ const EMPTY: FormState = {
   system: '',
   installer: '',
   notes: '',
+  invoiceUrl: '',
+  invoiceName: '',
   status: 'new',
   order: 0,
 };
@@ -73,6 +76,7 @@ export default function AdminJobs() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
 
   useEffect(() => subscribeJobs(setJobs), []);
 
@@ -114,6 +118,8 @@ export default function AdminJobs() {
         system: editing.system.trim(),
         installer: editing.installer.trim(),
         notes: editing.notes.trim(),
+        invoiceUrl: editing.invoiceUrl,
+        invoiceName: editing.invoiceName,
         status: editing.status,
         order: editing.order || Date.now(),
       };
@@ -184,6 +190,7 @@ export default function AdminJobs() {
                   setEditing({ ...j });
                 }}
                 onDelete={handleDelete}
+                onPreviewInvoice={setInvoicePreview}
               />
             ))}
           </div>
@@ -198,7 +205,12 @@ export default function AdminJobs() {
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
+          onPreview={setInvoicePreview}
         />
+      )}
+
+      {invoicePreview && (
+        <PdfPreviewModal url={invoicePreview} onClose={() => setInvoicePreview(null)} />
       )}
     </div>
   );
@@ -210,12 +222,14 @@ function Column({
   jobs,
   onEdit,
   onDelete,
+  onPreviewInvoice,
 }: {
   status: JobStatus;
   label: string;
   jobs: Job[];
   onEdit: (j: Job) => void;
   onDelete: (j: Job) => void;
+  onPreviewInvoice: (url: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const style = STATUS_STYLES[status];
@@ -237,7 +251,13 @@ function Column({
       </div>
       <div className="min-h-[80px] space-y-3">
         {jobs.map((j) => (
-          <JobCard key={j.id} job={j} onEdit={() => onEdit(j)} onDelete={() => onDelete(j)} />
+          <JobCard
+            key={j.id}
+            job={j}
+            onEdit={() => onEdit(j)}
+            onDelete={() => onDelete(j)}
+            onPreviewInvoice={onPreviewInvoice}
+          />
         ))}
         {jobs.length === 0 && (
           <p className="rounded-md border border-dashed border-slate-300 py-6 text-center text-xs text-slate-400">
@@ -249,7 +269,17 @@ function Column({
   );
 }
 
-function JobCard({ job, onEdit, onDelete }: { job: Job; onEdit: () => void; onDelete: () => void }) {
+function JobCard({
+  job,
+  onEdit,
+  onDelete,
+  onPreviewInvoice,
+}: {
+  job: Job;
+  onEdit: () => void;
+  onDelete: () => void;
+  onPreviewInvoice: (url: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
@@ -262,6 +292,7 @@ function JobCard({ job, onEdit, onDelete }: { job: Job; onEdit: () => void; onDe
         dragAttributes={attributes}
         onEdit={onEdit}
         onDelete={onDelete}
+        onPreviewInvoice={onPreviewInvoice}
       />
     </div>
   );
@@ -273,6 +304,7 @@ function JobCardView({
   dragAttributes,
   onEdit,
   onDelete,
+  onPreviewInvoice,
   overlay,
 }: {
   job: Job;
@@ -280,6 +312,7 @@ function JobCardView({
   dragAttributes?: DraggableAttributes;
   onEdit?: () => void;
   onDelete?: () => void;
+  onPreviewInvoice?: (url: string) => void;
   overlay?: boolean;
 }) {
   return (
@@ -312,6 +345,15 @@ function JobCardView({
       {job.address && <p className="mt-1 truncate text-xs text-slate-500">📍 {job.address}</p>}
       {job.phone && <p className="truncate text-xs text-slate-500">📞 {job.phone}</p>}
       {job.notes && <p className="mt-1 line-clamp-2 text-xs text-slate-600">{job.notes}</p>}
+      {job.invoiceUrl && (
+        <button
+          type="button"
+          onClick={() => onPreviewInvoice?.(job.invoiceUrl)}
+          className="mt-2 inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+        >
+          📄 Invoice
+        </button>
+      )}
       {!overlay && (
         <div className="mt-2 flex gap-3 text-xs">
           <button type="button" onClick={onEdit} className="font-semibold text-brand-700 hover:underline">
@@ -332,12 +374,14 @@ function JobDialog({
   busy,
   onCancel,
   onSave,
+  onPreview,
 }: {
   state: FormState;
   setState: (s: FormState) => void;
   busy: boolean;
   onCancel: () => void;
   onSave: () => void;
+  onPreview: (url: string) => void;
 }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
@@ -420,6 +464,7 @@ function JobDialog({
               onChange={(e) => setState({ ...state, notes: e.target.value })}
             />
           </Field>
+          <InvoiceField state={state} setState={setState} onPreview={onPreview} />
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
           <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
@@ -429,6 +474,138 @@ function JobDialog({
             {busy ? 'Saving…' : 'Save'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceField({
+  state,
+  setState,
+  onPreview,
+}: {
+  state: FormState;
+  setState: (s: FormState) => void;
+  onPreview: (url: string) => void;
+}) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function handleFile(file: File) {
+    setErr('');
+    setUploading(true);
+    try {
+      const { url } = await uploadInvoice(file, state.id || undefined);
+      setState({ ...state, invoiceUrl: url, invoiceName: file.name });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Invoice (PDF)
+      </label>
+      {state.invoiceUrl ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <span className="text-2xl">📄</span>
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
+            {state.invoiceName || 'invoice.pdf'}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPreview(state.invoiceUrl)}
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            Preview
+          </button>
+          <button
+            type="button"
+            onClick={() => setState({ ...state, invoiceUrl: '', invoiceName: '' })}
+            className="text-sm font-semibold text-red-700 hover:underline"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) handleFile(f);
+          }}
+          onClick={() => fileInput.current?.click()}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed p-6 text-center text-sm transition ${
+            dragOver ? 'border-brand-500 bg-brand-50' : 'border-slate-300 hover:bg-slate-50'
+          }`}
+        >
+          {uploading ? (
+            <span className="text-slate-600">Uploading…</span>
+          ) : (
+            <>
+              <span className="text-2xl">📄</span>
+              <span className="mt-1 text-slate-600">
+                Drag &amp; drop a PDF invoice here, or click to choose
+              </span>
+            </>
+          )}
+        </div>
+      )}
+      <input
+        ref={fileInput}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+        }}
+      />
+      {err && <p className="mt-1 text-xs text-red-700">{err}</p>}
+    </div>
+  );
+}
+
+function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
+      <div
+        className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
+          <span className="text-sm font-semibold text-slate-800">Invoice preview</span>
+          <div className="flex gap-4 text-sm">
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-brand-700 hover:underline"
+            >
+              Open in new tab
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="font-semibold text-slate-600 hover:underline"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <iframe src={url} title="Invoice preview" className="h-full w-full flex-1" />
       </div>
     </div>
   );

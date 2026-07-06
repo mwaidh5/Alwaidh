@@ -24,6 +24,8 @@ export interface Job {
   system: string; // e.g. "6 kW rooftop system"
   installer: string; // technician assigned to the job
   notes: string;
+  invoiceUrl: string; // attached PDF invoice (Storage URL)
+  invoiceName: string; // original filename of the invoice
   status: JobStatus;
   order: number; // position within its column
 }
@@ -68,6 +70,8 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     system: String(data.system ?? ''),
     installer: String(data.installer ?? ''),
     notes: String(data.notes ?? ''),
+    invoiceUrl: String(data.invoiceUrl ?? ''),
+    invoiceName: String(data.invoiceName ?? ''),
     status: (['new', 'scheduled', 'in_progress', 'done'].includes(String(data.status))
       ? data.status
       : 'new') as JobStatus,
