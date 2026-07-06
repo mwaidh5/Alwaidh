@@ -5,6 +5,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { DEFAULT_COLUMNS, type PriceColumn } from './solarPricesStore';
 
 export interface SiteSettings {
   storeName: string;
@@ -21,6 +22,7 @@ export interface SiteSettings {
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
+  solarPriceColumns: PriceColumn[];
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
+  solarPriceColumns: DEFAULT_COLUMNS,
 };
 
 const SINGLETON_PATH = ['settings', 'site'] as const;
@@ -70,6 +73,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     extraAdminEmails: Array.isArray(data.extraAdminEmails)
       ? (data.extraAdminEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.extraAdminEmails,
+    solarPriceColumns:
+      Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
+        ? (data.solarPriceColumns as PriceColumn[])
+        : DEFAULT_SETTINGS.solarPriceColumns,
   } as SiteSettings;
 }
 
@@ -96,6 +103,23 @@ export function subscribeSettings(cb: (s: SiteSettings) => void): () => void {
   };
   window.addEventListener('storage', handler);
   return () => window.removeEventListener('storage', handler);
+}
+
+/** Update a single settings field without touching the others. */
+export async function updateSettingsField<K extends keyof SiteSettings>(
+  key: K,
+  value: SiteSettings[K],
+): Promise<void> {
+  const database = db;
+  if (database) {
+    await setDoc(
+      doc(database, SINGLETON_PATH[0], SINGLETON_PATH[1]),
+      { [key]: value },
+      { merge: true },
+    );
+    return;
+  }
+  writeLocal({ ...readLocal(), [key]: value });
 }
 
 export async function saveSettings(s: SiteSettings): Promise<void> {

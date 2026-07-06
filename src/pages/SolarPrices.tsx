@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { subscribeSolarPrices, SEED_PRICES, type SolarPrice } from '../lib/solarPricesStore';
+import { subscribePriceRows, SEED_PRICE_ROWS, type PriceRow } from '../lib/solarPricesStore';
 import { useSettings } from '../lib/useSettings';
 
 const COMPANY = 'شركة الواعظ للقدرة';
@@ -9,12 +9,13 @@ const WEBSITE = 'www.alwaidhpower.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
 
 export default function SolarPrices() {
-  const [live, setLive] = useState<SolarPrice[]>([]);
+  const [live, setLive] = useState<PriceRow[]>([]);
   const [downloading, setDownloading] = useState(false);
   const settings = useSettings();
+  const columns = settings.solarPriceColumns;
 
-  useEffect(() => subscribeSolarPrices(setLive), []);
-  const prices = live.length ? live : SEED_PRICES;
+  useEffect(() => subscribePriceRows(setLive), []);
+  const rows = live.length ? live : SEED_PRICE_ROWS;
 
   async function downloadPdf() {
     const el = document.getElementById('price-sheet');
@@ -39,22 +40,18 @@ export default function SolarPrices() {
     }
   }
 
+  const gridStyle = { gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` };
+
   return (
     <div className="bg-slate-50 py-8">
       <div className="container-page">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-extrabold text-slate-900">Solar System Prices</h1>
-          <button
-            type="button"
-            onClick={downloadPdf}
-            disabled={downloading}
-            className="btn-primary"
-          >
+          <button type="button" onClick={downloadPdf} disabled={downloading} className="btn-primary">
             {downloading ? 'Preparing…' : '⬇ Download PDF'}
           </button>
         </div>
 
-        {/* The price sheet — this element is what gets captured into the PDF. */}
         <div className="overflow-x-auto">
           <div
             id="price-sheet"
@@ -84,36 +81,35 @@ export default function SolarPrices() {
             </div>
 
             {/* Column headers */}
-            <div className="mt-8 grid grid-cols-7 gap-2 px-3 pb-2 text-center text-sm font-extrabold text-slate-800">
-              <div>السعة</div>
-              <div>العاكسة</div>
-              <div>عدد الألواح</div>
-              <div>البطاريات</div>
-              <div>
-                ساعات التغذية
-                <span className="block text-[10px] font-bold text-slate-600">Backup Time</span>
-              </div>
-              <div>السعر</div>
-              <div>
-                السعر مع انفيرتر
-                <span className="block text-[10px] font-bold text-slate-600">IP65</span>
-              </div>
+            <div className="mt-8 grid gap-2 px-3 pb-2 text-center text-sm font-extrabold text-slate-800" style={gridStyle}>
+              {columns.map((c) => (
+                <div key={c.key}>
+                  {c.label}
+                  {c.sub && <span className="block text-[10px] font-bold text-slate-600">{c.sub}</span>}
+                </div>
+              ))}
             </div>
 
             {/* Rows */}
             <div className="space-y-3">
-              {prices.map((p) => (
+              {rows.map((row) => (
                 <div
-                  key={p.id}
-                  className="grid grid-cols-7 items-center gap-2 rounded-full bg-white/75 px-3 py-4 text-center text-sm shadow-sm"
+                  key={row.id}
+                  className="grid items-center gap-2 rounded-full bg-white/75 px-3 py-4 text-center text-sm shadow-sm"
+                  style={gridStyle}
                 >
-                  <div className="text-base font-black text-slate-900">{p.capacity}</div>
-                  <div className="font-semibold text-slate-800">{p.inverter}</div>
-                  <div className="font-semibold text-slate-800">{p.panels}</div>
-                  <div className="font-semibold text-slate-800">{p.batteries}</div>
-                  <div className="font-semibold text-slate-800">{p.backup}</div>
-                  <div className="text-base font-black text-slate-900">{p.price || '-'}</div>
-                  <div className="text-base font-black text-slate-900">{p.priceWithInverter || '-'}</div>
+                  {columns.map((c, i) => (
+                    <div
+                      key={c.key}
+                      className={
+                        i === 0 || c.key === 'price' || c.key === 'priceWithInverter'
+                          ? 'text-base font-black text-slate-900'
+                          : 'font-semibold text-slate-800'
+                      }
+                    >
+                      {row.values[c.key] || '-'}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
