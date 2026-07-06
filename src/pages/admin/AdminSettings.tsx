@@ -148,8 +148,8 @@ export default function AdminSettings() {
 
         <Section title="Site behaviour">
           <Toggle
-            label="Show solar calculator"
-            description="Toggle the public /solar-calculator route visibility in navigation."
+            label="Show solar prices link"
+            description="Show the Solar Prices page link in the site navigation."
             checked={settings.showSolarCalculator}
             onChange={(v) => update('showSolarCalculator', v)}
           />

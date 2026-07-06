@@ -7,8 +7,7 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
-import SolarCalculator from './pages/SolarCalculator';
-import SolarProjects from './pages/SolarProjects';
+import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
@@ -19,7 +18,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminSolarProjects from './pages/admin/AdminSolarProjects';
+import AdminSolarPrices from './pages/admin/AdminSolarPrices';
 import AdminMedia from './pages/admin/AdminMedia';
 import AdminJobs from './pages/admin/AdminJobs';
 import NotFound from './pages/NotFound';
@@ -41,8 +40,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/solar-calculator" element={<SolarCalculator />} />
-        <Route path="/projects/solar" element={<SolarProjects />} />
+        <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />}>
@@ -53,7 +51,7 @@ export default function App() {
           <Route path="submissions" element={<AdminSubmissions />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="projects" element={<AdminSolarProjects />} />
+          <Route path="prices" element={<AdminSolarPrices />} />
           <Route path="jobs" element={<AdminJobs />} />
           <Route path="media" element={<AdminMedia />} />
         </Route>

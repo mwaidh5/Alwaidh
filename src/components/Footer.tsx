@@ -17,7 +17,7 @@ export default function Footer() {
           <h4 className="font-semibold text-slate-900">Browse</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
             <li><Link className="hover:text-brand-700" to="/shop">Shop</Link></li>
-            <li><Link className="hover:text-brand-700" to="/solar-calculator">Solar Calculator</Link></li>
+            <li><Link className="hover:text-brand-700" to="/solar-prices">Solar Prices</Link></li>
             <li><Link className="hover:text-brand-700" to="/cart">Cart</Link></li>
           </ul>
         </div>
