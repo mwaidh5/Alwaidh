@@ -160,10 +160,10 @@ export default function Home() {
               and batteries — and help you size the right system for your home or business.
             </p>
             <Link
-              to="/solar-calculator"
+              to="/solar-prices"
               className="mt-8 inline-flex items-center justify-center rounded-full border border-white/70 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-slate-900"
             >
-              Build a Solar System
+              View Solar Prices
             </Link>
           </div>
         </div>

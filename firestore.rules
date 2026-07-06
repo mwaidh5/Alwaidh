@@ -49,8 +49,8 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
-    // Solar projects showcase: public read, admin write.
-    match /solarProjects/{id} {
+    // Solar system price list: public read, admin write.
+    match /solarPrices/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }

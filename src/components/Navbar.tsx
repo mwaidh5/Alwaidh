@@ -9,12 +9,9 @@ import { formatPrice } from '../lib/format';
 const navLinks = [
   { to: '/', label: 'Home', end: true },
   { to: '/shop', label: 'Shop' },
-  { to: '/solar-calculator', label: 'Solar Calculator' },
+  { to: '/solar-prices', label: 'Solar Prices' },
   { to: '/about', label: 'About' },
 ];
-
-// Projects dropdown items — add more project types here later.
-const projectLinks = [{ to: '/projects/solar', label: 'Solar Energy Projects' }];
 
 export default function Navbar() {
   const { itemCount } = useCart();
@@ -22,12 +19,10 @@ export default function Navbar() {
   const { products } = useProducts();
   const settings = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [projectsOpen, setProjectsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  const projectsRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
 
@@ -35,7 +30,6 @@ export default function Navbar() {
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const t = e.target as Node;
-      if (projectsRef.current && !projectsRef.current.contains(t)) setProjectsOpen(false);
       if (searchRef.current && !searchRef.current.contains(t)) setSearchOpen(false);
     }
     document.addEventListener('mousedown', onDown);
@@ -108,38 +102,6 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
-
-          {/* Projects dropdown */}
-          <div className="relative" ref={projectsRef}>
-            <button
-              type="button"
-              onClick={() => setProjectsOpen((o) => !o)}
-              className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-              aria-haspopup="menu"
-              aria-expanded={projectsOpen}
-            >
-              Projects
-              <ChevronDown className={`transition ${projectsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {projectsOpen && (
-              <div
-                className="absolute left-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
-                role="menu"
-              >
-                {projectLinks.map((p) => (
-                  <Link
-                    key={p.to}
-                    to={p.to}
-                    onClick={() => setProjectsOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    role="menuitem"
-                  >
-                    {p.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
           {isAdmin && (
             <NavLink
@@ -319,25 +281,6 @@ function SearchIcon() {
     >
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-function ChevronDown({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
     </svg>
   );
 }
