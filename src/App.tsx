@@ -21,6 +21,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminSolarProjects from './pages/admin/AdminSolarProjects';
 import AdminMedia from './pages/admin/AdminMedia';
+import AdminJobs from './pages/admin/AdminJobs';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="projects" element={<AdminSolarProjects />} />
+          <Route path="jobs" element={<AdminJobs />} />
           <Route path="media" element={<AdminMedia />} />
         </Route>
         <Route path="*" element={<NotFound />} />

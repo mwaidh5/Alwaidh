@@ -41,3 +41,25 @@ export async function uploadProductImage(
   const folder = productId ? `products/${productId}` : `products/_drafts/${crypto.randomUUID()}`;
   return uploadImage(file, folder);
 }
+
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
+/** Upload a PDF invoice for a job. */
+export async function uploadInvoice(file: File, jobId?: string): Promise<UploadResult> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not configured. Add VITE_FIREBASE_* values to your .env.');
+  }
+  if (file.type !== 'application/pdf') {
+    throw new Error('Please choose a PDF file.');
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+  }
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80);
+  const folder = jobId ? `jobs/${jobId}` : `jobs/_drafts/${crypto.randomUUID()}`;
+  const path = `${folder}/${Date.now()}-${safe}`;
+  const objectRef = ref(storage, path);
+  await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+  const url = await getDownloadURL(objectRef);
+  return { url, path };
+}
