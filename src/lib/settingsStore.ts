@@ -19,6 +19,8 @@ export interface SiteSettings {
   maintenanceMode: boolean;
   bannerMessage: string;
   extraAdminEmails: string[];
+  computerStaffEmails: string[];
+  solarStaffEmails: string[];
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -37,6 +39,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   maintenanceMode: false,
   bannerMessage: '',
   extraAdminEmails: [],
+  computerStaffEmails: [],
+  solarStaffEmails: [],
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
@@ -73,6 +77,12 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     extraAdminEmails: Array.isArray(data.extraAdminEmails)
       ? (data.extraAdminEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.extraAdminEmails,
+    computerStaffEmails: Array.isArray(data.computerStaffEmails)
+      ? (data.computerStaffEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.computerStaffEmails,
+    solarStaffEmails: Array.isArray(data.solarStaffEmails)
+      ? (data.solarStaffEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.solarStaffEmails,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])
@@ -124,9 +134,13 @@ export async function updateSettingsField<K extends keyof SiteSettings>(
 
 export async function saveSettings(s: SiteSettings): Promise<void> {
   const database = db;
+  const cleanEmails = (list: string[]) =>
+    list.map((e) => e.trim().toLowerCase()).filter(Boolean);
   const normalized: SiteSettings = {
     ...s,
-    extraAdminEmails: s.extraAdminEmails.map((e) => e.trim().toLowerCase()).filter(Boolean),
+    extraAdminEmails: cleanEmails(s.extraAdminEmails),
+    computerStaffEmails: cleanEmails(s.computerStaffEmails),
+    solarStaffEmails: cleanEmails(s.solarStaffEmails),
   };
   if (database) {
     await setDoc(doc(database, SINGLETON_PATH[0], SINGLETON_PATH[1]), normalized, { merge: true });

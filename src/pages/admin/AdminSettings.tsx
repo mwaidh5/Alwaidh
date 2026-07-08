@@ -169,6 +169,29 @@ export default function AdminSettings() {
           </Field>
         </Section>
 
+        <Section title="Team & roles">
+          <p className="text-sm text-slate-600">
+            Grant staff access by email (one per line). Admins can do everything. Computer staff can
+            edit computer &amp; camera products. Solar staff can edit solar products, prices, and jobs.
+            Staff should sign in with Google using the same email.
+          </p>
+          <EmailListField
+            label="Admins — full access"
+            value={settings.extraAdminEmails}
+            onChange={(v) => update('extraAdminEmails', v)}
+          />
+          <EmailListField
+            label="Computer staff — computers & cameras"
+            value={settings.computerStaffEmails}
+            onChange={(v) => update('computerStaffEmails', v)}
+          />
+          <EmailListField
+            label="Solar staff — solar products, prices & jobs"
+            value={settings.solarStaffEmails}
+            onChange={(v) => update('solarStaffEmails', v)}
+          />
+        </Section>
+
         <Section title="Site images">
           <p className="text-sm text-slate-600">
             Replace the main images used across the website. Changes go live as soon as you save.
@@ -313,6 +336,30 @@ function ImageField({
           {err && <p className="text-xs text-red-700">{err}</p>}
         </div>
       </div>
+    </div>
+  );
+}
+
+function EmailListField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </label>
+      <textarea
+        className="input min-h-[70px]"
+        value={value.join('\n')}
+        onChange={(e) => onChange(e.target.value.split('\n'))}
+        placeholder="name@example.com"
+      />
     </div>
   );
 }

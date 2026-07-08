@@ -9,6 +9,7 @@ import {
 import { uploadProductImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import { formatPrice } from '../../lib/format';
+import { useAuth } from '../../context/AuthContext';
 import type { Product, CategorySlug } from '../../types/product';
 
 type FormState = Omit<Product, 'specs'> & { specsText: string };
@@ -36,6 +37,19 @@ export default function AdminProducts() {
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
+  const allowedCategories = useMemo<CategorySlug[]>(
+    () =>
+      isAdmin
+        ? categories.map((c) => c.slug)
+        : [
+            ...(isComputerStaff ? (['computers', 'tiandy-cameras'] as CategorySlug[]) : []),
+            ...(isSolarStaff ? (['solar'] as CategorySlug[]) : []),
+          ],
+    [isAdmin, isComputerStaff, isSolarStaff],
+  );
+  const categoryOptions = categories.filter((c) => allowedCategories.includes(c.slug));
 
   useEffect(() => {
     return subscribeProducts((list) => setProducts(list));
@@ -99,6 +113,7 @@ export default function AdminProducts() {
   const filtered = useMemo(() => {
     const list = products ?? [];
     return list.filter((p) => {
+      if (!allowedCategories.includes(p.category)) return false;
       if (filter !== 'all' && p.category !== filter) return false;
       if (query.trim()) {
         const q = query.trim().toLowerCase();
@@ -110,11 +125,11 @@ export default function AdminProducts() {
       }
       return true;
     });
-  }, [products, filter, query]);
+  }, [products, filter, query, allowedCategories]);
 
   function startCreate() {
     setError('');
-    setEditing({ ...EMPTY_FORM });
+    setEditing({ ...EMPTY_FORM, category: allowedCategories[0] ?? 'computers' });
   }
 
   function startEdit(p: Product) {
@@ -192,9 +207,11 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={handleReset} disabled={busy} className="btn-secondary">
-            Reset to seed
-          </button>
+          {isAdmin && (
+            <button type="button" onClick={handleReset} disabled={busy} className="btn-secondary">
+              Reset to seed
+            </button>
+          )}
           <button type="button" onClick={startCreate} className="btn-primary">
             + Add product
           </button>
@@ -216,7 +233,7 @@ export default function AdminProducts() {
             className="input max-w-xs"
           >
             <option value="all">All categories</option>
-            {categories.map((c) => (
+            {categoryOptions.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>
@@ -239,7 +256,7 @@ export default function AdminProducts() {
             }}
           >
             <option value="">Set category…</option>
-            {categories.map((c) => (
+            {categoryOptions.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>
@@ -403,6 +420,7 @@ export default function AdminProducts() {
           state={editing}
           setState={setEditing}
           busy={busy}
+          categoryOptions={categoryOptions}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
         />
@@ -415,12 +433,14 @@ function ProductDialog({
   state,
   setState,
   busy,
+  categoryOptions,
   onCancel,
   onSave,
 }: {
   state: FormState;
   setState: (s: FormState) => void;
   busy: boolean;
+  categoryOptions: { slug: CategorySlug; name: string }[];
   onCancel: () => void;
   onSave: () => void;
 }) {
@@ -493,7 +513,7 @@ function ProductDialog({
                 setState({ ...state, category: e.target.value as CategorySlug })
               }
             >
-              {categories.map((c) => (
+              {categoryOptions.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.name}
                 </option>
