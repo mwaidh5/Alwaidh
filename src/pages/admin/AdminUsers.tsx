@@ -10,7 +10,41 @@ import {
 import { ADMIN_EMAILS } from '../../firebase';
 import { loadSettings, saveSettings, type SiteSettings } from '../../lib/settingsStore';
 
-const ROLES: AppUser['role'][] = ['admin', 'staff', 'customer'];
+const ROLES: AppUser['role'][] = ['admin', 'computer-staff', 'solar-staff', 'customer'];
+
+const ROLE_LABELS: Record<AppUser['role'], string> = {
+  admin: 'Admin — full access',
+  'computer-staff': 'Computer staff — computers & cameras',
+  'solar-staff': 'Solar staff — solar, prices & jobs',
+  customer: 'Customer',
+};
+
+/** The role that is actually enforced, derived from the settings email lists. */
+function effectiveRole(email: string, settings: SiteSettings | null): AppUser['role'] {
+  const e = email.toLowerCase();
+  if (ADMIN_EMAILS.includes(e)) return 'admin';
+  if (!settings) return 'customer';
+  if (settings.extraAdminEmails.includes(e)) return 'admin';
+  if (settings.computerStaffEmails.includes(e)) return 'computer-staff';
+  if (settings.solarStaffEmails.includes(e)) return 'solar-staff';
+  return 'customer';
+}
+
+/** Rebuild the settings email lists so `email` appears only under `role`. */
+function withRoleAssigned(s: SiteSettings, email: string, role: AppUser['role']): SiteSettings {
+  const e = email.toLowerCase();
+  const without = (list: string[]) => list.filter((x) => x !== e);
+  const next: SiteSettings = {
+    ...s,
+    extraAdminEmails: without(s.extraAdminEmails),
+    computerStaffEmails: without(s.computerStaffEmails),
+    solarStaffEmails: without(s.solarStaffEmails),
+  };
+  if (role === 'admin') next.extraAdminEmails = [...next.extraAdminEmails, e];
+  if (role === 'computer-staff') next.computerStaffEmails = [...next.computerStaffEmails, e];
+  if (role === 'solar-staff') next.solarStaffEmails = [...next.solarStaffEmails, e];
+  return next;
+}
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<AppUser[] | null>(null);
@@ -52,6 +86,11 @@ export default function AdminUsers() {
         displayName: inviteName.trim() || undefined,
         role: inviteRole,
       });
+      if (settings && inviteRole !== 'customer') {
+        const next = withRoleAssigned(settings, inviteEmail.trim(), inviteRole);
+        await saveSettings(next);
+        setSettings(next);
+      }
       setInviteEmail('');
       setInviteName('');
       setInviteRole('customer');
@@ -63,9 +102,20 @@ export default function AdminUsers() {
     }
   }
 
-  async function handleRoleChange(uid: string, role: AppUser['role']) {
+  async function handleRoleChange(u: AppUser, role: AppUser['role']) {
+    if (!settings) return;
+    if (ADMIN_EMAILS.includes(u.email.toLowerCase()) && role !== 'admin') {
+      setError(`${u.email} is the built-in owner account and always stays admin.`);
+      return;
+    }
+    setError('');
     try {
-      await setUserRole(uid, role);
+      // The settings lists are what the app and security rules actually check;
+      // the user-doc role is kept in sync for display.
+      const next = withRoleAssigned(settings, u.email, role);
+      await saveSettings(next);
+      setSettings(next);
+      await setUserRole(u.uid, role);
       setRefresh((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.');
@@ -170,7 +220,7 @@ export default function AdminUsers() {
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
-                {r}
+                {ROLE_LABELS[r]}
               </option>
             ))}
           </select>
@@ -265,13 +315,13 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <select
-                      value={u.role}
-                      onChange={(e) => handleRoleChange(u.uid, e.target.value as AppUser['role'])}
+                      value={effectiveRole(u.email, settings)}
+                      onChange={(e) => handleRoleChange(u, e.target.value as AppUser['role'])}
                       className="input"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {ROLE_LABELS[r]}
                         </option>
                       ))}
                     </select>
