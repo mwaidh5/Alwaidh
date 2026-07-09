@@ -43,27 +43,30 @@ const EMPTY: FormState = {
   order: 0,
 };
 
-const STATUS_STYLES: Record<JobStatus, { column: string; header: string; dot: string; badge: string }> = {
+const STATUS_STYLES: Record<
+  JobStatus,
+  { over: string; header: string; dot: string; badge: string }
+> = {
   new: {
-    column: 'border-blue-200 bg-blue-50',
+    over: 'bg-blue-50',
     header: 'text-blue-700',
     dot: 'bg-blue-500',
     badge: 'bg-blue-100 text-blue-700',
   },
   scheduled: {
-    column: 'border-amber-200 bg-amber-50',
+    over: 'bg-amber-50',
     header: 'text-amber-700',
     dot: 'bg-amber-500',
     badge: 'bg-amber-100 text-amber-700',
   },
   in_progress: {
-    column: 'border-violet-200 bg-violet-50',
+    over: 'bg-violet-50',
     header: 'text-violet-700',
     dot: 'bg-violet-500',
     badge: 'bg-violet-100 text-violet-700',
   },
   done: {
-    column: 'border-green-200 bg-green-50',
+    over: 'bg-green-50',
     header: 'text-green-700',
     dot: 'bg-green-500',
     badge: 'bg-green-100 text-green-700',
@@ -77,6 +80,8 @@ export default function AdminJobs() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
 
   useEffect(() => subscribeJobs(setJobs), []);
 
@@ -85,9 +90,30 @@ export default function AdminJobs() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   );
 
+  const filtered = useMemo(() => {
+    let list = jobs ?? [];
+    if (typeFilter !== 'all') list = list.filter((j) => j.type === typeFilter);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((j) =>
+        [j.customer, j.installer, j.address, j.phone, j.system].some((v) =>
+          v.toLowerCase().includes(q),
+        ),
+      );
+    }
+    return list;
+  }, [jobs, typeFilter, query]);
+
   const byStatus = useMemo(() => {
     const map: Record<JobStatus, Job[]> = { new: [], scheduled: [], in_progress: [], done: [] };
-    for (const j of jobs ?? []) map[j.status]?.push(j);
+    for (const j of filtered) map[j.status]?.push(j);
+    return map;
+  }, [filtered]);
+
+  // Stat tiles always show the full board, regardless of search/filter.
+  const totals = useMemo(() => {
+    const map: Record<JobStatus, number> = { new: 0, scheduled: 0, in_progress: 0, done: 0 };
+    for (const j of jobs ?? []) map[j.status] += 1;
     return map;
   }, [jobs]);
 
@@ -168,6 +194,69 @@ export default function AdminJobs() {
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
       )}
 
+      {/* Status summary */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {JOB_STATUSES.map((s) => {
+          const style = STATUS_STYLES[s.key];
+          return (
+            <div key={s.key} className="card flex items-center gap-3 p-4">
+              <span className={`grid h-9 w-9 flex-none place-items-center rounded-full ${style.badge}`}>
+                <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-2xl font-extrabold leading-none text-slate-900">
+                  {totals[s.key]}
+                </p>
+                <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{s.label}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search customer, installer, address…"
+            className="input w-72 max-w-full pl-8"
+          />
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+            🔍
+          </span>
+        </div>
+        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold">
+          {(
+            [
+              { key: 'all', label: 'All' },
+              { key: 'install', label: 'Installs' },
+              { key: 'repair', label: 'Repairs' },
+            ] as { key: 'all' | JobType; label: string }[]
+          ).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTypeFilter(t.key)}
+              className={`rounded-md px-3 py-1.5 transition ${
+                typeFilter === t.key
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {(query || typeFilter !== 'all') && (
+          <p className="text-sm text-slate-500">
+            Showing {filtered.length} of {jobs?.length ?? 0} jobs
+          </p>
+        )}
+      </div>
+
       {jobs === null ? (
         <p className="text-center text-sm text-slate-500">Loading…</p>
       ) : (
@@ -236,20 +325,25 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border p-3 transition ${
-        isOver ? 'border-brand-500 ring-2 ring-brand-200' : ''
-      } ${style.column}`}
+      className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition ${
+        isOver ? 'ring-2 ring-brand-300' : ''
+      }`}
     >
-      <div className="mb-3 flex items-center justify-between px-1">
+      <div className={`h-1.5 w-full ${style.dot}`} />
+      <div className="flex items-center justify-between border-b border-slate-100 px-3.5 py-3">
         <h2 className={`flex items-center gap-2 text-sm font-bold ${style.header}`}>
           <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
           {label}
         </h2>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${style.badge}`}>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${style.badge}`}>
           {jobs.length}
         </span>
       </div>
-      <div className="min-h-[80px] space-y-3">
+      <div
+        className={`min-h-[140px] flex-1 space-y-2.5 p-2.5 transition ${
+          isOver ? style.over : 'bg-slate-50/60'
+        }`}
+      >
         {jobs.map((j) => (
           <JobCard
             key={j.id}
@@ -260,9 +354,10 @@ function Column({
           />
         ))}
         {jobs.length === 0 && (
-          <p className="rounded-md border border-dashed border-slate-300 py-6 text-center text-xs text-slate-400">
-            Drop here
-          </p>
+          <div className="flex h-24 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
+            <span className="text-lg">🛠️</span>
+            <p className="mt-1 text-xs font-medium">Drag jobs here</p>
+          </div>
         )}
       </div>
     </div>
@@ -315,55 +410,103 @@ function JobCardView({
   onPreviewInvoice?: (url: string) => void;
   overlay?: boolean;
 }) {
+  const isRepair = job.type === 'repair';
   return (
     <div
-      className={`rounded-lg border border-slate-200 bg-white p-3 ${
-        overlay ? 'shadow-lg' : 'shadow-sm'
+      className={`relative overflow-hidden rounded-xl border border-slate-200 bg-white pl-1 transition ${
+        overlay ? 'rotate-2 shadow-xl ring-2 ring-brand-200' : 'shadow-sm hover:shadow-md'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-            job.type === 'repair' ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
-          }`}
-        >
-          {job.type}
-        </span>
-        <button
-          type="button"
-          aria-label="Drag"
-          className="cursor-grab touch-none px-1 text-slate-400 hover:text-slate-600 active:cursor-grabbing"
-          {...dragListeners}
-          {...dragAttributes}
-        >
-          ⠿
-        </button>
-      </div>
-      <p className="mt-1 font-semibold text-slate-900">{job.customer || 'Unnamed'}</p>
-      {job.system && <p className="text-xs text-slate-600">{job.system}</p>}
-      {job.installer && <p className="mt-1 truncate text-xs font-medium text-slate-600">👷 {job.installer}</p>}
-      {job.address && <p className="mt-1 truncate text-xs text-slate-500">📍 {job.address}</p>}
-      {job.phone && <p className="truncate text-xs text-slate-500">📞 {job.phone}</p>}
-      {job.notes && <p className="mt-1 line-clamp-2 text-xs text-slate-600">{job.notes}</p>}
-      {job.invoiceUrl && (
-        <button
-          type="button"
-          onClick={() => onPreviewInvoice?.(job.invoiceUrl)}
-          className="mt-2 inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-        >
-          📄 Invoice
-        </button>
-      )}
-      {!overlay && (
-        <div className="mt-2 flex gap-3 text-xs">
-          <button type="button" onClick={onEdit} className="font-semibold text-brand-700 hover:underline">
-            Edit
-          </button>
-          <button type="button" onClick={onDelete} className="font-semibold text-red-700 hover:underline">
-            Delete
+      {/* Type accent bar */}
+      <span
+        className={`absolute inset-y-0 left-0 w-1 ${isRepair ? 'bg-amber-400' : 'bg-brand-500'}`}
+        aria-hidden="true"
+      />
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              isRepair ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
+            }`}
+          >
+            {isRepair ? '🔧 repair' : '⚡ install'}
+          </span>
+          <button
+            type="button"
+            aria-label="Drag"
+            className="-m-1 cursor-grab touch-none rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
+            {...dragListeners}
+            {...dragAttributes}
+          >
+            ⠿
           </button>
         </div>
-      )}
+
+        <p className="mt-1.5 text-sm font-bold text-slate-900">{job.customer || 'Unnamed'}</p>
+        {job.system && <p className="text-xs text-slate-500">{job.system}</p>}
+
+        {(job.address || job.phone) && (
+          <div className="mt-2 space-y-0.5 text-xs text-slate-500">
+            {job.address && <p className="truncate">📍 {job.address}</p>}
+            {job.phone && <p className="truncate">📞 {job.phone}</p>}
+          </div>
+        )}
+
+        {job.notes && (
+          <p className="mt-2 line-clamp-2 rounded-md bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+            {job.notes}
+          </p>
+        )}
+
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+          {job.installer ? (
+            <span className="flex min-w-0 items-center gap-1.5" title={`Installer: ${job.installer}`}>
+              <span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-slate-800 text-[10px] font-bold text-white">
+                {job.installer
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((w) => w.charAt(0).toUpperCase())
+                  .join('')}
+              </span>
+              <span className="truncate text-xs font-medium text-slate-600">{job.installer}</span>
+            </span>
+          ) : (
+            <span className="text-xs text-slate-400">Unassigned</span>
+          )}
+          <div className="flex flex-none items-center gap-1">
+            {job.invoiceUrl && (
+              <button
+                type="button"
+                onClick={() => onPreviewInvoice?.(job.invoiceUrl)}
+                title="Preview invoice"
+                className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
+              >
+                📄
+              </button>
+            )}
+            {!overlay && (
+              <>
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  title="Edit job"
+                  className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
+                >
+                  ✏️
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  title="Delete job"
+                  className="rounded-md px-1.5 py-1 text-sm hover:bg-red-50"
+                >
+                  🗑️
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
