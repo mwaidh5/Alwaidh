@@ -33,6 +33,7 @@ export default function Home() {
   const { products } = useProducts();
   const settings = useSettings();
   const collection = products.slice(0, 8);
+  const tiandy = products.filter((p) => p.category === 'tiandy-cameras').slice(0, 4);
   const heroImage = settings.heroImage || HERO_IMAGE;
   const bannerImage = settings.solarBannerImage || SOLAR_IMAGE;
 
@@ -219,8 +220,79 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Tiandy cameras spotlight */}
+      {tiandy.length > 0 && (
+        <section className="relative overflow-hidden bg-slate-950 py-16 text-white">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-red-600/15 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-red-500/10 blur-3xl"
+          />
+          <div className="container-page relative">
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-full bg-red-500/15 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-red-400 ring-1 ring-red-500/40">
+                  📷 Security
+                </p>
+                <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                  Tiandy <span className="text-red-500">Cameras</span>
+                </h2>
+                <p className="mt-2 max-w-xl text-white/70">
+                  Professional IP cameras and NVRs from an authorised Tiandy reseller — built for
+                  homes, shops, and business sites.
+                </p>
+              </div>
+              <Link
+                to="/shop"
+                className="hidden text-sm font-semibold text-red-400 hover:text-red-300 hover:underline sm:block"
+              >
+                View all →
+              </Link>
+            </div>
+
+            <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {tiandy.map((p) => (
+                <Link key={p.id} to={`/product/${p.id}`} className="group">
+                  <div className="aspect-square overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-white/10 transition group-hover:ring-red-500/60">
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                    />
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="line-clamp-1 text-sm font-semibold text-white group-hover:text-red-400">
+                        {p.name}
+                      </span>
+                      <span className="flex-none text-sm font-extrabold text-red-500">
+                        {formatPrice(p.price, p.currency)}
+                      </span>
+                    </div>
+                    <StarRating rating={p.rating} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <Link
+                to="/shop"
+                className="inline-flex items-center justify-center rounded-full bg-red-600 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-600/30 transition hover:bg-red-700"
+              >
+                Shop Tiandy Cameras
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Solar energy banner */}
-      <section className="container-page pb-20">
+      <section className="container-page py-20">
         <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
           <img
             src={bannerImage}
