@@ -4,11 +4,30 @@ import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
+import StarRating from '../components/StarRating';
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1100&q=80';
 const SOLAR_IMAGE =
   'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1600&q=80';
+
+const VALUE_PROPS = [
+  {
+    icon: '🚚',
+    title: 'Fast delivery',
+    body: 'Same-day dispatch on in-stock items across Baghdad and beyond.',
+  },
+  {
+    icon: '✅',
+    title: 'Genuine products',
+    body: 'Authorised reseller for Tiandy, SolarMax, and partner brands.',
+  },
+  {
+    icon: '🛟',
+    title: 'Expert support',
+    body: 'Real help sizing solar systems, PCs, and CCTV — before and after you buy.',
+  },
+];
 
 export default function Home() {
   const { products } = useProducts();
@@ -23,33 +42,41 @@ export default function Home() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="bg-white">
-        <div className="container-page grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-white">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-100/60 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-100/50 blur-3xl"
+        />
+        <div className="container-page relative grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Your Tech Destination
+            <p className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-brand-700">
+              ⚡ Your Tech Destination
             </p>
-            <h1 className="mt-4 text-5xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-6xl">
+            <h1 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl">
               New Season
               <br />
-              Collection
+              <span className="text-brand-600">Collection</span>
             </h1>
-            <p className="mt-6 max-w-md text-slate-600">
+            <p className="mt-6 max-w-md text-lg text-slate-600">
               Quality computers, solar energy systems, and Tiandy security cameras — chosen for
               performance and built to last.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700"
+                className="inline-flex items-center justify-center rounded-full bg-brand-600 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
               >
                 Shop Now
               </Link>
               <Link
-                to="/about"
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+                to="/solar-prices"
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:border-slate-400 hover:bg-slate-50"
               >
-                Read More
+                Solar Prices
               </Link>
             </div>
           </div>
@@ -57,60 +84,110 @@ export default function Home() {
             <img
               src={heroImage}
               alt="Featured products"
-              className="aspect-[5/4] w-full rounded-3xl object-cover shadow-sm"
+              className="aspect-[5/4] w-full rounded-3xl object-cover shadow-xl ring-1 ring-slate-900/5"
             />
+            <div className="absolute -bottom-4 left-6 flex items-center gap-2.5 rounded-2xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+              <span className="text-2xl">📷</span>
+              <div className="leading-tight">
+                <p className="text-sm font-bold text-slate-900">Tiandy Authorised</p>
+                <p className="text-xs text-slate-500">Security cameras &amp; NVRs</p>
+              </div>
+            </div>
+            <div className="absolute -top-4 right-6 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-lg backdrop-blur">
+              <span>☀️</span>
+              <p className="text-sm font-bold text-slate-900">Solar experts</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Category promo tiles */}
-      <section className="container-page grid gap-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        {categories.map((c) => (
-          <Link
-            key={c.slug}
-            to="/shop"
-            className="group flex items-center gap-5 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md"
-          >
-            <img
-              src={imageFor(c.slug)}
-              alt={c.name}
-              className="h-28 w-28 flex-none rounded-2xl object-cover"
-            />
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                {c.name}
-              </p>
-              <span className="mt-1 inline-block text-base font-semibold text-slate-900 underline-offset-4 group-hover:underline">
-                Shop Now
+      {/* Value props */}
+      <section className="container-page py-12">
+        <div className="grid gap-5 sm:grid-cols-3">
+          {VALUE_PROPS.map((v) => (
+            <div
+              key={v.title}
+              className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-5"
+            >
+              <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-white text-xl shadow-sm">
+                {v.icon}
               </span>
+              <div>
+                <p className="font-bold text-slate-900">{v.title}</p>
+                <p className="mt-0.5 text-sm text-slate-600">{v.body}</p>
+              </div>
             </div>
-          </Link>
-        ))}
-        <Link
-          to="/shop"
-          className="group flex items-center gap-5 rounded-3xl bg-slate-900 p-8 text-white shadow-sm transition hover:bg-slate-800"
-        >
-          <span className="text-6xl">🛍️</span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-              All Products
-            </p>
-            <span className="mt-1 inline-block text-base font-semibold underline-offset-4 group-hover:underline">
-              Shop Now
-            </span>
-          </div>
-        </Link>
+          ))}
+        </div>
       </section>
 
-      {/* Latest collection grid */}
-      <section className="container-page py-16">
-        <h2 className="text-center text-3xl font-extrabold tracking-tight text-slate-900">
-          Latest Collection
-        </h2>
-        <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Category banners */}
+      <section className="container-page py-10">
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-600">Browse</p>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+              Shop by Category
+            </h2>
+          </div>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((c) => (
+            <Link
+              key={c.slug}
+              to="/shop"
+              className="group relative h-44 overflow-hidden rounded-2xl shadow-sm"
+            >
+              <img
+                src={imageFor(c.slug)}
+                alt={c.name}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                <p className="text-lg font-bold">{c.name}</p>
+                <span className="text-xs font-semibold uppercase tracking-wide text-white/80 underline-offset-4 group-hover:underline">
+                  Shop Now →
+                </span>
+              </div>
+            </Link>
+          ))}
+          <Link
+            to="/shop"
+            className="group relative flex h-44 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-slate-900 text-white shadow-sm transition hover:bg-slate-800"
+          >
+            <span className="text-4xl transition group-hover:scale-110">🛍️</span>
+            <p className="text-lg font-bold">All Products</p>
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/70 underline-offset-4 group-hover:underline">
+              Shop Now →
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Latest collection */}
+      <section className="container-page py-14">
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-600">
+              Fresh in store
+            </p>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+              Latest Collection
+            </h2>
+          </div>
+          <Link
+            to="/shop"
+            className="hidden text-sm font-semibold text-brand-700 hover:underline sm:block"
+          >
+            View all →
+          </Link>
+        </div>
+        <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {collection.map((p) => (
             <Link key={p.id} to={`/product/${p.id}`} className="group">
-              <div className="aspect-square overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition group-hover:shadow-md">
+              <div className="aspect-square overflow-hidden rounded-2xl bg-slate-100 shadow-sm transition group-hover:shadow-md">
                 <img
                   src={p.image}
                   alt={p.name}
@@ -118,18 +195,21 @@ export default function Home() {
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="line-clamp-1 text-sm text-slate-700 group-hover:text-slate-900">
-                  {p.name}
-                </span>
-                <span className="flex-none text-sm font-bold text-orange-500">
-                  {formatPrice(p.price, p.currency)}
-                </span>
+              <div className="mt-3 space-y-1">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="line-clamp-1 text-sm font-semibold text-slate-800 group-hover:text-brand-700">
+                    {p.name}
+                  </span>
+                  <span className="flex-none text-sm font-extrabold text-orange-500">
+                    {formatPrice(p.price, p.currency)}
+                  </span>
+                </div>
+                <StarRating rating={p.rating} />
               </div>
             </Link>
           ))}
         </div>
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center sm:hidden">
           <Link
             to="/shop"
             className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
@@ -148,11 +228,12 @@ export default function Home() {
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover opacity-40"
           />
-          <div className="relative px-8 py-28 text-center md:max-w-2xl md:px-16 md:py-36 md:text-left">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
-              Clean Energy
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/40 to-transparent" />
+          <div className="relative px-8 py-24 text-center md:max-w-2xl md:px-16 md:py-32 md:text-left">
+            <p className="inline-flex items-center gap-2 rounded-full bg-amber-400/15 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-amber-300 ring-1 ring-amber-300/40">
+              ☀️ Clean Energy
             </p>
-            <h2 className="mt-4 text-4xl font-extrabold uppercase tracking-[0.12em] sm:text-6xl">
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-[0.1em] sm:text-6xl">
               Go Solar
             </h2>
             <p className="mt-5 max-w-xl text-lg text-white/85">
@@ -161,7 +242,7 @@ export default function Home() {
             </p>
             <Link
               to="/solar-prices"
-              className="mt-8 inline-flex items-center justify-center rounded-full border border-white/70 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-slate-900"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg transition hover:bg-amber-50"
             >
               View Solar Prices
             </Link>
