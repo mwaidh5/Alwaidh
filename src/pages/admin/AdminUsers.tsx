@@ -59,6 +59,10 @@ export default function AdminUsers() {
 
   const [extraEmailInput, setExtraEmailInput] = useState('');
 
+  // Role edits are staged here per user until the admin presses Save.
+  const [pendingRoles, setPendingRoles] = useState<Record<string, AppUser['role']>>({});
+  const [savingUid, setSavingUid] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([listUsers(), loadSettings()])
@@ -102,13 +106,34 @@ export default function AdminUsers() {
     }
   }
 
-  async function handleRoleChange(u: AppUser, role: AppUser['role']) {
-    if (!settings) return;
+  function stageRole(u: AppUser, role: AppUser['role']) {
+    setError('');
+    setPendingRoles((prev) => {
+      const next = { ...prev };
+      if (role === effectiveRole(u.email, settings)) delete next[u.uid];
+      else next[u.uid] = role;
+      return next;
+    });
+  }
+
+  function cancelRole(uid: string) {
+    setPendingRoles((prev) => {
+      const next = { ...prev };
+      delete next[uid];
+      return next;
+    });
+  }
+
+  async function handleSaveRole(u: AppUser) {
+    const role = pendingRoles[u.uid];
+    if (!settings || !role) return;
     if (ADMIN_EMAILS.includes(u.email.toLowerCase()) && role !== 'admin') {
       setError(`${u.email} is the built-in owner account and always stays admin.`);
+      cancelRole(u.uid);
       return;
     }
     setError('');
+    setSavingUid(u.uid);
     try {
       // The settings lists are what the app and security rules actually check;
       // the user-doc role is kept in sync for display.
@@ -116,9 +141,12 @@ export default function AdminUsers() {
       await saveSettings(next);
       setSettings(next);
       await setUserRole(u.uid, role);
+      cancelRole(u.uid);
       setRefresh((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.');
+    } finally {
+      setSavingUid(null);
     }
   }
 
@@ -314,17 +342,39 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <select
-                      value={effectiveRole(u.email, settings)}
-                      onChange={(e) => handleRoleChange(u, e.target.value as AppUser['role'])}
-                      className="input"
-                    >
-                      {ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABELS[r]}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={pendingRoles[u.uid] ?? effectiveRole(u.email, settings)}
+                        onChange={(e) => stageRole(u, e.target.value as AppUser['role'])}
+                        className="input"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_LABELS[r]}
+                          </option>
+                        ))}
+                      </select>
+                      {pendingRoles[u.uid] && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveRole(u)}
+                            disabled={savingUid === u.uid}
+                            className="btn-primary px-3 py-1.5 text-xs"
+                          >
+                            {savingUid === u.uid ? 'Saving…' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => cancelRole(u.uid)}
+                            disabled={savingUid === u.uid}
+                            className="text-xs font-semibold text-slate-500 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(u.lastSeenAt).toLocaleDateString()}
