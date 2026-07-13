@@ -46,10 +46,12 @@ service cloud.firestore {
         || (isSolarStaff() && resource.data.category == 'solar');
     }
 
-    // Orders: guests can place orders; only admins can read/update/delete.
+    // Orders: guests can place orders; admins manage them; signed-in
+    // customers can read their own orders.
     match /orders/{id} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
+      allow read: if request.auth != null && request.auth.uid == resource.data.userUid;
     }
 
     // User profiles: each user reads/writes their own doc; admins see everyone.

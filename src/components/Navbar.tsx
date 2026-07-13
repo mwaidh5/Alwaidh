@@ -220,6 +220,14 @@ export default function Navbar() {
                     Signed in as
                     <div className="truncate font-semibold text-slate-800">{user.email}</div>
                   </div>
+                  <Link
+                    to="/account"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    role="menuitem"
+                  >
+                    My account & orders
+                  </Link>
                   {isAdmin && (
                     <Link
                       to="/admin"
