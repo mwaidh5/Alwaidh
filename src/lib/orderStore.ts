@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   Timestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -93,8 +94,12 @@ export async function createOrder(input: NewOrder): Promise<string> {
     status: input.status ?? 'pending',
   };
   if (database) {
+    // Firestore rejects undefined field values, so drop empty optionals.
+    const clean = Object.fromEntries(
+      Object.entries(payload).filter(([, v]) => v !== undefined),
+    );
     const ref = await addDoc(collection(database, COLLECTION), {
-      ...payload,
+      ...clean,
       createdAt: serverTimestamp(),
     });
     return ref.id;
@@ -116,6 +121,20 @@ export async function listOrders(): Promise<Order[]> {
     return snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id));
   }
   return readLocal();
+}
+
+/** Orders belonging to one signed-in user, newest first. */
+export async function listOrdersForUser(uid: string): Promise<Order[]> {
+  const database = db;
+  if (database) {
+    const snap = await getDocs(
+      query(collection(database, COLLECTION), where('userUid', '==', uid)),
+    );
+    return snap.docs
+      .map((d) => normalize(d.data() as Record<string, unknown>, d.id))
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }
+  return readLocal().filter((o) => o.userUid === uid);
 }
 
 export async function setOrderStatus(id: string, status: OrderStatus): Promise<void> {

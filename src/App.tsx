@@ -10,6 +10,7 @@ import Cart from './pages/Cart';
 import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Login from './pages/Login';
+import Account from './pages/Account';
 import Admin from './pages/Admin';
 import Overview from './pages/admin/Overview';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/admin" element={<Admin />}>
           <Route index element={<Overview />} />
           <Route path="products" element={<AdminProducts />} />
