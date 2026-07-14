@@ -147,7 +147,7 @@ export default function Navbar() {
               <SearchIcon />
             </button>
             {searchOpen && (
-              <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+              <div className="fixed inset-x-4 top-[4.75rem] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
                 <form onSubmit={handleSearchSubmit}>
                   <input
                     ref={searchInput}
