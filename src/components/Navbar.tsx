@@ -15,7 +15,8 @@ const navLinks = [
 
 export default function Navbar() {
   const { itemCount } = useCart();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, hasAdminAccess, signOut } = useAuth();
+  const dashboardLabel = isAdmin ? 'Admin' : 'Dashboard';
   const { products } = useProducts();
   const settings = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,7 +120,7 @@ export default function Navbar() {
             </NavLink>
           ))}
 
-          {isAdmin && (
+          {hasAdminAccess && (
             <NavLink
               to="/admin"
               className={({ isActive }) =>
@@ -128,7 +129,7 @@ export default function Navbar() {
                 }`
               }
             >
-              Admin
+              {dashboardLabel}
             </NavLink>
           )}
         </nav>
@@ -244,14 +245,14 @@ export default function Navbar() {
                   >
                     My account & orders
                   </Link>
-                  {isAdmin && (
+                  {hasAdminAccess && (
                     <Link
                       to="/admin"
                       onClick={() => setMenuOpen(false)}
                       className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                       role="menuitem"
                     >
-                      Admin dashboard
+                      {isAdmin ? 'Admin dashboard' : 'Staff dashboard'}
                     </Link>
                   )}
                   <button
@@ -308,7 +309,7 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
-            {isAdmin && (
+            {hasAdminAccess && (
               <NavLink
                 to="/admin"
                 className={({ isActive }) =>
@@ -317,7 +318,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                Admin
+                {dashboardLabel}
               </NavLink>
             )}
             {user ? (
