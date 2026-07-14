@@ -80,6 +80,16 @@ export default function AdminJobs() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+
+  // Phones render iframe PDFs zoomed to actual size, so open the native
+  // viewer there instead of the modal.
+  function previewInvoice(url: string) {
+    if (window.matchMedia('(max-width: 640px)').matches) {
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+    setInvoicePreview(url);
+  }
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
 
@@ -279,7 +289,7 @@ export default function AdminJobs() {
                   setEditing({ ...j });
                 }}
                 onDelete={handleDelete}
-                onPreviewInvoice={setInvoicePreview}
+                onPreviewInvoice={previewInvoice}
               />
             ))}
           </div>
@@ -294,7 +304,7 @@ export default function AdminJobs() {
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
-          onPreview={setInvoicePreview}
+          onPreview={previewInvoice}
         />
       )}
 
@@ -748,7 +758,11 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
             </button>
           </div>
         </div>
-        <iframe src={url} title="Invoice preview" className="h-full w-full flex-1" />
+        <iframe
+          src={url.includes('#') ? url : `${url}#view=FitH`}
+          title="Invoice preview"
+          className="h-full w-full flex-1"
+        />
       </div>
     </div>
   );
