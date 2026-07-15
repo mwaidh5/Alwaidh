@@ -21,6 +21,16 @@ export default {
           500: '#f59e0b',
           600: '#d97706',
         },
+        // Tiandy Iraq brand green (from the official logo).
+        tiandy: {
+          50: '#f1fdf1',
+          100: '#ddfadd',
+          300: '#7ee87e',
+          400: '#4fd852',
+          500: '#3cc63c',
+          600: '#2ea830',
+          700: '#248527',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

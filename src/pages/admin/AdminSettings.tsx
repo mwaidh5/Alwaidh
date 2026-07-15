@@ -214,6 +214,12 @@ export default function AdminSettings() {
             folder="site"
             onChange={(url) => update('logoImage', url)}
           />
+          <ImageField
+            label="Tiandy logo (homepage camera section)"
+            value={settings.tiandyLogo}
+            folder="site"
+            onChange={(url) => update('tiandyLogo', url)}
+          />
         </Section>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
