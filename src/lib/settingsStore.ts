@@ -24,6 +24,7 @@ export interface SiteSettings {
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
+  tiandyLogo: string;
   solarPriceColumns: PriceColumn[];
 }
 
@@ -44,6 +45,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
+  tiandyLogo: '',
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
