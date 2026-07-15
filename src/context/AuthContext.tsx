@@ -43,7 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        // Firebase caches the ID token for up to an hour, so a user who just
+        // verified their email still carries email_verified:false in the token
+        // the security rules read. Refresh profile + token on every load so the
+        // claims match reality.
+        try {
+          await u.reload();
+          await u.getIdToken(true);
+        } catch {
+          /* offline or token revoked — fall through with what we have */
+        }
+      }
       setUser(u);
       setLoading(false);
       if (u && u.email) {

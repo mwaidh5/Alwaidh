@@ -135,6 +135,7 @@ export default function AdminLayout() {
 
 function UnverifiedBanner({ email }: { email: string | null }) {
   const [sent, setSent] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSend() {
@@ -148,6 +149,27 @@ function UnverifiedBanner({ email }: { email: string | null }) {
     }
   }
 
+  // Pull the latest status and mint a fresh token, then reload so every
+  // listener reconnects with the verified claim.
+  async function handleRecheck() {
+    setError('');
+    setChecking(true);
+    try {
+      if (!auth?.currentUser) throw new Error('Not signed in.');
+      await auth.currentUser.reload();
+      if (!auth.currentUser.emailVerified) {
+        setError('Still not verified. Open the email and click the link, then try again.');
+        return;
+      }
+      await auth.currentUser.getIdToken(true);
+      window.location.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message.replace('Firebase: ', '') : 'Could not refresh.');
+    } finally {
+      setChecking(false);
+    }
+  }
+
   return (
     <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
       <p className="font-bold">⚠️ Your email isn't verified — data won't load.</p>
@@ -155,20 +177,29 @@ function UnverifiedBanner({ email }: { email: string | null }) {
         The database only trusts verified accounts, so pages here will appear empty and saves will
         fail. Verify <span className="font-semibold">{email}</span> to fix it:
       </p>
-      {sent ? (
+      {sent && (
         <p className="mt-2 font-semibold">
-          ✅ Verification email sent — open it and click the link (check spam too). Then{' '}
-          <span className="underline">sign out and sign back in</span> here.
+          ✅ Verification email sent — open it and click the link (check spam too), then press
+          “I've clicked the link” below.
         </p>
-      ) : (
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={handleSend}
-          className="mt-3 rounded-md border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+          className="rounded-md border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
         >
-          Send verification email
+          {sent ? 'Resend email' : 'Send verification email'}
         </button>
-      )}
+        <button
+          type="button"
+          onClick={handleRecheck}
+          disabled={checking}
+          className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+        >
+          {checking ? 'Checking…' : "I've clicked the link — refresh"}
+        </button>
+      </div>
       {error && <p className="mt-2 text-red-700">{error}</p>}
     </div>
   );
