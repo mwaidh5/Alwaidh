@@ -291,33 +291,101 @@ export default function Home() {
         </section>
       )}
 
-      {/* Solar energy banner */}
-      <section className="container-page py-20">
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
-          <img
-            src={bannerImage}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/40 to-transparent" />
-          <div className="relative px-8 py-24 text-center md:max-w-2xl md:px-16 md:py-32 md:text-left">
-            <p className="inline-flex items-center gap-2 rounded-full bg-amber-400/15 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-amber-300 ring-1 ring-amber-300/40">
-              ☀️ Clean Energy
-            </p>
-            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-[0.1em] sm:text-6xl">
-              Go Solar
+      {/* Solar energy — frosted glass over the SolarMax sky blue */}
+      <section className="relative overflow-hidden">
+        <img
+          src={bannerImage}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Brand sky-blue wash: light at the top, deeper where the text sits */}
+        <div className="absolute inset-0 bg-gradient-to-b from-sky-300/85 via-sky-500/85 to-sky-600/95" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-white/25 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-white/20 blur-3xl"
+        />
+
+        <div className="container-page relative py-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white">
+              ☀️ SolarMax · الواعظ للقدرة
+            </span>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight text-white drop-shadow sm:text-5xl">
+              Power tomorrow today
+              <br />
+              with solar
             </h2>
-            <p className="mt-5 max-w-xl text-lg text-white/85">
-              Cut your power bills and run on clean, reliable energy. We supply panels, inverters,
-              and batteries — and help you size the right system for your home or business.
+            <p className="mx-auto mt-4 max-w-xl text-white/90">
+              Panels, inverters, and batteries sized for your home or business — supplied and
+              installed by the team that knows the gear.
             </p>
             <Link
               to="/solar-prices"
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg transition hover:bg-amber-50"
+              className="mt-8 inline-flex items-center gap-3 rounded-full bg-white py-2 pl-6 pr-2 text-sm font-bold uppercase tracking-wide text-sky-700 shadow-xl transition hover:bg-sky-50"
             >
               View Solar Prices
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-sky-600 text-base text-white">
+                →
+              </span>
             </Link>
+          </div>
+
+          {/* Glass feature cards */}
+          <div className="mt-14 grid gap-4 md:grid-cols-3">
+            <div className="glass rounded-3xl p-5">
+              <img
+                src={imageFor('solar')}
+                alt=""
+                loading="lazy"
+                className="h-28 w-full rounded-2xl object-cover"
+              />
+              <p className="mt-4 text-sm font-bold uppercase tracking-wide text-white">
+                Complete solar systems
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/85">
+                Panels, inverters, and batteries supplied as one working system — sized for your
+                actual load.
+              </p>
+              <Link
+                to="/solar-prices"
+                className="mt-3 inline-block text-xs font-bold uppercase tracking-wide text-white underline-offset-4 hover:underline"
+              >
+                Discover our systems →
+              </Link>
+            </div>
+
+            <div className="glass flex flex-col items-center justify-center rounded-3xl p-5 text-center">
+              <span className="text-3xl">🛡️</span>
+              <p className="mt-2 text-4xl font-extrabold leading-none text-white">1.5 Year</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-white/85">
+                Warranty
+              </p>
+              <p dir="rtl" className="mt-3 text-xs text-white/85">
+                ضمان سنة ونصف
+              </p>
+            </div>
+
+            <div className="glass rounded-3xl p-5">
+              <span className="text-3xl">🔋</span>
+              <p className="mt-3 text-sm font-bold uppercase tracking-wide text-white">
+                SolarMax batteries
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/85">
+                More power, more backup — tubular and lithium batteries built for long, hot days and
+                nightly runtime.
+              </p>
+              <Link
+                to="/shop"
+                className="mt-3 inline-block text-xs font-bold uppercase tracking-wide text-white underline-offset-4 hover:underline"
+              >
+                Shop batteries →
+              </Link>
+            </div>
           </div>
         </div>
       </section>

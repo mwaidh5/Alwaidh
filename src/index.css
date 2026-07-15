@@ -21,6 +21,13 @@
   .card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md;
   }
+  /* Frosted glass — for panels sitting over imagery or colour. */
+  .glass {
+    @apply border border-white/30 bg-white/15 shadow-lg backdrop-blur-md;
+  }
+  .glass-strong {
+    @apply border border-white/40 bg-white/25 shadow-lg backdrop-blur-lg;
+  }
   .container-page {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
