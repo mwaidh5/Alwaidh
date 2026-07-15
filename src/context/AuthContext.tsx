@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -101,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         if (displayName && cred.user) {
           await updateProfile(cred.user, { displayName });
+        }
+        if (cred.user) {
+          // Best-effort: let new password accounts verify right away.
+          await sendEmailVerification(cred.user).catch(() => undefined);
         }
       },
       async sendPasswordReset(email: string) {

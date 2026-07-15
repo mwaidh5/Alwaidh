@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
+  sendEmailVerification,
   updatePassword,
   updateProfile,
 } from 'firebase/auth';
@@ -207,6 +208,26 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
   if (!user) return null;
   const hasPassword = user.providerData.some((p) => p.providerId === 'password');
 
+  async function handleSendVerification() {
+    if (!auth?.currentUser) return;
+    setError('');
+    setMsg('');
+    setBusy(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setMsg('Verification email sent — click the link in it, then sign out and back in.');
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : '';
+      setError(
+        raw.includes('too-many-requests')
+          ? 'Too many attempts — wait a few minutes, then try again.'
+          : raw.replace('Firebase: ', '') || 'Could not send the email.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!auth?.currentUser || !user?.email) return;
@@ -249,6 +270,28 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
   return (
     <div className="card p-6">
       <h2 className="font-bold text-slate-900">Security</h2>
+
+      {user.emailVerified ? (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+          ✅ Email verified
+        </p>
+      ) : (
+        <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-semibold">⚠️ Your email isn't verified yet.</p>
+          <p className="mt-1 text-xs">
+            Some features (like staff access) only work with a verified email.
+          </p>
+          <button
+            type="button"
+            onClick={handleSendVerification}
+            disabled={busy}
+            className="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+          >
+            {busy ? 'Sending…' : 'Verify now — send email'}
+          </button>
+        </div>
+      )}
+
       {hasPassword ? (
         <form onSubmit={handleChangePassword} className="mt-4 space-y-3">
           <input
