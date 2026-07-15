@@ -93,7 +93,17 @@ export default function AdminJobs() {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
 
-  useEffect(() => subscribeJobs(setJobs), []);
+  useEffect(
+    () =>
+      subscribeJobs(setJobs, (message) =>
+        setError(
+          message.includes('insufficient permissions')
+            ? 'Access to jobs was denied. Make sure you are signed in with Google using an email listed under Solar staff (or Admin).'
+            : `Could not load jobs: ${message}`,
+        ),
+      ),
+    [],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

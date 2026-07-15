@@ -117,6 +117,17 @@ export default function AdminLayout() {
           </aside>
 
           <section className="min-w-0">
+            {!user.emailVerified && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                <p className="font-bold">⚠️ Your email isn't verified — data won't load.</p>
+                <p className="mt-1">
+                  The database only trusts verified accounts, so pages here will appear empty and
+                  saves will fail. Sign out and use <span className="font-semibold">Continue with
+                  Google</span> with this same email ({user.email}) — Google accounts are always
+                  verified.
+                </p>
+              </div>
+            )}
             <Outlet />
           </section>
         </div>

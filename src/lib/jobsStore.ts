@@ -79,13 +79,19 @@ function normalize(data: Record<string, unknown>, id: string): Job {
   };
 }
 
-export function subscribeJobs(cb: (list: Job[]) => void): () => void {
+export function subscribeJobs(
+  cb: (list: Job[]) => void,
+  onError?: (message: string) => void,
+): () => void {
   const database = db;
   if (database) {
     return onSnapshot(
       query(collection(database, COLLECTION), orderBy('order', 'asc')),
       (snap) => cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id))),
-      () => cb([]),
+      (err) => {
+        cb([]);
+        onError?.(err.message);
+      },
     );
   }
   cb(readLocal());
