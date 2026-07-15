@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
-import { ADMIN_EMAILS } from '../../firebase';
+import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -35,6 +36,12 @@ export default function AdminLayout() {
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  // Roles come from the settings doc; don't judge access (or flash
+  // "Not authorised") until it has loaded.
+  if (settings === null) {
+    return <p className="container-page py-16 text-center text-slate-500">Loading…</p>;
   }
 
   const extra = settings?.extraAdminEmails ?? [];
@@ -117,21 +124,52 @@ export default function AdminLayout() {
           </aside>
 
           <section className="min-w-0">
-            {!user.emailVerified && (
-              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-                <p className="font-bold">⚠️ Your email isn't verified — data won't load.</p>
-                <p className="mt-1">
-                  The database only trusts verified accounts, so pages here will appear empty and
-                  saves will fail. Sign out and use <span className="font-semibold">Continue with
-                  Google</span> with this same email ({user.email}) — Google accounts are always
-                  verified.
-                </p>
-              </div>
-            )}
+            {!user.emailVerified && <UnverifiedBanner email={user.email} />}
             <Outlet />
           </section>
         </div>
       </div>
+    </div>
+  );
+}
+
+function UnverifiedBanner({ email }: { email: string | null }) {
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSend() {
+    setError('');
+    try {
+      if (!auth?.currentUser) throw new Error('Not signed in.');
+      await sendEmailVerification(auth.currentUser);
+      setSent(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message.replace('Firebase: ', '') : 'Could not send email.');
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <p className="font-bold">⚠️ Your email isn't verified — data won't load.</p>
+      <p className="mt-1">
+        The database only trusts verified accounts, so pages here will appear empty and saves will
+        fail. Verify <span className="font-semibold">{email}</span> to fix it:
+      </p>
+      {sent ? (
+        <p className="mt-2 font-semibold">
+          ✅ Verification email sent — open it and click the link (check spam too). Then{' '}
+          <span className="underline">sign out and sign back in</span> here.
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSend}
+          className="mt-3 rounded-md border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+        >
+          Send verification email
+        </button>
+      )}
+      {error && <p className="mt-2 text-red-700">{error}</p>}
     </div>
   );
 }
