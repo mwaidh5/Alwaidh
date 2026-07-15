@@ -187,56 +187,72 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Latest collection */}
-      <section className="container-page py-14">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-600">
-              Fresh in store
-            </p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-              Latest Collection
-            </h2>
+      {/* Latest collection — glass cards on a tinted wash */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 py-14">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 top-16 h-80 w-80 rounded-full bg-brand-200/40 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-sky-200/40 blur-3xl"
+        />
+
+        <div className="container-page relative">
+          <div className="mb-6 flex items-end justify-between sm:mb-8">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-600 sm:text-xs">
+                Fresh in store
+              </p>
+              <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:mt-2 sm:text-3xl">
+                Latest Collection
+              </h2>
+            </div>
+            <Link
+              to="/shop"
+              className="hidden text-sm font-semibold text-brand-700 hover:underline sm:block"
+            >
+              View all →
+            </Link>
           </div>
-          <Link
-            to="/shop"
-            className="hidden text-sm font-semibold text-brand-700 hover:underline sm:block"
-          >
-            View all →
-          </Link>
-        </div>
-        <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-          {collection.map((p) => (
-            <Link key={p.id} to={`/product/${p.id}`} className="group">
-              <div className="aspect-square overflow-hidden rounded-2xl bg-slate-100 shadow-sm transition group-hover:shadow-md">
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <div className="mt-3 space-y-1">
-                <div className="flex items-start justify-between gap-3">
-                  <span className="line-clamp-1 text-sm font-semibold text-slate-800 group-hover:text-brand-700">
-                    {p.name}
-                  </span>
-                  <span className="flex-none text-sm font-extrabold text-orange-500">
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            {collection.map((p) => (
+              <Link
+                key={p.id}
+                to={`/product/${p.id}`}
+                className="group rounded-2xl border border-white/70 bg-white/60 p-1.5 shadow-sm backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-white/85 hover:shadow-xl sm:p-2"
+              >
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  {/* Frosted price tag floating on the image */}
+                  <span className="absolute bottom-1.5 right-1.5 whitespace-nowrap rounded-full border border-white/60 bg-white/70 px-2 py-0.5 text-[10px] font-extrabold text-slate-900 shadow-sm backdrop-blur-md sm:bottom-2 sm:right-2 sm:px-2.5 sm:py-1 sm:text-xs">
                     {formatPrice(p.price, p.currency)}
                   </span>
                 </div>
-                <StarRating rating={p.rating} />
-              </div>
+                <div className="px-1 pb-1 pt-2 sm:px-1.5 sm:pt-2.5">
+                  <p className="line-clamp-1 text-xs font-semibold text-slate-800 transition group-hover:text-brand-700 sm:text-sm">
+                    {p.name}
+                  </p>
+                  <StarRating rating={p.rating} className="mt-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center sm:hidden">
+            <Link
+              to="/shop"
+              className="inline-flex items-center justify-center rounded-full border border-white/70 bg-white/70 px-7 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-sm backdrop-blur-md transition hover:bg-white"
+            >
+              View All Products
             </Link>
-          ))}
-        </div>
-        <div className="mt-12 text-center sm:hidden">
-          <Link
-            to="/shop"
-            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-          >
-            View All Products
-          </Link>
+          </div>
         </div>
       </section>
 
