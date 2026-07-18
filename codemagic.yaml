@@ -1,0 +1,47 @@
+# Cloud build for the Alwaidh Staff iOS app (no Mac required).
+# Codemagic (codemagic.io) runs this on a macOS machine, signs the app with
+# your App Store Connect API key, and uploads it to TestFlight.
+#
+# One thing must match between Codemagic and this file:
+#   integrations.app_store_connect below must equal the NAME you give the
+#   App Store Connect API key when you add it in Codemagic (Team settings ->
+#   Integrations). If you name it differently, tell Claude to update this file.
+
+workflows:
+  ios-testflight:
+    name: Alwaidh Staff — iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: Alwaidh ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.alwaidh.staff
+      node: 20
+      xcode: latest
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build the web app
+        script: npm run build
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+      - name: Set the build number
+        script: |
+          cd ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
+      - name: Fetch signing profiles
+        script: xcode-project use-profiles
+      - name: Build the signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
