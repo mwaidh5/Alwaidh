@@ -258,30 +258,30 @@ export default function Home() {
 
       {/* Tiandy cameras spotlight */}
       {tiandy.length > 0 && (
-        <section className="relative overflow-hidden bg-slate-950 py-16 text-white">
+        <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 py-16">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-tiandy-500/15 blur-3xl"
+            className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-tiandy-300/30 blur-3xl"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-tiandy-400/10 blur-3xl"
+            className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-tiandy-100/60 blur-3xl"
           />
           <div className="container-page relative">
             <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <TiandyLogo src={settings.tiandyLogo} />
-                <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                  Security <span className="text-tiandy-500">Cameras</span>
+                <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                  Security <span className="text-tiandy-600">Cameras</span>
                 </h2>
-                <p className="mt-2 max-w-xl text-white/70">
+                <p className="mt-2 max-w-xl text-slate-600">
                   Professional IP cameras and NVRs from an authorised Tiandy reseller — built for
                   homes, shops, and business sites.
                 </p>
               </div>
               <Link
                 to="/shop"
-                className="hidden text-sm font-semibold text-tiandy-400 hover:text-tiandy-300 hover:underline sm:block"
+                className="hidden text-sm font-semibold text-tiandy-600 hover:text-tiandy-700 hover:underline sm:block"
               >
                 View all →
               </Link>
@@ -290,20 +290,20 @@ export default function Home() {
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {tiandy.map((p) => (
                 <Link key={p.id} to={`/product/${p.id}`} className="group">
-                  <div className="aspect-square overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-white/10 transition group-hover:ring-tiandy-500/60">
+                  <div className="aspect-square overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition group-hover:shadow-md group-hover:ring-tiandy-500/60">
                     <img
                       src={p.image}
                       alt={p.name}
                       loading="lazy"
-                      className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
                   </div>
                   <div className="mt-3 space-y-1">
                     <div className="flex items-start justify-between gap-3">
-                      <span className="line-clamp-1 text-sm font-semibold text-white group-hover:text-tiandy-400">
+                      <span className="line-clamp-1 text-sm font-semibold text-slate-800 group-hover:text-tiandy-600">
                         {p.name}
                       </span>
-                      <span className="flex-none text-sm font-extrabold text-tiandy-500">
+                      <span className="flex-none text-sm font-extrabold text-tiandy-600">
                         {formatPrice(p.price, p.currency)}
                       </span>
                     </div>
