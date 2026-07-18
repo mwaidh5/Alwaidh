@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export type JobStatus = 'new' | 'scheduled' | 'in_progress' | 'done';
+export type JobStatus = 'new' | 'scheduled' | 'in_progress' | 'done' | 'cancelled';
 export type JobType = 'install' | 'repair';
 
 export interface Job {
@@ -35,6 +35,7 @@ export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
   { key: 'scheduled', label: 'Scheduled' },
   { key: 'in_progress', label: 'In Progress' },
   { key: 'done', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled / Delayed' },
 ];
 
 const COLLECTION = 'jobs';
@@ -72,7 +73,7 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     notes: String(data.notes ?? ''),
     invoiceUrl: String(data.invoiceUrl ?? ''),
     invoiceName: String(data.invoiceName ?? ''),
-    status: (['new', 'scheduled', 'in_progress', 'done'].includes(String(data.status))
+    status: (['new', 'scheduled', 'in_progress', 'done', 'cancelled'].includes(String(data.status))
       ? data.status
       : 'new') as JobStatus,
     order: Number(data.order ?? 0),
