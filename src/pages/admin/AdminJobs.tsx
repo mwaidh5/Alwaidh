@@ -71,6 +71,12 @@ const STATUS_STYLES: Record<
     dot: 'bg-green-500',
     badge: 'bg-green-100 text-green-700',
   },
+  cancelled: {
+    over: 'bg-rose-50',
+    header: 'text-rose-700',
+    dot: 'bg-rose-500',
+    badge: 'bg-rose-100 text-rose-700',
+  },
 };
 
 export default function AdminJobs() {
@@ -125,14 +131,26 @@ export default function AdminJobs() {
   }, [jobs, typeFilter, query]);
 
   const byStatus = useMemo(() => {
-    const map: Record<JobStatus, Job[]> = { new: [], scheduled: [], in_progress: [], done: [] };
+    const map: Record<JobStatus, Job[]> = {
+      new: [],
+      scheduled: [],
+      in_progress: [],
+      done: [],
+      cancelled: [],
+    };
     for (const j of filtered) map[j.status]?.push(j);
     return map;
   }, [filtered]);
 
   // Stat tiles always show the full board, regardless of search/filter.
   const totals = useMemo(() => {
-    const map: Record<JobStatus, number> = { new: 0, scheduled: 0, in_progress: 0, done: 0 };
+    const map: Record<JobStatus, number> = {
+      new: 0,
+      scheduled: 0,
+      in_progress: 0,
+      done: 0,
+      cancelled: 0,
+    };
     for (const j of jobs ?? []) map[j.status] += 1;
     return map;
   }, [jobs]);
@@ -215,7 +233,7 @@ export default function AdminJobs() {
       )}
 
       {/* Status summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {JOB_STATUSES.map((s) => {
           const style = STATUS_STYLES[s.key];
           return (
@@ -287,7 +305,7 @@ export default function AdminJobs() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {JOB_STATUSES.map((col) => (
               <Column
                 key={col.key}
