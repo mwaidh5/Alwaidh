@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Alwaidh Staff</string>
+    <string name="title_activity_main">Alwaidh Staff</string>
+    <string name="package_name">com.alwaidh.staff</string>
+    <string name="custom_url_scheme">com.alwaidh.staff</string>
+</resources>
