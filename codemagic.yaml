@@ -26,15 +26,16 @@ workflows:
       - name: Sync Capacitor iOS
         script: npx cap sync ios
       - name: Fetch or create signing files
-        # --create registers the bundle id, and creates the distribution
-        # certificate + App Store provisioning profile if they don't exist yet.
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-      - name: Add certificate to keychain
+        # Generate a fresh private key so a new distribution certificate can be
+        # created and saved (the account's existing cert has no local key here).
+        # --create also registers the bundle id and creates the App Store profile.
         script: |
           keychain initialize
+          openssl genrsa -out "$CM_BUILD_DIR/dist_cert_key.pem" 2048
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@file:"$CM_BUILD_DIR/dist_cert_key.pem" \
+            --create
           keychain add-certificates
       - name: Apply provisioning profile to the Xcode project
         script: xcode-project use-profiles
