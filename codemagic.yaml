@@ -14,7 +14,7 @@ workflows:
     integrations:
       app_store_connect: AppStoreConnect
     environment:
-      node: 20
+      node: 22
       xcode: latest
       vars:
         BUNDLE_ID: 'com.alwaidh.staff'
