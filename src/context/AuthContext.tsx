@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   createUserWithEmailAndPassword,
+  getRedirectResult,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut as fbSignOut,
   updateProfile,
   type User,
@@ -43,6 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    // Complete any pending redirect sign-in (used when popups are blocked).
+    getRedirectResult(auth).catch(() => {
+      /* no pending redirect, or it failed — onAuthStateChanged still governs */
+    });
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
         // Firebase caches the ID token for up to an hour, so a user who just
@@ -103,7 +109,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: firebaseReady && auth !== null,
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
-        await signInWithPopup(auth, googleProvider);
+        try {
+          await signInWithPopup(auth, googleProvider);
+        } catch (e) {
+          // In-app webviews (the native app) block popups — fall back to a
+          // full-page redirect, which onAuthStateChanged completes on return.
+          const code = (e as { code?: string })?.code ?? '';
+          if (
+            code === 'auth/popup-blocked' ||
+            code === 'auth/cancelled-popup-request' ||
+            code === 'auth/popup-closed-by-user' ||
+            code === 'auth/operation-not-supported-in-this-environment'
+          ) {
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+          throw e;
+        }
       },
       async signInWithEmail(email: string, password: string) {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');

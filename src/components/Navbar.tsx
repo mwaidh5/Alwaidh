@@ -80,7 +80,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur">
+    <header className="safe-top sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <button
