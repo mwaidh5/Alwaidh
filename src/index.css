@@ -8,6 +8,8 @@
   }
   body {
     font-family: 'Inter', system-ui, sans-serif;
+    /* Keep content clear of the iPhone home indicator in the native app. */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -33,5 +35,10 @@
   }
   .input {
     @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+  }
+  /* Pushes the sticky header below the status bar / notch in the native app.
+     env() is 0 in normal browsers, so this is a no-op on the web. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
   }
 }
