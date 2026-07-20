@@ -22,6 +22,12 @@ const config: CapacitorConfig = {
       '*.gstatic.com',
     ],
   },
+  plugins: {
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['google.com'],
+    },
+  },
 };
 
 export default config;
