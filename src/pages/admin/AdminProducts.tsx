@@ -469,14 +469,27 @@ function ProductDialog({
     setUploadError('');
     setRemovingBg(true);
     try {
-      // Loaded on demand — the model downloads on first use, then is cached.
+      // Fetch the current image ourselves so a bad URL fails with a clear
+      // message instead of dying inside the AI library.
+      const resp = await fetch(state.image);
+      if (!resp.ok) throw new Error(`Could not download the current image (HTTP ${resp.status}).`);
+      const source = await resp.blob();
+      // Loaded on demand — the AI model (~40 MB) downloads on first use,
+      // then is cached by the browser.
       const { removeBackground } = await import('@imgly/background-removal');
-      const blob = await removeBackground(state.image);
+      const blob = await removeBackground(source);
       const file = new File([blob], 'bg-removed.png', { type: 'image/png' });
       const { url } = await uploadProductImage(file, state.id || undefined);
       setState({ ...state, image: url });
     } catch (e) {
-      setUploadError(e instanceof Error ? e.message : 'Background removal failed.');
+      const raw = e instanceof Error ? e.message : 'Background removal failed.';
+      setUploadError(
+        /load failed|failed to fetch|network|fetching of the wasm|dynamically imported module/i.test(raw)
+          ? 'Background removal needs to download its AI model (~40 MB) on first use and the download failed. Check your internet connection and try again — a computer with a stable connection works best.'
+          : /memory|aborted/i.test(raw)
+            ? 'This device ran out of memory running the AI. Try on a computer instead.'
+            : raw,
+      );
     } finally {
       setRemovingBg(false);
     }

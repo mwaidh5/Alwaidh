@@ -23,15 +23,75 @@ function validate(file: File): FirebaseStorage {
   return storage;
 }
 
+const MAX_DIMENSION = 1600;
+const COMPRESS_OVER_BYTES = 1_500_000;
+
+/**
+ * Convert any browser-displayable photo (including iPhone HEIC) to a
+ * resized JPEG so uploads are small, fast, and always an accepted type.
+ * Images that are already an allowed type and small pass through untouched.
+ */
+async function normalizeImage(file: File): Promise<File> {
+  if (ALLOWED.includes(file.type) && file.size <= COMPRESS_OVER_BYTES) return file;
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () =>
+        reject(
+          new Error(
+            `This device could not read the image (${file.type || 'unknown type'}). Try a JPG or PNG.`,
+          ),
+        );
+      i.src = objectUrl;
+    });
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.85),
+    );
+    if (!blob) throw new Error('Could not convert the image — try a JPG or PNG.');
+    const base = file.name.replace(/\.[^.]+$/, '') || 'photo';
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/** Turn opaque network failures ("Load failed") into actionable messages. */
+function friendlyUploadError(e: unknown): Error {
+  const raw = e instanceof Error ? e.message : String(e);
+  if (/load failed|failed to fetch|network|retry-limit/i.test(raw)) {
+    return new Error('Upload failed — network problem. Check your internet connection and try again.');
+  }
+  if (/unauthorized|permission/i.test(raw)) {
+    return new Error('Upload was blocked by permissions. Make sure you are signed in with a verified staff/admin account.');
+  }
+  return e instanceof Error ? e : new Error(raw);
+}
+
 /** Upload an image into an arbitrary folder (e.g. "site", "projects"). */
 export async function uploadImage(file: File, folder = 'site'): Promise<UploadResult> {
-  const store = validate(file);
-  const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 60);
+  const prepared = await normalizeImage(file);
+  const store = validate(prepared);
+  const safe = prepared.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 60);
   const path = `${folder.replace(/\/+$/, '')}/${Date.now()}-${safe}`;
   const objectRef = ref(store, path);
-  await uploadBytes(objectRef, file, { contentType: file.type });
-  const url = await getDownloadURL(objectRef);
-  return { url, path };
+  try {
+    await uploadBytes(objectRef, prepared, { contentType: prepared.type });
+    const url = await getDownloadURL(objectRef);
+    return { url, path };
+  } catch (e) {
+    throw friendlyUploadError(e);
+  }
 }
 
 export async function uploadProductImage(
