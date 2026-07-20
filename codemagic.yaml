@@ -16,6 +16,11 @@ workflows:
     environment:
       node: 22
       xcode: latest
+      groups:
+        # Codemagic app settings -> Environment variables: add a SECURE
+        # variable CERTIFICATE_PRIVATE_KEY (the permanent RSA key) in the
+        # group "signing" so every build reuses the same certificate.
+        - signing
       vars:
         BUNDLE_ID: 'com.alwaidh.staff'
     scripts:
@@ -26,15 +31,14 @@ workflows:
       - name: Sync Capacitor iOS
         script: npx cap sync ios
       - name: Fetch or create signing files
-        # Generate a fresh private key so a new distribution certificate can be
-        # created and saved (the account's existing cert has no local key here).
-        # --create also registers the bundle id and creates the App Store profile.
+        # Uses the PERMANENT private key from the "signing" env group, so the
+        # first run creates one certificate and every later run reuses it —
+        # no more running into Apple's 2-certificate limit.
         script: |
           keychain initialize
-          openssl genrsa -out "$CM_BUILD_DIR/dist_cert_key.pem" 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:"$CM_BUILD_DIR/dist_cert_key.pem" \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
       - name: Apply provisioning profile to the Xcode project
