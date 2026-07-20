@@ -26,14 +26,45 @@ function validate(file: File): FirebaseStorage {
 const MAX_DIMENSION = 1600;
 const COMPRESS_OVER_BYTES = 1_500_000;
 
+function jpgName(original: string): string {
+  return `${original.replace(/\.[^.]+$/, '') || 'photo'}.jpg`;
+}
+
+function isHeic(file: File): boolean {
+  return /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+}
+
 /**
- * Convert any browser-displayable photo (including iPhone HEIC) to a
- * resized JPEG so uploads are small, fast, and always an accepted type.
- * Images that are already an allowed type and small pass through untouched.
+ * Convert any photo (including iPhone HEIC/HEIF) to a resized JPEG so
+ * uploads are small, fast, and always an accepted type. HEIC is decoded
+ * with a bundled decoder — no reliance on the device's browser supporting
+ * it — then everything large is resized via canvas. Images that are
+ * already an allowed type and small pass through untouched.
  */
 async function normalizeImage(file: File): Promise<File> {
-  if (ALLOWED.includes(file.type) && file.size <= COMPRESS_OVER_BYTES) return file;
-  const objectUrl = URL.createObjectURL(file);
+  let working: Blob = file;
+  let workingType = file.type;
+
+  if (isHeic(file)) {
+    try {
+      // Loaded on demand — only HEIC uploads pay for the decoder.
+      const { default: heic2any } = await import('heic2any');
+      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+      working = Array.isArray(out) ? out[0] : out;
+      workingType = 'image/jpeg';
+    } catch {
+      // Fall through — some browsers (iOS Safari) can decode HEIC natively
+      // in the <img> path below.
+    }
+  }
+
+  if (ALLOWED.includes(workingType) && working.size <= COMPRESS_OVER_BYTES) {
+    return working === file
+      ? file
+      : new File([working], jpgName(file.name), { type: 'image/jpeg' });
+  }
+
+  const objectUrl = URL.createObjectURL(working);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const i = new Image();
@@ -53,14 +84,13 @@ async function normalizeImage(file: File): Promise<File> {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return file;
+    if (!ctx) throw new Error('Could not process the image on this device.');
     ctx.drawImage(img, 0, 0, w, h);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', 0.85),
     );
     if (!blob) throw new Error('Could not convert the image — try a JPG or PNG.');
-    const base = file.name.replace(/\.[^.]+$/, '') || 'photo';
-    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+    return new File([blob], jpgName(file.name), { type: 'image/jpeg' });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
