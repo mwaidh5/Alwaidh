@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import {
   createUserWithEmailAndPassword,
   getRedirectResult,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -13,6 +15,13 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth, firebaseReady, googleProvider, isAdminEmail } from '../firebase';
+
+/** True when running inside the Capacitor native app. */
+function isNativeApp(): boolean {
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+    .Capacitor;
+  return Boolean(cap?.isNativePlatform?.());
+}
 import { recordUserLogin } from '../lib/userStore';
 import { subscribeSettings, type SiteSettings } from '../lib/settingsStore';
 
@@ -109,11 +118,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: firebaseReady && auth !== null,
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
+        // Native app: Google blocks OAuth inside embedded webviews, so use the
+        // OS-level Google sign-in and hand its credential to Firebase.
+        if (isNativeApp()) {
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+          const result = await FirebaseAuthentication.signInWithGoogle();
+          const idToken = result.credential?.idToken;
+          if (!idToken) throw new Error('Google sign-in did not return a credential. Please try again.');
+          const credential = GoogleAuthProvider.credential(idToken, result.credential?.nonce);
+          await signInWithCredential(auth, credential);
+          return;
+        }
         try {
           await signInWithPopup(auth, googleProvider);
         } catch (e) {
-          // In-app webviews (the native app) block popups — fall back to a
-          // full-page redirect, which onAuthStateChanged completes on return.
+          // Some browsers block popups — fall back to a full-page redirect,
+          // which onAuthStateChanged completes on return.
           const code = (e as { code?: string })?.code ?? '';
           if (
             code === 'auth/popup-blocked' ||
@@ -148,6 +168,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         if (!auth) return;
+        if (isNativeApp()) {
+          // Also clear the OS-level Google session so the account picker
+          // shows again on the next sign-in.
+          try {
+            const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+            await FirebaseAuthentication.signOut();
+          } catch {
+            /* native layer unavailable — web sign-out below still applies */
+          }
+        }
         await fbSignOut(auth);
       },
     }),
