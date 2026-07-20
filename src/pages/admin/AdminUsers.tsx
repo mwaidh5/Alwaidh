@@ -10,12 +10,19 @@ import {
 import { ADMIN_EMAILS } from '../../firebase';
 import { loadSettings, saveSettings, type SiteSettings } from '../../lib/settingsStore';
 
-const ROLES: AppUser['role'][] = ['admin', 'computer-staff', 'solar-staff', 'customer'];
+const ROLES: AppUser['role'][] = [
+  'admin',
+  'computer-staff',
+  'solar-staff',
+  'full-staff',
+  'customer',
+];
 
 const ROLE_LABELS: Record<AppUser['role'], string> = {
   admin: 'Admin — full access',
   'computer-staff': 'Computer staff — computers & cameras',
   'solar-staff': 'Solar staff — solar, prices & jobs',
+  'full-staff': 'Full staff — computers, cameras & solar',
   customer: 'Customer',
 };
 
@@ -25,8 +32,11 @@ function effectiveRole(email: string, settings: SiteSettings | null): AppUser['r
   if (ADMIN_EMAILS.includes(e)) return 'admin';
   if (!settings) return 'customer';
   if (settings.extraAdminEmails.includes(e)) return 'admin';
-  if (settings.computerStaffEmails.includes(e)) return 'computer-staff';
-  if (settings.solarStaffEmails.includes(e)) return 'solar-staff';
+  const computer = settings.computerStaffEmails.includes(e);
+  const solar = settings.solarStaffEmails.includes(e);
+  if (computer && solar) return 'full-staff';
+  if (computer) return 'computer-staff';
+  if (solar) return 'solar-staff';
   return 'customer';
 }
 
@@ -41,8 +51,10 @@ function withRoleAssigned(s: SiteSettings, email: string, role: AppUser['role'])
     solarStaffEmails: without(s.solarStaffEmails),
   };
   if (role === 'admin') next.extraAdminEmails = [...next.extraAdminEmails, e];
-  if (role === 'computer-staff') next.computerStaffEmails = [...next.computerStaffEmails, e];
-  if (role === 'solar-staff') next.solarStaffEmails = [...next.solarStaffEmails, e];
+  if (role === 'computer-staff' || role === 'full-staff')
+    next.computerStaffEmails = [...next.computerStaffEmails, e];
+  if (role === 'solar-staff' || role === 'full-staff')
+    next.solarStaffEmails = [...next.solarStaffEmails, e];
   return next;
 }
 
