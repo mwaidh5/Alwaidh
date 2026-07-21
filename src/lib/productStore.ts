@@ -48,7 +48,12 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     brand: String(data.brand ?? ''),
     price: Number(data.price ?? 0),
     currency: String(data.currency ?? 'IQD'),
-    image: String(data.image ?? ''),
+    ...(() => {
+      const arr = Array.isArray(data.images) ? data.images.map(String).filter(Boolean) : [];
+      const primary = String(data.image ?? '');
+      const images = arr.length ? arr : primary ? [primary] : [];
+      return { image: images[0] ?? '', images };
+    })(),
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),

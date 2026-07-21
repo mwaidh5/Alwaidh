@@ -22,6 +22,7 @@ const EMPTY_FORM: FormState = {
   price: 0,
   currency: 'IQD',
   image: '',
+  images: [],
   rating: 0,
   inStock: true,
   shortDescription: '',
@@ -149,13 +150,15 @@ export default function AdminProducts() {
     try {
       const specs = parseSpecs(editing.specsText);
       const isNew = !editing.id;
+      const images = editing.images.map((s) => s.trim()).filter(Boolean);
       const payload = {
         name: editing.name.trim(),
         category: editing.category,
         brand: editing.brand.trim(),
         price: Number(editing.price) || 0,
         currency: editing.currency.trim().toUpperCase() || 'IQD',
-        image: editing.image.trim(),
+        image: images[0] ?? '',
+        images,
         rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
         inStock: editing.inStock,
         shortDescription: editing.shortDescription.trim(),
@@ -450,12 +453,16 @@ function ProductDialog({
   const [uploadError, setUploadError] = useState('');
   const [removingBg, setRemovingBg] = useState(false);
 
-  async function handleUpload(file: File) {
+  async function handleUpload(files: FileList) {
     setUploadError('');
     setUploading(true);
     try {
-      const { url } = await uploadProductImage(file, state.id || undefined);
-      setState({ ...state, image: url });
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const { url } = await uploadProductImage(file, state.id || undefined);
+        uploaded.push(url);
+      }
+      setState({ ...state, images: [...state.images, ...uploaded] });
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
@@ -464,28 +471,50 @@ function ProductDialog({
     }
   }
 
+  function addImageUrl(url: string) {
+    const clean = url.trim();
+    if (clean) setState({ ...state, images: [...state.images, clean] });
+  }
+
+  function removeImageAt(i: number) {
+    setState({ ...state, images: state.images.filter((_, idx) => idx !== i) });
+  }
+
+  function makePrimary(i: number) {
+    if (i === 0) return;
+    const next = [...state.images];
+    const [chosen] = next.splice(i, 1);
+    setState({ ...state, images: [chosen, ...next] });
+  }
+
   async function handleRemoveBackground() {
-    if (!state.image) return;
+    const target = state.images[0];
+    if (!target) return;
     setUploadError('');
     setRemovingBg(true);
     try {
-      // Fetch the current image ourselves so a bad URL fails with a clear
+      // Fetch the primary image ourselves so a bad URL fails with a clear
       // message instead of dying inside the AI library.
-      const resp = await fetch(state.image);
+      const resp = await fetch(target);
       if (!resp.ok) throw new Error(`Could not download the current image (HTTP ${resp.status}).`);
       const source = await resp.blob();
-      // Loaded on demand — the AI model (~40 MB) downloads on first use,
-      // then is cached by the browser.
       const { removeBackground } = await import('@imgly/background-removal');
-      const blob = await removeBackground(source);
+      // The AI model is served from our own origin (see public/imgly-data,
+      // populated by scripts/copy-imgly-assets.mjs) rather than the flaky
+      // third-party CDN. 'small' keeps the one-time download light (~42 MB).
+      const blob = await removeBackground(source, {
+        publicPath: `${window.location.origin}/imgly-data/`,
+        model: 'small',
+      });
       const file = new File([blob], 'bg-removed.png', { type: 'image/png' });
       const { url } = await uploadProductImage(file, state.id || undefined);
-      setState({ ...state, image: url });
+      // Replace the primary image with the cut-out version.
+      setState({ ...state, images: [url, ...state.images.slice(1)] });
     } catch (e) {
       const raw = e instanceof Error ? e.message : 'Background removal failed.';
       setUploadError(
         /load failed|failed to fetch|network|fetching of the wasm|dynamically imported module/i.test(raw)
-          ? 'Background removal needs to download its AI model (~40 MB) on first use and the download failed. Check your internet connection and try again — a computer with a stable connection works best.'
+          ? 'Background removal could not load its AI model. Check your internet connection and try again — a computer with a stable connection works best.'
           : /memory|aborted/i.test(raw)
             ? 'This device ran out of memory running the AI. Try on a computer instead.'
             : raw,
@@ -570,71 +599,100 @@ function ProductDialog({
               Available for purchase
             </label>
           </Field>
-          <Field label="Product image" full>
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
-                {state.image ? (
-                  <img src={state.image} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-xs text-slate-400">
-                    No image
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 space-y-2">
-                <div className="flex flex-wrap gap-2">
+          <Field label="Product images" full>
+            <div className="space-y-3">
+              {state.images.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {state.images.map((img, i) => (
+                    <div
+                      key={`${img}-${i}`}
+                      className="group relative h-24 w-24 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+                    >
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      {i === 0 && (
+                        <span className="absolute left-1 top-1 rounded bg-brand-700 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          Main
+                        </span>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 flex justify-between bg-slate-900/60 px-1 py-0.5 opacity-0 transition group-hover:opacity-100">
+                        {i !== 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => makePrimary(i)}
+                            className="text-[10px] font-semibold text-white hover:underline"
+                            title="Make this the main image"
+                          >
+                            ★ Main
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImageAt(i)}
+                          className="text-[10px] font-semibold text-red-300 hover:underline"
+                          title="Remove this image"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={uploading || removingBg}
+                  className="btn-secondary"
+                >
+                  {uploading ? 'Uploading…' : state.images.length ? '+ Add images' : 'Upload images'}
+                </button>
+                {state.images.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => fileInput.current?.click()}
+                    onClick={handleRemoveBackground}
                     disabled={uploading || removingBg}
                     className="btn-secondary"
                   >
-                    {uploading ? 'Uploading…' : 'Upload image'}
+                    {removingBg ? 'Removing…' : 'Remove background (main)'}
                   </button>
-                  {state.image && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveBackground}
-                      disabled={uploading || removingBg}
-                      className="btn-secondary"
-                    >
-                      {removingBg ? 'Removing…' : 'Remove background'}
-                    </button>
-                  )}
-                  {state.image && (
-                    <button
-                      type="button"
-                      onClick={() => setState({ ...state, image: '' })}
-                      className="text-sm font-semibold text-red-700 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleUpload(f);
-                  }}
-                />
-                <input
-                  className="input"
-                  value={state.image}
-                  onChange={(e) => setState({ ...state, image: e.target.value })}
-                  placeholder="…or paste an image URL"
-                />
-                {uploadError && (
-                  <p className="text-xs text-red-700">{uploadError}</p>
                 )}
-                <p className="text-xs text-slate-500">
-                  JPG, PNG, WEBP, AVIF, or GIF · max 5 MB. “Remove background” uses an in-browser AI
-                  model that downloads on first use (may take a moment).
-                </p>
               </div>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files && files.length) handleUpload(files);
+                }}
+              />
+              <input
+                className="input"
+                defaultValue=""
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addImageUrl((e.target as HTMLInputElement).value);
+                    (e.target as HTMLInputElement).value = '';
+                  }
+                }}
+                onBlur={(e) => {
+                  addImageUrl(e.target.value);
+                  e.target.value = '';
+                }}
+                placeholder="…or paste an image URL and press Enter"
+              />
+              {uploadError && <p className="text-xs text-red-700">{uploadError}</p>}
+              <p className="text-xs text-slate-500">
+                JPG, PNG, WEBP, AVIF, or GIF · max 5 MB each. The first image is the main one shown
+                in listings — hover a thumbnail to reorder or remove. “Remove background” runs an
+                in-browser AI on the main image.
+              </p>
             </div>
           </Field>
           <Field label="Short description" full>

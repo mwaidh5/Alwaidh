@@ -7,7 +7,7 @@ import type { Product } from '../types/product';
  * shape consistent. Images use Unsplash placeholders; swap for your own
  * uploads (e.g. Firebase Storage URLs) when ready.
  */
-export const products: Product[] = [
+const seed: Omit<Product, 'images'>[] = [
   // ---------- Computers ----------
   {
     id: 'pc-001',
@@ -207,6 +207,9 @@ export const products: Product[] = [
     },
   },
 ];
+
+// Every seed product starts with a single-image gallery.
+export const products: Product[] = seed.map((p) => ({ ...p, images: [p.image] }));
 
 export function getProduct(id: string): Product | undefined {
   return products.find((p) => p.id === id);
