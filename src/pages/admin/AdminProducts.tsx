@@ -558,11 +558,21 @@ function ProductDialog({
     setUploadError('');
     setRemovingBg(true);
     try {
-      // Fetch the primary image ourselves so a bad URL fails with a clear
-      // message instead of dying inside the AI library.
-      const resp = await fetch(target);
-      if (!resp.ok) throw new Error(`Could not download the current image (HTTP ${resp.status}).`);
-      const source = await resp.blob();
+      // Fetch the primary image ourselves so reading it fails with its own
+      // clear message instead of being mistaken for an AI-model failure.
+      // Reading bytes from Storage (unlike showing them in an <img>) needs
+      // CORS to be configured on the bucket — see cors.json.
+      let source: Blob;
+      try {
+        const resp = await fetch(target);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        source = await resp.blob();
+      } catch {
+        throw new Error(
+          'SOURCE_UNREADABLE: Could not read this image. The site is not allowed to download files ' +
+            'from Storage yet — the bucket needs its CORS setting applied (see cors.json in the repo).',
+        );
+      }
       const { removeBackground } = await import('@imgly/background-removal');
       // The AI model is served from our own origin (see public/imgly-data,
       // populated by scripts/copy-imgly-assets.mjs) rather than the flaky
@@ -578,11 +588,14 @@ function ProductDialog({
     } catch (e) {
       const raw = e instanceof Error ? e.message : 'Background removal failed.';
       setUploadError(
-        /load failed|failed to fetch|network|fetching of the wasm|dynamically imported module/i.test(raw)
-          ? 'Background removal could not load its AI model. Check your internet connection and try again — a computer with a stable connection works best.'
-          : /memory|aborted/i.test(raw)
-            ? 'This device ran out of memory running the AI. Try on a computer instead.'
-            : raw,
+        // Reading the source image failed — never report this as a model problem.
+        raw.startsWith('SOURCE_UNREADABLE:')
+          ? raw.slice('SOURCE_UNREADABLE:'.length).trim()
+          : /load failed|failed to fetch|network|fetching of the wasm|dynamically imported module/i.test(raw)
+            ? 'Background removal could not load its AI model. Check your internet connection and try again — a computer with a stable connection works best.'
+            : /memory|aborted/i.test(raw)
+              ? 'This device ran out of memory running the AI. Try on a computer instead.'
+              : raw,
       );
     } finally {
       setRemovingBg(false);

@@ -1,0 +1,20 @@
+[
+  {
+    "origin": [
+      "https://alwaidh-baeb5.web.app",
+      "https://alwaidh-baeb5.firebaseapp.com",
+      "capacitor://localhost",
+      "http://localhost:5173"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Content-Disposition",
+      "Accept-Ranges",
+      "Range"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
