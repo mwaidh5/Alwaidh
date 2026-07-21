@@ -332,7 +332,71 @@ export default function AdminProducts() {
       ) : filtered.length === 0 ? (
         <p className="card p-10 text-center text-sm text-slate-500">No products match.</p>
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        {/* Phone: tap-friendly cards with big Edit / Delete buttons. */}
+        <div className="space-y-3 md:hidden">
+          {filtered.map((p) => (
+            <div
+              key={p.id}
+              className={`card p-3 ${selected.has(p.id) ? 'ring-2 ring-brand-400' : ''}`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${p.name}`}
+                  checked={selected.has(p.id)}
+                  onChange={() => toggleSelect(p.id)}
+                  className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300"
+                />
+                {p.image ? (
+                  <img
+                    src={p.image}
+                    alt=""
+                    className="h-14 w-14 shrink-0 rounded-md object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-14 w-14 shrink-0 rounded-md bg-slate-100" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold leading-snug text-slate-900">{p.name}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{p.brand}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="font-semibold text-slate-900">
+                      {formatPrice(p.price, p.currency)}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        p.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {p.inStock ? 'In stock' : 'Out'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => startEdit(p)}
+                  className="btn-primary w-full py-2.5"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(p.id)}
+                  className="w-full rounded-lg border border-red-300 bg-white py-2.5 font-semibold text-red-700 active:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Larger screens: full table. */}
+        <div className="card hidden overflow-x-auto md:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -416,6 +480,7 @@ export default function AdminProducts() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {editing && (
