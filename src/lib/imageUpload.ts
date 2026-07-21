@@ -8,6 +8,9 @@ const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/g
 export interface UploadResult {
   url: string;
   path: string;
+  /** The (normalized) file that was actually stored — lets callers reuse the
+   *  bytes without re-downloading, e.g. for background removal. */
+  file?: File;
 }
 
 function validate(file: File): FirebaseStorage {
@@ -118,7 +121,7 @@ export async function uploadImage(file: File, folder = 'site'): Promise<UploadRe
   try {
     await uploadBytes(objectRef, prepared, { contentType: prepared.type });
     const url = await getDownloadURL(objectRef);
-    return { url, path };
+    return { url, path, file: prepared };
   } catch (e) {
     throw friendlyUploadError(e);
   }

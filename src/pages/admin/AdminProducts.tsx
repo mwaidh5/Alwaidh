@@ -517,6 +517,10 @@ function ProductDialog({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [removingBg, setRemovingBg] = useState(false);
+  // Bytes of images uploaded in this dialog, keyed by their URL — lets
+  // "Remove background" work on them without re-downloading (no CORS,
+  // no network, no cache surprises).
+  const uploadedFiles = useRef<Map<string, File>>(new Map());
 
   async function handleUpload(files: FileList) {
     setUploadError('');
@@ -524,7 +528,8 @@ function ProductDialog({
     try {
       const uploaded: string[] = [];
       for (const file of Array.from(files)) {
-        const { url } = await uploadProductImage(file, state.id || undefined);
+        const { url, file: stored } = await uploadProductImage(file, state.id || undefined);
+        if (stored) uploadedFiles.current.set(url, stored);
         uploaded.push(url);
       }
       setState({ ...state, images: [...state.images, ...uploaded] });
@@ -552,27 +557,53 @@ function ProductDialog({
     setState({ ...state, images: [chosen, ...next] });
   }
 
+  /** Get the primary image's bytes: prefer the copy kept from this dialog's
+   *  own upload, else download it — with a cache-busting retry and errors
+   *  that name the actual problem. */
+  async function readSourceImage(target: string): Promise<Blob> {
+    const inMemory = uploadedFiles.current.get(target);
+    if (inMemory) return inMemory;
+    const attempt = async (url: string) => {
+      // no-store: never reuse a cached copy saved without CORS headers.
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`HTTP_${resp.status}`);
+      return resp.blob();
+    };
+    const isStorage = /firebasestorage\.googleapis\.com|\.firebasestorage\.app/.test(target);
+    try {
+      return await attempt(target);
+    } catch (first) {
+      // Stale caches can survive no-store on some browsers — retry once with
+      // a cache-busting query param before giving up.
+      if (isStorage) {
+        try {
+          return await attempt(`${target}${target.includes('?') ? '&' : '?'}cb=${Date.now()}`);
+        } catch {
+          /* report based on the first failure below */
+        }
+      }
+      const raw = first instanceof Error ? first.message : String(first);
+      const httpStatus = /^HTTP_(\d+)$/.exec(raw)?.[1];
+      if (httpStatus) {
+        throw new Error(
+          `SOURCE_UNREADABLE: Could not open this image (error ${httpStatus}) — its link may have expired or the file was deleted. Upload the photo again, then retry.`,
+        );
+      }
+      throw new Error(
+        isStorage
+          ? `SOURCE_UNREADABLE: Could not read this image from Storage even though it displays fine (${raw}). A firewall, antivirus, or proxy on this network may be blocking downloads — try another browser or network, or re-upload the photo and run Remove background straight away.`
+          : 'SOURCE_UNREADABLE: This image comes from another website that does not allow downloading it. Save the photo to your device and upload it here instead.',
+      );
+    }
+  }
+
   async function handleRemoveBackground() {
     const target = state.images[0];
     if (!target) return;
     setUploadError('');
     setRemovingBg(true);
     try {
-      // Fetch the primary image ourselves so reading it fails with its own
-      // clear message instead of being mistaken for an AI-model failure.
-      // Reading bytes from Storage (unlike showing them in an <img>) needs
-      // CORS to be configured on the bucket — see cors.json.
-      let source: Blob;
-      try {
-        const resp = await fetch(target);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        source = await resp.blob();
-      } catch {
-        throw new Error(
-          'SOURCE_UNREADABLE: Could not read this image. The site is not allowed to download files ' +
-            'from Storage yet — the bucket needs its CORS setting applied (see cors.json in the repo).',
-        );
-      }
+      const source = await readSourceImage(target);
       const { removeBackground } = await import('@imgly/background-removal');
       // The AI model is served from our own origin (see public/imgly-data,
       // populated by scripts/copy-imgly-assets.mjs) rather than the flaky
