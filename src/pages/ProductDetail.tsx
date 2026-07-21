@@ -12,6 +12,7 @@ export default function ProductDetail() {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
 
   if (loading) {
     return <p className="container-page py-20 text-center text-slate-500">Loading product…</p>;
@@ -29,6 +30,7 @@ export default function ProductDetail() {
   }
 
   const category = getCategory(product.category);
+  const gallery = product.images?.length ? product.images : product.image ? [product.image] : [];
 
   function handleAdd() {
     if (!product) return;
@@ -54,8 +56,31 @@ export default function ProductDetail() {
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2">
-        <div className="overflow-hidden rounded-2xl bg-slate-100">
-          <img src={product.image} alt={product.name} className="aspect-square w-full object-cover" />
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-2xl bg-slate-100">
+            <img
+              src={gallery[activeImage] ?? product.image}
+              alt={product.name}
+              className="aspect-square w-full object-cover"
+            />
+          </div>
+          {gallery.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {gallery.map((img, i) => (
+                <button
+                  key={`${img}-${i}`}
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  className={`h-16 w-16 overflow-hidden rounded-lg border-2 transition ${
+                    i === activeImage ? 'border-brand-600' : 'border-transparent hover:border-slate-300'
+                  }`}
+                  aria-label={`View image ${i + 1}`}
+                >
+                  <img src={img} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-xs uppercase tracking-wide text-slate-500">{product.brand}</div>

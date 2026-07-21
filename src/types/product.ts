@@ -15,7 +15,8 @@ export interface Product {
   brand: string;
   price: number;        // in your local currency unit
   currency: string;     // e.g. "USD", "AED", "SAR"
-  image: string;        // URL or /public path
+  image: string;        // primary image (= images[0]); kept for thumbnails/back-compat
+  images: string[];     // full gallery, first entry is the primary
   rating: number;       // 0..5
   inStock: boolean;
   shortDescription: string;

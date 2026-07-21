@@ -43,3 +43,6 @@ ui-debug.log
 # Local preview helpers
 serve_preview.py
 _test_*
+
+# Self-hosted background-removal model (regenerated from node_modules at build)
+public/imgly-data/
