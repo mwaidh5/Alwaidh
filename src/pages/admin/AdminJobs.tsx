@@ -327,21 +327,27 @@ export default function AdminJobs() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {/* Trello-style board: columns keep a readable width and the board
+              scrolls sideways instead of squeezing the cards. */}
+          <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-3">
             {JOB_STATUSES.map((col) => (
-              <Column
+              <div
                 key={col.key}
-                status={col.key}
-                label={col.label}
-                jobs={byStatus[col.key]}
-                onEdit={(j) => {
-                  setError('');
-                  setEditing({ ...j });
-                }}
-                onView={setViewing}
-                onDelete={handleDelete}
-                onPreviewInvoice={previewInvoice}
-              />
+                className="w-[290px] flex-none snap-start 2xl:w-auto 2xl:min-w-[280px] 2xl:flex-1"
+              >
+                <Column
+                  status={col.key}
+                  label={col.label}
+                  jobs={byStatus[col.key]}
+                  onEdit={(j) => {
+                    setError('');
+                    setEditing({ ...j });
+                  }}
+                  onView={setViewing}
+                  onDelete={handleDelete}
+                  onPreviewInvoice={previewInvoice}
+                />
+              </div>
             ))}
           </div>
           <DragOverlay>{activeJob ? <JobCardView job={activeJob} overlay /> : null}</DragOverlay>
@@ -401,7 +407,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition ${
+      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition ${
         isOver ? 'ring-2 ring-brand-300' : ''
       }`}
     >
@@ -529,20 +535,20 @@ function JobCardView({
 
         {(job.address || job.phone) && (
           <div className="mt-2 space-y-0.5 text-xs text-slate-500">
-            {job.address &&
-              (job.mapUrl ? (
-                <a
-                  href={job.mapUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block truncate hover:text-brand-700 hover:underline"
-                  title="Open in Google Maps"
-                >
-                  📍 {job.address}
-                </a>
-              ) : (
-                <p className="truncate">📍 {job.address}</p>
-              ))}
+            {job.address && (
+              <a
+                href={
+                  job.mapUrl ||
+                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="block truncate hover:text-brand-700 hover:underline"
+                title="Open in Google Maps"
+              >
+                📍 {job.address}
+              </a>
+            )}
             {job.phone && <p className="truncate">📞 {job.phone}</p>}
           </div>
         )}
@@ -641,6 +647,12 @@ function JobDetailsModal({
   const statusMeta = JOB_STATUSES.find((s) => s.key === job.status);
   const style = STATUS_STYLES[job.status];
   const waze = wazeFromGoogleMaps(job.mapUrl, job.address);
+  // Old jobs have no saved map link — search Google Maps for the address.
+  const gmaps =
+    job.mapUrl ||
+    (job.address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`
+      : '');
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
@@ -700,11 +712,11 @@ function JobDetailsModal({
             )}
           </dl>
 
-          {(job.mapUrl || waze || job.invoiceUrl) && (
+          {(gmaps || waze || job.invoiceUrl) && (
             <div className="flex flex-wrap gap-2">
-              {job.mapUrl && (
+              {gmaps && (
                 <a
-                  href={job.mapUrl}
+                  href={gmaps}
                   target="_blank"
                   rel="noreferrer"
                   className="btn-secondary inline-flex items-center gap-1.5"
