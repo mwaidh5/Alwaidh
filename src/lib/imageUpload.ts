@@ -44,7 +44,7 @@ function isHeic(file: File): boolean {
  * it — then everything large is resized via canvas. Images that are
  * already an allowed type and small pass through untouched.
  */
-async function normalizeImage(file: File): Promise<File> {
+export async function normalizeImage(file: File): Promise<File> {
   let working: Blob = file;
   let workingType = file.type;
 
@@ -89,11 +89,33 @@ async function normalizeImage(file: File): Promise<File> {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Could not process the image on this device.');
     ctx.drawImage(img, 0, 0, w, h);
+    // JPEG has no transparency — re-encoding a cut-out (or any PNG/WEBP/GIF)
+    // to JPEG would paint its transparent pixels black. Keep those as PNG.
+    const keepAlpha = workingType !== 'image/jpeg';
+    const outType = keepAlpha ? 'image/png' : 'image/jpeg';
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.85),
+      canvas.toBlob(resolve, outType, keepAlpha ? undefined : 0.85),
     );
     if (!blob) throw new Error('Could not convert the image — try a JPG or PNG.');
-    return new File([blob], jpgName(file.name), { type: 'image/jpeg' });
+    // PNG can't trade quality for size, so a very detailed cut-out may still
+    // exceed the upload cap — shrink harder rather than reject it.
+    let finalBlob = blob;
+    if (keepAlpha && finalBlob.size > MAX_BYTES) {
+      const s2 = Math.min(1, 1000 / Math.max(w, h));
+      const c2 = document.createElement('canvas');
+      c2.width = Math.max(1, Math.round(w * s2));
+      c2.height = Math.max(1, Math.round(h * s2));
+      const ctx2 = c2.getContext('2d');
+      if (ctx2) {
+        ctx2.drawImage(img, 0, 0, c2.width, c2.height);
+        const smaller = await new Promise<Blob | null>((resolve) =>
+          c2.toBlob(resolve, 'image/png'),
+        );
+        if (smaller && smaller.size < finalBlob.size) finalBlob = smaller;
+      }
+    }
+    const base = file.name.replace(/\.[^.]+$/, '') || 'photo';
+    return new File([finalBlob], `${base}.${keepAlpha ? 'png' : 'jpg'}`, { type: outType });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
