@@ -24,6 +24,8 @@ export interface Product {
   specs: Record<string, string>;
   datasheet?: string;   // PDF or image URL — shown on the product page
   manual?: string;      // PDF URL — offered as a download only
+  deletedAtMs?: number | null; // set = product is in the Trash
+  deletedBy?: string;   // who moved it to the Trash
 }
 
 export interface CartItem {

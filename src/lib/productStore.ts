@@ -2,7 +2,9 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -11,7 +13,7 @@ import {
   setDoc,
   type Firestore,
 } from 'firebase/firestore';
-import { db, firebaseReady } from '../firebase';
+import { auth, db, firebaseReady } from '../firebase';
 import { products as seedProducts } from '../data/products';
 import type { Product } from '../types/product';
 
@@ -61,21 +63,43 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     specs: (data.specs as Record<string, string>) ?? {},
     datasheet: String(data.datasheet ?? ''),
     manual: String(data.manual ?? ''),
+    deletedAtMs: toMillis(data.deletedAt),
+    deletedBy: String(data.deletedBy ?? ''),
   };
+}
+
+/** Firestore Timestamp (or ms number from the local fallback) → ms epoch. */
+function toMillis(v: unknown): number | null {
+  if (typeof v === 'number') return v;
+  const ts = v as { toMillis?: () => number } | null;
+  return typeof ts?.toMillis === 'function' ? ts.toMillis() : null;
+}
+
+/** Marker doc: proves seeding already happened once, so emptying the
+ *  catalogue (or the Trash) never resurrects the demo products. */
+const SEED_MARKER = '__seeded__';
+
+function isRealProductDoc(id: string): boolean {
+  return id !== SEED_MARKER;
 }
 
 async function seedIfEmpty(database: Firestore | null): Promise<void> {
   if (database) {
     const snap = await getDocs(collection(database, COLLECTION));
+    // Any doc — product, trashed product, or the marker — means the shop
+    // has been set up before: never re-create the demo catalogue.
     if (!snap.empty) return;
-    await Promise.all(
-      seedProducts.map((p) =>
+    const marker = await getDoc(doc(database, COLLECTION, SEED_MARKER));
+    if (marker.exists()) return;
+    await Promise.all([
+      ...seedProducts.map((p) =>
         setDoc(doc(database, COLLECTION, p.id), {
           ...p,
           createdAt: serverTimestamp(),
         }),
       ),
-    );
+      setDoc(doc(database, COLLECTION, SEED_MARKER), { seededAt: serverTimestamp() }),
+    ]);
     return;
   }
   if (!localStorage.getItem(LS_SEEDED)) {
@@ -89,9 +113,15 @@ export async function listProducts(): Promise<Product[]> {
   await seedIfEmpty(database);
   if (database) {
     const snap = await getDocs(query(collection(database, COLLECTION), orderBy('name', 'asc')));
-    return snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id));
+    return snap.docs
+      .filter((d) => isRealProductDoc(d.id))
+      .map((d) => normalize(d.data() as Record<string, unknown>, d.id))
+      .filter((p) => !p.deletedAtMs);
   }
-  return readLocal().slice().sort((a, b) => a.name.localeCompare(b.name));
+  return readLocal()
+    .filter((p) => !p.deletedAtMs)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function subscribeProducts(cb: (list: Product[]) => void): () => void {
@@ -103,7 +133,12 @@ export function subscribeProducts(cb: (list: Product[]) => void): () => void {
     const unsub = onSnapshot(
       query(collection(database, COLLECTION), orderBy('name', 'asc')),
       (snap) => {
-        cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id)));
+        cb(
+          snap.docs
+            .filter((d) => isRealProductDoc(d.id))
+            .map((d) => normalize(d.data() as Record<string, unknown>, d.id))
+            .filter((p) => !p.deletedAtMs),
+        );
       },
       (err) => {
         console.error('Products subscription failed; falling back to empty list:', err);
@@ -115,6 +150,33 @@ export function subscribeProducts(cb: (list: Product[]) => void): () => void {
   listProducts().then(cb);
   const handler = (e: StorageEvent) => {
     if (e.key === LS_KEY) listProducts().then(cb);
+  };
+  window.addEventListener('storage', handler);
+  return () => window.removeEventListener('storage', handler);
+}
+
+/** Live list of products in the Trash (soft-deleted), newest first. */
+export function subscribeDeletedProducts(cb: (list: Product[]) => void): () => void {
+  const database = db;
+  if (database) {
+    return onSnapshot(
+      collection(database, COLLECTION),
+      (snap) => {
+        cb(
+          snap.docs
+            .filter((d) => isRealProductDoc(d.id))
+            .map((d) => normalize(d.data() as Record<string, unknown>, d.id))
+            .filter((p) => Boolean(p.deletedAtMs))
+            .sort((a, b) => (b.deletedAtMs ?? 0) - (a.deletedAtMs ?? 0)),
+        );
+      },
+      () => cb([]),
+    );
+  }
+  const emit = () => cb(readLocal().filter((p) => Boolean(p.deletedAtMs)));
+  emit();
+  const handler = (e: StorageEvent) => {
+    if (e.key === LS_KEY) emit();
   };
   window.addEventListener('storage', handler);
   return () => window.removeEventListener('storage', handler);
@@ -160,29 +222,51 @@ export async function createProduct(input: Omit<Product, 'id'>): Promise<string>
   return id;
 }
 
+/** Move a product to the Trash (recoverable — see restoreProduct). */
 export async function deleteProduct(id: string): Promise<void> {
   const database = db;
   if (database) {
+    await setDoc(
+      doc(database, COLLECTION, id),
+      { deletedAt: serverTimestamp(), deletedBy: auth?.currentUser?.email ?? '' },
+      { merge: true },
+    );
+    return;
+  }
+  writeLocal(
+    readLocal().map((p) => (p.id === id ? { ...p, deletedAtMs: Date.now() } : p)),
+  );
+  triggerLocalChange();
+}
+
+/** Bring a product back from the Trash. */
+export async function restoreProduct(id: string): Promise<void> {
+  const database = db;
+  if (database) {
+    await setDoc(
+      doc(database, COLLECTION, id),
+      { deletedAt: deleteField(), deletedBy: deleteField() },
+      { merge: true },
+    );
+    return;
+  }
+  writeLocal(
+    readLocal().map((p) => (p.id === id ? { ...p, deletedAtMs: null, deletedBy: '' } : p)),
+  );
+  triggerLocalChange();
+}
+
+/** Permanently delete a product (from the Trash). Cannot be undone. */
+export async function destroyProduct(id: string): Promise<void> {
+  const database = db;
+  if (database) {
+    // Ensure the seed marker exists first, so emptying the whole catalogue
+    // can never trigger the demo products to come back.
+    await setDoc(doc(database, COLLECTION, SEED_MARKER), { seededAt: serverTimestamp() }, { merge: true });
     await deleteDoc(doc(database, COLLECTION, id));
     return;
   }
   writeLocal(readLocal().filter((p) => p.id !== id));
-  triggerLocalChange();
-}
-
-export async function resetProductsToSeed(): Promise<void> {
-  const database = db;
-  if (database) {
-    const snap = await getDocs(collection(database, COLLECTION));
-    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    await Promise.all(
-      seedProducts.map((p) =>
-        setDoc(doc(database, COLLECTION, p.id), { ...p, createdAt: serverTimestamp() }),
-      ),
-    );
-    return;
-  }
-  writeLocal(seedProducts);
   localStorage.setItem(LS_SEEDED, '1');
   triggerLocalChange();
 }

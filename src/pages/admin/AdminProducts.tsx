@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   createProduct,
   deleteProduct,
-  resetProductsToSeed,
+  destroyProduct,
+  restoreProduct,
+  subscribeDeletedProducts,
   subscribeProducts,
   upsertProduct,
 } from '../../lib/productStore';
@@ -54,8 +56,15 @@ export default function AdminProducts() {
   );
   const categoryOptions = categories.filter((c) => allowedCategories.includes(c.slug));
 
+  const [trashed, setTrashed] = useState<Product[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+
   useEffect(() => {
     return subscribeProducts((list) => setProducts(list));
+  }, []);
+
+  useEffect(() => {
+    return subscribeDeletedProducts(setTrashed);
   }, []);
 
   function toggleSelect(id: string) {
@@ -100,7 +109,7 @@ export default function AdminProducts() {
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} selected product(s)? This cannot be undone.`)) return;
+    if (!confirm(`Move ${selected.size} selected product(s) to the Trash? You can restore them later.`)) return;
     setError('');
     setBusy(true);
     try {
@@ -184,7 +193,7 @@ export default function AdminProducts() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this product?')) return;
+    if (!confirm('Move this product to the Trash? You can restore it later.')) return;
     try {
       await deleteProduct(id);
     } catch (e) {
@@ -192,15 +201,20 @@ export default function AdminProducts() {
     }
   }
 
-  async function handleReset() {
-    if (!confirm('Reset all products back to the built-in seed catalogue? This deletes any custom products.')) return;
-    setBusy(true);
+  async function handleRestore(id: string) {
     try {
-      await resetProductsToSeed();
+      await restoreProduct(id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Reset failed.');
-    } finally {
-      setBusy(false);
+      setError(e instanceof Error ? e.message : 'Restore failed.');
+    }
+  }
+
+  async function handleDestroy(p: Product) {
+    if (!confirm(`Permanently delete "${p.name}"? This CANNOT be undone.`)) return;
+    try {
+      await destroyProduct(p.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed.');
     }
   }
 
@@ -214,17 +228,22 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isAdmin && (
-            <button type="button" onClick={handleReset} disabled={busy} className="btn-secondary">
-              Reset to seed
+          <button
+            type="button"
+            onClick={() => setShowTrash((v) => !v)}
+            className={showTrash ? 'btn-primary' : 'btn-secondary'}
+          >
+            {showTrash ? '← Back to products' : `🗑️ Trash (${trashed.length})`}
+          </button>
+          {!showTrash && (
+            <button type="button" onClick={startCreate} className="btn-primary">
+              + Add product
             </button>
           )}
-          <button type="button" onClick={startCreate} className="btn-primary">
-            + Add product
-          </button>
         </div>
       </header>
 
+      {!showTrash && (
       <div className="card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -248,8 +267,9 @@ export default function AdminProducts() {
           </select>
         </div>
       </div>
+      )}
 
-      {selected.size > 0 && (
+      {!showTrash && selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm">
           <span className="font-semibold text-brand-800">{selected.size} selected</span>
           <span className="text-slate-400">·</span>
@@ -331,7 +351,9 @@ export default function AdminProducts() {
         </p>
       )}
 
-      {products === null ? (
+      {showTrash ? (
+        <TrashList trashed={trashed} onRestore={handleRestore} onDestroy={handleDestroy} />
+      ) : products === null ? (
         <p className="text-center text-sm text-slate-500">Loading…</p>
       ) : filtered.length === 0 ? (
         <p className="card p-10 text-center text-sm text-slate-500">No products match.</p>
@@ -880,6 +902,68 @@ function ProductDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TrashList({
+  trashed,
+  onRestore,
+  onDestroy,
+}: {
+  trashed: Product[];
+  onRestore: (id: string) => void;
+  onDestroy: (p: Product) => void;
+}) {
+  if (trashed.length === 0) {
+    return (
+      <div className="card p-10 text-center text-sm text-slate-500">
+        <p className="text-2xl">🗑️</p>
+        <p className="mt-2">The Trash is empty.</p>
+        <p className="mt-1 text-xs">Deleted products land here and can be restored anytime.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-500">
+        Deleted products stay here until you restore them or delete them forever.
+      </p>
+      {trashed.map((p) => (
+        <div key={p.id} className="card flex flex-wrap items-center gap-3 p-3">
+          {p.image ? (
+            <img src={p.image} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover opacity-60" />
+          ) : (
+            <div className="h-12 w-12 shrink-0 rounded-md bg-slate-100" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-slate-700">{p.name}</p>
+            <p className="text-xs text-slate-500">
+              {p.brand && `${p.brand} · `}
+              {formatPrice(p.price, p.currency)}
+              {p.deletedAtMs &&
+                ` · deleted ${new Date(p.deletedAtMs).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}`}
+              {p.deletedBy && ` by ${p.deletedBy.split('@')[0]}`}
+            </p>
+          </div>
+          <div className="flex flex-none gap-2">
+            <button type="button" onClick={() => onRestore(p.id)} className="btn-secondary py-1.5">
+              ↩️ Restore
+            </button>
+            <button
+              type="button"
+              onClick={() => onDestroy(p)}
+              className="rounded-lg border border-red-300 bg-white px-4 py-1.5 font-semibold text-red-700 hover:bg-red-50"
+            >
+              Delete forever
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
