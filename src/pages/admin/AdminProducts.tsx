@@ -28,7 +28,6 @@ const EMPTY_FORM: FormState = {
   rating: 0,
   inStock: true,
   shortDescription: '',
-  description: '',
   specsText: '',
   datasheet: '',
   manual: '',
@@ -173,7 +172,6 @@ export default function AdminProducts() {
         rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
         inStock: editing.inStock,
         shortDescription: editing.shortDescription.trim(),
-        description: editing.description.trim(),
         specs,
         datasheet: (editing.datasheet ?? '').trim(),
         manual: (editing.manual ?? '').trim(),
@@ -882,13 +880,6 @@ function ProductDialog({
               className="input"
               value={state.shortDescription}
               onChange={(e) => setState({ ...state, shortDescription: e.target.value })}
-            />
-          </Field>
-          <Field label="Description" full>
-            <textarea
-              className="input min-h-[100px]"
-              value={state.description}
-              onChange={(e) => setState({ ...state, description: e.target.value })}
             />
           </Field>
           <Field label="Specs (one per line, key: value)" full>
