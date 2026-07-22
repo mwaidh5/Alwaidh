@@ -10,7 +10,12 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
+
+/** Email of the signed-in staff member (audit trail). */
+function currentEmail(): string {
+  return auth?.currentUser?.email ?? '';
+}
 
 export type JobStatus = 'new' | 'scheduled' | 'in_progress' | 'done' | 'cancelled';
 export type JobType = 'install' | 'repair';
@@ -28,6 +33,10 @@ export interface Job {
   invoiceName: string; // original filename of the invoice
   status: JobStatus;
   order: number; // position within its column
+  createdBy: string; // email of who added the job
+  createdAtMs: number | null; // when it was added (ms epoch)
+  updatedBy: string; // email of the last person who changed it
+  updatedAtMs: number | null; // when it was last changed (ms epoch)
 }
 
 export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
@@ -77,7 +86,18 @@ function normalize(data: Record<string, unknown>, id: string): Job {
       ? data.status
       : 'new') as JobStatus,
     order: Number(data.order ?? 0),
+    createdBy: String(data.createdBy ?? ''),
+    createdAtMs: toMillis(data.createdAt),
+    updatedBy: String(data.updatedBy ?? ''),
+    updatedAtMs: toMillis(data.updatedAt),
   };
+}
+
+/** Firestore Timestamp (or ms number from the local fallback) → ms epoch. */
+function toMillis(v: unknown): number | null {
+  if (typeof v === 'number') return v;
+  const ts = v as { toMillis?: () => number } | null;
+  return typeof ts?.toMillis === 'function' ? ts.toMillis() : null;
 }
 
 export function subscribeJobs(
@@ -103,27 +123,49 @@ export function subscribeJobs(
   return () => window.removeEventListener('storage', handler);
 }
 
-export async function createJob(input: Omit<Job, 'id'>): Promise<void> {
+/** Fields the store stamps itself — callers never provide them. */
+type JobInput = Omit<Job, 'id' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'>;
+
+export async function createJob(input: JobInput): Promise<void> {
   const database = db;
   if (database) {
-    await addDoc(collection(database, COLLECTION), { ...input, createdAt: serverTimestamp() });
+    await addDoc(collection(database, COLLECTION), {
+      ...input,
+      createdAt: serverTimestamp(),
+      createdBy: currentEmail(),
+    });
     return;
   }
   const list = readLocal();
-  list.push({ ...input, id: `local-${Date.now()}` });
+  list.push({
+    ...input,
+    id: `local-${Date.now()}`,
+    createdBy: currentEmail(),
+    createdAtMs: Date.now(),
+    updatedBy: '',
+    updatedAtMs: null,
+  });
   writeLocal(list);
 }
 
 export async function upsertJob(job: Job): Promise<void> {
   const database = db;
   if (database) {
-    await setDoc(doc(database, COLLECTION, job.id), { ...job, updatedAt: serverTimestamp() });
+    // Never write the audit fields from the client copy: merge keeps the
+    // original createdAt/createdBy intact and we re-stamp the "updated" pair.
+    const { id, createdBy, createdAtMs, updatedBy, updatedAtMs, ...rest } = job;
+    await setDoc(
+      doc(database, COLLECTION, id),
+      { ...rest, updatedAt: serverTimestamp(), updatedBy: currentEmail() },
+      { merge: true },
+    );
     return;
   }
   const list = readLocal();
   const idx = list.findIndex((j) => j.id === job.id);
-  if (idx >= 0) list[idx] = job;
-  else list.push(job);
+  const stamped = { ...job, updatedBy: currentEmail(), updatedAtMs: Date.now() };
+  if (idx >= 0) list[idx] = stamped;
+  else list.push(stamped);
   writeLocal(list);
 }
 
@@ -131,7 +173,12 @@ export async function upsertJob(job: Job): Promise<void> {
 export async function setJobStatus(id: string, status: JobStatus, order: number): Promise<void> {
   const database = db;
   if (database) {
-    await updateDoc(doc(database, COLLECTION, id), { status, order, updatedAt: serverTimestamp() });
+    await updateDoc(doc(database, COLLECTION, id), {
+      status,
+      order,
+      updatedAt: serverTimestamp(),
+      updatedBy: currentEmail(),
+    });
     return;
   }
   const list = readLocal();
