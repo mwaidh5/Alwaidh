@@ -59,7 +59,6 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),
-    description: String(data.description ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
     datasheet: String(data.datasheet ?? ''),
     manual: String(data.manual ?? ''),

@@ -99,7 +99,7 @@ export default function ProductDetail() {
             </span>
           </div>
 
-          <p className="mt-5 text-slate-700">{product.description}</p>
+          <p className="mt-5 text-slate-700">{product.shortDescription}</p>
 
           <div className="mt-6 flex items-center gap-3">
             <div className="inline-flex items-center rounded-lg border border-slate-300">

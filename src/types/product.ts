@@ -20,7 +20,6 @@ export interface Product {
   rating: number;       // 0..5
   inStock: boolean;
   shortDescription: string;
-  description: string;
   specs: Record<string, string>;
   datasheet?: string;   // PDF or image URL — shown on the product page
   manual?: string;      // PDF URL — offered as a download only
