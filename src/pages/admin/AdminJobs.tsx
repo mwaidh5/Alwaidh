@@ -41,7 +41,25 @@ const EMPTY: FormState = {
   invoiceName: '',
   status: 'new',
   order: 0,
+  createdBy: '',
+  createdAtMs: null,
+  updatedBy: '',
+  updatedAtMs: null,
 };
+
+/** "mahmood" from "mahmood@gmail.com" — compact name for the cards. */
+function shortWho(email: string): string {
+  return email.split('@')[0] || email;
+}
+
+function fmtWhen(ms: number | null): string {
+  if (!ms) return '';
+  return new Date(ms).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 const STATUS_STYLES: Record<
   JobStatus,
@@ -188,7 +206,7 @@ export default function AdminJobs() {
         order: editing.order || Date.now(),
       };
       if (!payload.customer) throw new Error('Customer name is required.');
-      if (editing.id) await upsertJob({ id: editing.id, ...payload });
+      if (editing.id) await upsertJob({ ...editing, ...payload });
       else await createJob(payload);
       setEditing(null);
     } catch (e) {
@@ -544,6 +562,18 @@ function JobCardView({
             )}
           </div>
         </div>
+
+        {(job.createdBy || job.createdAtMs) && (
+          <p
+            className="mt-1.5 truncate text-[10px] text-slate-400"
+            title={`Added by ${job.createdBy || 'unknown'}${
+              job.createdAtMs ? ` on ${fmtWhen(job.createdAtMs)}` : ''
+            }`}
+          >
+            ➕ {job.createdBy ? shortWho(job.createdBy) : 'unknown'}
+            {job.createdAtMs ? ` · ${fmtWhen(job.createdAtMs)}` : ''}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -574,6 +604,22 @@ function JobDialog({
           </button>
         </div>
         <div className="space-y-4 p-5">
+          {state.id && (state.createdBy || state.createdAtMs || state.updatedBy) && (
+            <div className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              {(state.createdBy || state.createdAtMs) && (
+                <p>
+                  ➕ Added by <span className="font-semibold">{state.createdBy || 'unknown'}</span>
+                  {state.createdAtMs ? ` on ${fmtWhen(state.createdAtMs)}` : ''}
+                </p>
+              )}
+              {state.updatedBy && (
+                <p className="mt-0.5">
+                  ✏️ Last edited by <span className="font-semibold">{state.updatedBy}</span>
+                  {state.updatedAtMs ? ` on ${fmtWhen(state.updatedAtMs)}` : ''}
+                </p>
+              )}
+            </div>
+          )}
           <Field label="Customer name">
             <input
               className="input"
