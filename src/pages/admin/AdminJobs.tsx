@@ -20,6 +20,7 @@ import {
   setJobStatus,
   subscribeJobs,
   upsertJob,
+  wazeFromGoogleMaps,
   type Job,
   type JobStatus,
   type JobType,
@@ -33,6 +34,7 @@ const EMPTY: FormState = {
   customer: '',
   phone: '',
   address: '',
+  mapUrl: '',
   type: 'install',
   system: '',
   installer: '',
@@ -100,6 +102,7 @@ const STATUS_STYLES: Record<
 export default function AdminJobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
+  const [viewing, setViewing] = useState<Job | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -196,6 +199,7 @@ export default function AdminJobs() {
         customer: editing.customer.trim(),
         phone: editing.phone.trim(),
         address: editing.address.trim(),
+        mapUrl: editing.mapUrl.trim(),
         type: editing.type,
         system: editing.system.trim(),
         installer: editing.installer.trim(),
@@ -334,6 +338,7 @@ export default function AdminJobs() {
                   setError('');
                   setEditing({ ...j });
                 }}
+                onView={setViewing}
                 onDelete={handleDelete}
                 onPreviewInvoice={previewInvoice}
               />
@@ -354,6 +359,19 @@ export default function AdminJobs() {
         />
       )}
 
+      {viewing && (
+        <JobDetailsModal
+          job={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setError('');
+            setEditing({ ...viewing });
+            setViewing(null);
+          }}
+          onPreviewInvoice={previewInvoice}
+        />
+      )}
+
       {invoicePreview && (
         <PdfPreviewModal url={invoicePreview} onClose={() => setInvoicePreview(null)} />
       )}
@@ -366,6 +384,7 @@ function Column({
   label,
   jobs,
   onEdit,
+  onView,
   onDelete,
   onPreviewInvoice,
 }: {
@@ -373,6 +392,7 @@ function Column({
   label: string;
   jobs: Job[];
   onEdit: (j: Job) => void;
+  onView: (j: Job) => void;
   onDelete: (j: Job) => void;
   onPreviewInvoice: (url: string) => void;
 }) {
@@ -405,6 +425,7 @@ function Column({
             key={j.id}
             job={j}
             onEdit={() => onEdit(j)}
+            onView={() => onView(j)}
             onDelete={() => onDelete(j)}
             onPreviewInvoice={onPreviewInvoice}
           />
@@ -423,11 +444,13 @@ function Column({
 function JobCard({
   job,
   onEdit,
+  onView,
   onDelete,
   onPreviewInvoice,
 }: {
   job: Job;
   onEdit: () => void;
+  onView: () => void;
   onDelete: () => void;
   onPreviewInvoice: (url: string) => void;
 }) {
@@ -442,6 +465,7 @@ function JobCard({
         dragListeners={listeners}
         dragAttributes={attributes}
         onEdit={onEdit}
+        onView={onView}
         onDelete={onDelete}
         onPreviewInvoice={onPreviewInvoice}
       />
@@ -454,6 +478,7 @@ function JobCardView({
   dragListeners,
   dragAttributes,
   onEdit,
+  onView,
   onDelete,
   onPreviewInvoice,
   overlay,
@@ -462,6 +487,7 @@ function JobCardView({
   dragListeners?: DraggableSyntheticListeners;
   dragAttributes?: DraggableAttributes;
   onEdit?: () => void;
+  onView?: () => void;
   onDelete?: () => void;
   onPreviewInvoice?: (url: string) => void;
   overlay?: boolean;
@@ -503,7 +529,20 @@ function JobCardView({
 
         {(job.address || job.phone) && (
           <div className="mt-2 space-y-0.5 text-xs text-slate-500">
-            {job.address && <p className="truncate">📍 {job.address}</p>}
+            {job.address &&
+              (job.mapUrl ? (
+                <a
+                  href={job.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block truncate hover:text-brand-700 hover:underline"
+                  title="Open in Google Maps"
+                >
+                  📍 {job.address}
+                </a>
+              ) : (
+                <p className="truncate">📍 {job.address}</p>
+              ))}
             {job.phone && <p className="truncate">📞 {job.phone}</p>}
           </div>
         )}
@@ -544,6 +583,14 @@ function JobCardView({
               <>
                 <button
                   type="button"
+                  onClick={onView}
+                  title="View all details"
+                  className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
+                >
+                  👁️
+                </button>
+                <button
+                  type="button"
                   onClick={onEdit}
                   title="Edit job"
                   className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
@@ -575,6 +622,136 @@ function JobCardView({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function JobDetailsModal({
+  job,
+  onClose,
+  onEdit,
+  onPreviewInvoice,
+}: {
+  job: Job;
+  onClose: () => void;
+  onEdit: () => void;
+  onPreviewInvoice: (url: string) => void;
+}) {
+  const isRepair = job.type === 'repair';
+  const statusMeta = JOB_STATUSES.find((s) => s.key === job.status);
+  const style = STATUS_STYLES[job.status];
+  const waze = wazeFromGoogleMaps(job.mapUrl, job.address);
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <div
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
+          <h2 className="font-bold text-slate-900">Job details</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </div>
+        <div className="space-y-4 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${
+                isRepair ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
+              }`}
+            >
+              {isRepair ? '🔧 Repair' : '⚡ Install'}
+            </span>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style.badge}`}>
+              {statusMeta?.label ?? job.status}
+            </span>
+          </div>
+
+          <div>
+            <p className="text-lg font-extrabold text-slate-900">{job.customer || 'Unnamed'}</p>
+            {job.system && <p className="text-sm text-slate-600">{job.system}</p>}
+          </div>
+
+          <dl className="divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
+            <DetailRow label="Phone">
+              {job.phone ? (
+                <a href={`tel:${job.phone}`} className="font-semibold text-brand-700 hover:underline">
+                  {job.phone}
+                </a>
+              ) : (
+                '—'
+              )}
+            </DetailRow>
+            <DetailRow label="Address">{job.address || '—'}</DetailRow>
+            <DetailRow label="Installer">{job.installer || 'Unassigned'}</DetailRow>
+            <DetailRow label="Notes">
+              {job.notes ? <span className="whitespace-pre-wrap">{job.notes}</span> : '—'}
+            </DetailRow>
+            <DetailRow label="Added">
+              {job.createdBy || job.createdAtMs
+                ? `${job.createdBy || 'unknown'}${job.createdAtMs ? ` · ${fmtWhen(job.createdAtMs)}` : ''}`
+                : '—'}
+            </DetailRow>
+            {job.updatedBy && (
+              <DetailRow label="Last edited">
+                {job.updatedBy}
+                {job.updatedAtMs ? ` · ${fmtWhen(job.updatedAtMs)}` : ''}
+              </DetailRow>
+            )}
+          </dl>
+
+          {(job.mapUrl || waze || job.invoiceUrl) && (
+            <div className="flex flex-wrap gap-2">
+              {job.mapUrl && (
+                <a
+                  href={job.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-secondary inline-flex items-center gap-1.5"
+                >
+                  🗺️ Google Maps
+                </a>
+              )}
+              {waze && (
+                <a
+                  href={waze}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-secondary inline-flex items-center gap-1.5"
+                >
+                  🚗 Waze
+                </a>
+              )}
+              {job.invoiceUrl && (
+                <button
+                  type="button"
+                  onClick={() => onPreviewInvoice(job.invoiceUrl)}
+                  className="btn-secondary inline-flex items-center gap-1.5"
+                >
+                  📄 Invoice
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
+          <button type="button" onClick={onClose} className="btn-secondary">
+            Close
+          </button>
+          <button type="button" onClick={onEdit} className="btn-primary">
+            Edit job
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-3 gap-3 px-4 py-2.5">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="col-span-2 text-slate-900">{children}</dd>
     </div>
   );
 }
@@ -652,6 +829,24 @@ function JobDialog({
               value={state.address}
               onChange={(e) => setState({ ...state, address: e.target.value })}
             />
+          </Field>
+          <Field label="Map link (Google Maps)">
+            <input
+              className="input"
+              value={state.mapUrl}
+              onChange={(e) => setState({ ...state, mapUrl: e.target.value })}
+              placeholder="Paste a Google Maps link — Waze link is made automatically"
+            />
+            {state.mapUrl.trim() &&
+              (wazeFromGoogleMaps(state.mapUrl, state.address) ? (
+                <p className="mt-1 text-xs font-medium text-green-700">
+                  ✅ Waze link will be created automatically from this
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-amber-700">
+                  Couldn't read a location from this link — the Waze button will be hidden
+                </p>
+              ))}
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="System / details">
