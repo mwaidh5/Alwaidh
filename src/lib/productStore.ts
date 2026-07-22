@@ -59,6 +59,8 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     shortDescription: String(data.shortDescription ?? ''),
     description: String(data.description ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
+    datasheet: String(data.datasheet ?? ''),
+    manual: String(data.manual ?? ''),
   };
 }
 

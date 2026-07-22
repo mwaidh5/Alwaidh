@@ -22,6 +22,8 @@ export interface Product {
   shortDescription: string;
   description: string;
   specs: Record<string, string>;
+  datasheet?: string;   // PDF or image URL — shown on the product page
+  manual?: string;      // PDF URL — offered as a download only
 }
 
 export interface CartItem {

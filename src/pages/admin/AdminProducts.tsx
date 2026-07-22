@@ -6,7 +6,7 @@ import {
   subscribeProducts,
   upsertProduct,
 } from '../../lib/productStore';
-import { uploadProductImage } from '../../lib/imageUpload';
+import { uploadProductDoc, uploadProductImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +28,8 @@ const EMPTY_FORM: FormState = {
   shortDescription: '',
   description: '',
   specsText: '',
+  datasheet: '',
+  manual: '',
 };
 
 export default function AdminProducts() {
@@ -164,6 +166,8 @@ export default function AdminProducts() {
         shortDescription: editing.shortDescription.trim(),
         description: editing.description.trim(),
         specs,
+        datasheet: (editing.datasheet ?? '').trim(),
+        manual: (editing.manual ?? '').trim(),
       };
       if (!payload.name) throw new Error('Name is required.');
       if (isNew) {
@@ -517,6 +521,8 @@ function ProductDialog({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [removingBg, setRemovingBg] = useState(false);
+  const [docBusy, setDocBusy] = useState<'datasheet' | 'manual' | null>(null);
+  const [docError, setDocError] = useState('');
   // Bytes of images uploaded in this dialog, keyed by their URL — lets
   // "Remove background" work on them without re-downloading (no CORS,
   // no network, no cache surprises).
@@ -594,6 +600,21 @@ function ProductDialog({
           ? `SOURCE_UNREADABLE: Could not read this image from Storage even though it displays fine (${raw}). A firewall, antivirus, or proxy on this network may be blocking downloads — try another browser or network, or re-upload the photo and run Remove background straight away.`
           : 'SOURCE_UNREADABLE: This image comes from another website that does not allow downloading it. Save the photo to your device and upload it here instead.',
       );
+    }
+  }
+
+  async function handleDocUpload(kind: 'datasheet' | 'manual', file: File) {
+    setDocError('');
+    setDocBusy(kind);
+    try {
+      // Datasheets may be a PDF or an image (it gets shown on the page);
+      // manuals are download-only, so PDF it is.
+      const { url } = await uploadProductDoc(file, state.id || undefined, kind === 'datasheet');
+      setState({ ...state, [kind]: url });
+    } catch (e) {
+      setDocError(e instanceof Error ? e.message : 'Upload failed.');
+    } finally {
+      setDocBusy(null);
     }
   }
 
@@ -804,6 +825,29 @@ function ProductDialog({
               </p>
             </div>
           </Field>
+          <Field label="Datasheet (optional — shown on the product page)" full>
+            <DocPicker
+              kind="datasheet"
+              value={state.datasheet ?? ''}
+              accept="application/pdf,image/*"
+              hint="PDF or image · shown below the product for customers"
+              busy={docBusy}
+              onPick={(f) => handleDocUpload('datasheet', f)}
+              onClear={() => setState({ ...state, datasheet: '' })}
+            />
+          </Field>
+          <Field label="Manual (optional — download only)" full>
+            <DocPicker
+              kind="manual"
+              value={state.manual ?? ''}
+              accept="application/pdf"
+              hint="PDF · customers get a download button"
+              busy={docBusy}
+              onPick={(f) => handleDocUpload('manual', f)}
+              onClear={() => setState({ ...state, manual: '' })}
+            />
+            {docError && <p className="mt-1 text-xs text-red-700">{docError}</p>}
+          </Field>
           <Field label="Short description" full>
             <input
               className="input"
@@ -836,6 +880,64 @@ function ProductDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DocPicker({
+  kind,
+  value,
+  accept,
+  hint,
+  busy,
+  onPick,
+  onClear,
+}: {
+  kind: 'datasheet' | 'manual';
+  value: string;
+  accept: string;
+  hint: string;
+  busy: 'datasheet' | 'manual' | null;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className={`btn-secondary cursor-pointer ${busy ? 'pointer-events-none opacity-60' : ''}`}>
+          {busy === kind ? 'Uploading…' : value ? 'Replace file' : 'Upload file'}
+          <input
+            type="file"
+            accept={accept}
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        {value && (
+          <>
+            <a
+              href={value}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold text-brand-700 hover:underline"
+            >
+              View ↗
+            </a>
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-sm font-semibold text-red-700 hover:underline"
+            >
+              Remove
+            </button>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-slate-500">{hint}</p>
     </div>
   );
 }

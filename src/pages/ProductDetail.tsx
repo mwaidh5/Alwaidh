@@ -142,8 +142,57 @@ export default function ProductDetail() {
               ))}
             </dl>
           </div>
+
+          {product.manual && (
+            <div className="mt-6">
+              <a
+                href={product.manual}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                📄 Download manual (PDF)
+              </a>
+            </div>
+          )}
         </div>
       </div>
+
+      {product.datasheet && <DatasheetSection url={product.datasheet} />}
     </div>
   );
+}
+
+function DatasheetSection({ url }: { url: string }) {
+  const isPdf = /\.pdf(\?|$)/i.test(safeDecode(url));
+  return (
+    <section className="mt-12">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-slate-900">Datasheet</h2>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm font-semibold text-brand-700 hover:underline"
+        >
+          Open in new tab ↗
+        </a>
+      </div>
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+        {isPdf ? (
+          <iframe src={url} title="Product datasheet" className="h-[75vh] w-full" />
+        ) : (
+          <img src={url} alt="Product datasheet" className="w-full" loading="lazy" />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function safeDecode(u: string): string {
+  try {
+    return decodeURIComponent(u);
+  } catch {
+    return u;
+  }
 }

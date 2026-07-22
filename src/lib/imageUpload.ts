@@ -159,6 +159,39 @@ export async function uploadProductImage(
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
+/** Upload a product document (datasheet or manual). PDFs always allowed;
+ *  images too when `allowImages` is set (datasheets are often JPG scans). */
+export async function uploadProductDoc(
+  file: File,
+  productId: string | undefined,
+  allowImages: boolean,
+): Promise<UploadResult> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not configured. Add VITE_FIREBASE_* values to your .env.');
+  }
+  const isPdf = file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+  if (!isPdf && !(allowImages && isImage)) {
+    throw new Error(allowImages ? 'Please choose a PDF or an image.' : 'Please choose a PDF file.');
+  }
+  // Images go through the usual compressor; PDFs upload as-is.
+  const folder = productId ? `products/${productId}` : `products/_drafts/${crypto.randomUUID()}`;
+  if (isImage) return uploadImage(file, folder);
+  if (file.size > MAX_PDF_BYTES) {
+    throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+  }
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80);
+  const path = `${folder}/${Date.now()}-${safe}`;
+  const objectRef = ref(storage, path);
+  try {
+    await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+    const url = await getDownloadURL(objectRef);
+    return { url, path };
+  } catch (e) {
+    throw friendlyUploadError(e);
+  }
+}
+
 /** Upload a PDF invoice for a job. */
 export async function uploadInvoice(file: File, jobId?: string): Promise<UploadResult> {
   if (!storage) {
