@@ -25,6 +25,7 @@ export interface Job {
   customer: string;
   phone: string;
   address: string;
+  mapUrl: string; // Google Maps link pasted by staff; Waze link is derived
   type: JobType;
   system: string; // e.g. "6 kW rooftop system"
   installer: string; // technician assigned to the job
@@ -76,6 +77,7 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     customer: String(data.customer ?? ''),
     phone: String(data.phone ?? ''),
     address: String(data.address ?? ''),
+    mapUrl: String(data.mapUrl ?? ''),
     type: (data.type as JobType) === 'repair' ? 'repair' : 'install',
     system: String(data.system ?? ''),
     installer: String(data.installer ?? ''),
@@ -91,6 +93,35 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     updatedBy: String(data.updatedBy ?? ''),
     updatedAtMs: toMillis(data.updatedAt),
   };
+}
+
+/**
+ * Build a Waze navigation link from a pasted Google Maps link.
+ * Tries the precise pin (!3d…!4d…), then the ?q=lat,lng form, then the
+ * @lat,lng viewport; if the link hides its coordinates (e.g. maps.app.goo.gl
+ * short links), falls back to a Waze search for the place name or address.
+ * Returns '' when there is nothing usable.
+ */
+export function wazeFromGoogleMaps(mapUrl: string, addressFallback = ''): string {
+  const url = mapUrl.trim();
+  if (!url) return '';
+  let decoded = url;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    /* keep raw */
+  }
+  const pin = /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/.exec(decoded);
+  const q = /[?&]q=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/.exec(decoded);
+  const at = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(decoded);
+  const coords = pin ?? q ?? at;
+  if (coords) {
+    return `https://www.waze.com/ul?ll=${coords[1]},${coords[2]}&navigate=yes`;
+  }
+  const place = /\/maps\/place\/([^/@?]+)/.exec(decoded);
+  const query = place ? place[1].replace(/\+/g, ' ') : addressFallback.trim();
+  if (query) return `https://www.waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
+  return '';
 }
 
 /** Firestore Timestamp (or ms number from the local fallback) → ms epoch. */
