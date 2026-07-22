@@ -661,11 +661,18 @@ function ProductDialog({
       setState({ ...state, images: [url, ...state.images.slice(1)] });
     } catch (e) {
       const raw = e instanceof Error ? e.message : 'Background removal failed.';
+      // A missing lazy chunk means the site was redeployed while this page
+      // was open — reload to pick up the new build, then the user retries.
+      if (/dynamically imported module|importing a module script/i.test(raw)) {
+        setUploadError('The app was just updated — reloading the page to finish the update…');
+        window.setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
       setUploadError(
         // Reading the source image failed — never report this as a model problem.
         raw.startsWith('SOURCE_UNREADABLE:')
           ? raw.slice('SOURCE_UNREADABLE:'.length).trim()
-          : /load failed|failed to fetch|network|fetching of the wasm|dynamically imported module/i.test(raw)
+          : /load failed|failed to fetch|network|fetching of the wasm/i.test(raw)
             ? 'Background removal could not load its AI model. Check your internet connection and try again — a computer with a stable connection works best.'
             : /memory|aborted/i.test(raw)
               ? 'This device ran out of memory running the AI. Try on a computer instead.'
