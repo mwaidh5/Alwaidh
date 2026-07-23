@@ -94,7 +94,7 @@ export default function Navbar() {
           </button>
           <Link to="/" className="flex min-w-0 items-center gap-2 font-extrabold text-brand-700">
             {settings.logoImage ? (
-              <img src={settings.logoImage} alt={settings.storeName || 'Alwaidh'} className="h-9 w-auto" />
+              <img src={settings.logoImage} alt={settings.storeName || 'Alwaidh'} className="h-12 w-auto" />
             ) : (
               <>
                 <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-brand-600 text-white">A</span>
