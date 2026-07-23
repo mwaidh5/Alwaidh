@@ -1,13 +1,28 @@
 import { Link } from 'react-router-dom';
+import { useSettings } from '../lib/useSettings';
 
 export default function Footer() {
+  // Same logo as the navbar — changing it in Settings updates both.
+  const settings = useSettings();
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="container-page grid gap-8 py-10 sm:grid-cols-2 md:grid-cols-4">
         <div>
           <div className="flex items-center gap-2 font-extrabold text-brand-700">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">A</span>
-            <span>Alwaidh</span>
+            {settings.logoImage ? (
+              <img
+                src={settings.logoImage}
+                alt={settings.storeName || 'Alwaidh'}
+                className="h-12 w-auto"
+              />
+            ) : (
+              <>
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">
+                  A
+                </span>
+                <span>{settings.storeName || 'Alwaidh'}</span>
+              </>
+            )}
           </div>
           <p className="mt-3 text-sm text-slate-600">
             Computers, solar energy solutions, and Tiandy security cameras — all in one shop.
@@ -39,7 +54,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} Alwaidh. All rights reserved.
+        &copy; {new Date().getFullYear()} {settings.storeName || 'Alwaidh'}. All rights reserved.
       </div>
     </footer>
   );
