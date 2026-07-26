@@ -101,11 +101,24 @@ workflows:
       - name: Sync Capacitor Android
         script: npx cap sync android
       - name: Set the version code
-        # Play rejects a version code it has seen before, so use the build
-        # counter — it always increases.
+        # Play rejects a version code it has already seen, so use the build
+        # counter — it always increases. Written via a temp file because
+        # BSD sed (macOS) and GNU sed disagree about `sed -i`.
         script: |
           cd android
-          sed -i "s/versionCode 1/versionCode $BUILD_NUMBER/" app/build.gradle
+          sed "s/versionCode 1/versionCode $BUILD_NUMBER/" app/build.gradle > app/build.gradle.tmp
+          mv app/build.gradle.tmp app/build.gradle
+          grep versionCode app/build.gradle
+      - name: Point Gradle at the Codemagic keystore
+        # android_signing above puts the keystore on disk and exports these
+        # CM_* variables; app/build.gradle reads the file we write here.
+        script: |
+          cat > "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
       - name: Build the signed app bundle
         script: |
           cd android
