@@ -26,6 +26,7 @@ import {
   type JobType,
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
+import { useLang } from '../../lib/i18n';
 
 type FormState = Job;
 
@@ -95,6 +96,7 @@ const STATUS_STYLES: Record<
 };
 
 export default function AdminJobs() {
+  const { t } = useLang();
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
@@ -228,9 +230,9 @@ export default function AdminJobs() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Solar Jobs</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">{t('Solar Jobs')}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Track installs and repairs. Drag a card between columns to update its status.
+            {t('Track installs and repairs. Drag a card between columns to update its status.')}
           </p>
         </div>
         <button
@@ -241,7 +243,7 @@ export default function AdminJobs() {
           }}
           className="btn-primary"
         >
-          + New job
+          {t('+ New job')}
         </button>
       </header>
 
@@ -262,7 +264,7 @@ export default function AdminJobs() {
                 <p className="text-2xl font-extrabold leading-none text-slate-900">
                   {totals[s.key]}
                 </p>
-                <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{s.label}</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{t(s.label)}</p>
               </div>
             </div>
           );
@@ -276,7 +278,7 @@ export default function AdminJobs() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search customer, installer, address…"
+            placeholder={t('Search customer, installer, address…')}
             className="input w-72 max-w-full pl-8"
           />
           <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -407,7 +409,7 @@ function Column({
       <div className="flex items-center justify-between border-b border-slate-100 px-3.5 py-3">
         <h2 className={`flex items-center gap-2 text-sm font-bold ${style.header}`}>
           <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
-          {label}
+          {useLang().t(label)}
         </h2>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${style.badge}`}>
           {jobs.length}
@@ -484,6 +486,7 @@ function JobCardView({
   onDelete?: () => void;
   overlay?: boolean;
 }) {
+  const { t } = useLang();
   const isRepair = job.type === 'repair';
   return (
     <div
@@ -536,7 +539,7 @@ function JobCardView({
                 title="View all details"
                 className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-[11px] font-bold text-brand-700 transition hover:bg-brand-100"
               >
-                👁 Details
+                👁 {t('Details')}
               </button>
               <button
                 type="button"
@@ -573,6 +576,7 @@ function JobDetailsModal({
   onEdit: () => void;
   onPreviewInvoice: (url: string) => void;
 }) {
+  const { t } = useLang();
   const isRepair = job.type === 'repair';
   const statusMeta = JOB_STATUSES.find((s) => s.key === job.status);
   const style = STATUS_STYLES[job.status];
@@ -590,7 +594,7 @@ function JobDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-          <h2 className="font-bold text-slate-900">Job details</h2>
+          <h2 className="font-bold text-slate-900">{t('Job details')}</h2>
           <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
             ✕
           </button>
@@ -678,10 +682,10 @@ function JobDetailsModal({
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
           <button type="button" onClick={onClose} className="btn-secondary">
-            Close
+            {t('Close')}
           </button>
           <button type="button" onClick={onEdit} className="btn-primary">
-            Edit job
+            {t('Edit job')}
           </button>
         </div>
       </div>
@@ -713,11 +717,12 @@ function JobDialog({
   onSave: () => void;
   onPreview: (url: string) => void;
 }) {
+  const { t } = useLang();
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-          <h2 className="font-bold text-slate-900">{state.id ? 'Edit job' : 'New job'}</h2>
+          <h2 className="font-bold text-slate-900">{state.id ? t('Edit job') : t('New job')}</h2>
           <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-800">
             ✕
           </button>
@@ -943,6 +948,7 @@ function InvoiceField({
 }
 
 function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const { t } = useLang();
   return (
     <div className="fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
       <div
@@ -965,7 +971,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
               onClick={onClose}
               className="font-semibold text-slate-600 hover:underline"
             >
-              Close
+              {t('Close')}
             </button>
           </div>
         </div>
@@ -983,7 +989,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
+        {useLang().t(label)}
       </label>
       {children}
     </div>

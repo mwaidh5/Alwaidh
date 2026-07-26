@@ -4,6 +4,7 @@ import { categories } from '../data/categories';
 import { solarBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
+import { useLang } from '../lib/i18n';
 import { formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
 
@@ -53,6 +54,7 @@ function TiandyLogo({ src }: { src: string }) {
 export default function Home() {
   const { products } = useProducts();
   const settings = useSettings();
+  const { t } = useLang();
   const collection = products.slice(0, 8);
   const tiandy = products.filter((p) => p.category === 'tiandy-cameras').slice(0, 4);
   const heroImage = settings.heroImage || HERO_IMAGE;
@@ -76,12 +78,12 @@ export default function Home() {
         <div className="container-page relative grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-brand-700">
-              ⚡ Your Tech Destination
+              ⚡ {t('Your Tech Destination')}
             </p>
             <h1 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl">
-              New Season
+              {t('New Season')}
               <br />
-              <span className="text-brand-600">Collection</span>
+              <span className="text-brand-600">{t('Collection')}</span>
             </h1>
             <p className="mt-6 max-w-md text-lg text-slate-600">
               Quality computers, solar energy systems, and Tiandy security cameras — chosen for
@@ -92,13 +94,13 @@ export default function Home() {
                 to="/shop"
                 className="inline-flex items-center justify-center rounded-full bg-brand-600 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
               >
-                Shop Now
+                {t('Shop Now')}
               </Link>
               <Link
                 to="/solar-prices"
                 className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:border-slate-400 hover:bg-slate-50"
               >
-                Solar Prices
+                {t('Solar Prices')}
               </Link>
             </div>
           </div>
@@ -112,12 +114,12 @@ export default function Home() {
               <span className="text-2xl">📷</span>
               <div className="leading-tight">
                 <p className="text-sm font-bold text-slate-900">Tiandy Authorised</p>
-                <p className="text-xs text-slate-500">Security cameras &amp; NVRs</p>
+                <p className="text-xs text-slate-500">{t('Security cameras & NVRs')}</p>
               </div>
             </div>
             <div className="absolute -top-4 right-6 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-lg backdrop-blur">
               <span>☀️</span>
-              <p className="text-sm font-bold text-slate-900">Solar experts</p>
+              <p className="text-sm font-bold text-slate-900">{t('Solar experts')}</p>
             </div>
           </div>
         </div>
@@ -128,15 +130,15 @@ export default function Home() {
         <div className="grid gap-5 sm:grid-cols-3">
           {VALUE_PROPS.map((v) => (
             <div
-              key={v.title}
+              key={t(v.title)}
               className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-5"
             >
               <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-white text-xl shadow-sm">
                 {v.icon}
               </span>
               <div>
-                <p className="font-bold text-slate-900">{v.title}</p>
-                <p className="mt-0.5 text-sm text-slate-600">{v.body}</p>
+                <p className="font-bold text-slate-900">{t(v.title)}</p>
+                <p className="mt-0.5 text-sm text-slate-600">{t(v.body)}</p>
               </div>
             </div>
           ))}
@@ -147,9 +149,9 @@ export default function Home() {
       <section className="container-page py-10">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-600">Browse</p>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-600">{t('Browse')}</p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-              Shop by Category
+              {t('Shop by Category')}
             </h2>
           </div>
         </div>
@@ -180,9 +182,9 @@ export default function Home() {
                 <span className="absolute left-4 top-4 text-3xl drop-shadow">{c.icon}</span>
               )}
               <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                <p className="text-lg font-bold">{c.name}</p>
+                <p className="text-lg font-bold">{t(c.name)}</p>
                 <span className="text-xs font-semibold uppercase tracking-wide text-white/80 underline-offset-4 group-hover:underline">
-                  Shop Now →
+                  {t('Shop Now →')}
                 </span>
               </div>
             </Link>
@@ -192,9 +194,9 @@ export default function Home() {
             className="group relative flex h-44 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-slate-900 text-white shadow-sm transition hover:bg-slate-800"
           >
             <span className="text-4xl transition group-hover:scale-110">🛍️</span>
-            <p className="text-lg font-bold">All Products</p>
+            <p className="text-lg font-bold">{t('All Products')}</p>
             <span className="text-xs font-semibold uppercase tracking-wide text-white/70 underline-offset-4 group-hover:underline">
-              Shop Now →
+              {t('Shop Now →')}
             </span>
           </Link>
         </div>
@@ -215,17 +217,17 @@ export default function Home() {
           <div className="mb-6 flex items-end justify-between sm:mb-8">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-600 sm:text-xs">
-                Fresh in store
+                {t('Fresh in store')}
               </p>
               <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:mt-2 sm:text-3xl">
-                Latest Collection
+                {t('Latest Collection')}
               </h2>
             </div>
             <Link
               to="/shop"
               className="hidden text-sm font-semibold text-brand-700 hover:underline sm:block"
             >
-              View all →
+              {t('View all →')}
             </Link>
           </div>
 
@@ -263,7 +265,7 @@ export default function Home() {
               to="/shop"
               className="inline-flex items-center justify-center rounded-full border border-white/70 bg-white/70 px-7 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-sm backdrop-blur-md transition hover:bg-white"
             >
-              View All Products
+              {t('View All Products')}
             </Link>
           </div>
         </div>
@@ -285,18 +287,17 @@ export default function Home() {
               <div>
                 <TiandyLogo src={settings.tiandyLogo} />
                 <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                  Security <span className="text-tiandy-600">Cameras</span>
+                  {t('Security')} <span className="text-tiandy-600">{t('Cameras')}</span>
                 </h2>
                 <p className="mt-2 max-w-xl text-slate-600">
-                  Professional IP cameras and NVRs from an authorised Tiandy reseller — built for
-                  homes, shops, and business sites.
+                  {t('Professional IP cameras and NVRs from an authorised Tiandy reseller — built for homes, shops, and business sites.')}
                 </p>
               </div>
               <Link
                 to="/shop"
                 className="hidden text-sm font-semibold text-tiandy-600 hover:text-tiandy-700 hover:underline sm:block"
               >
-                View all →
+                {t('View all →')}
               </Link>
             </div>
 
@@ -304,11 +305,10 @@ export default function Home() {
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-10 text-center">
                 <p className="text-3xl">📷</p>
                 <p className="mt-3 font-semibold text-slate-800">
-                  Camera range coming online soon
+                  {t('Camera range coming online soon')}
                 </p>
                 <p className="mx-auto mt-1 max-w-md text-sm text-slate-600">
-                  We supply and install the full Tiandy line-up — IP cameras, NVRs, and complete
-                  CCTV systems. Ask us for a quote in the meantime.
+                  {t('We supply and install the full Tiandy line-up — IP cameras, NVRs, and complete CCTV systems. Ask us for a quote in the meantime.')}
                 </p>
               </div>
             )}
@@ -344,7 +344,7 @@ export default function Home() {
                 to="/shop"
                 className="inline-flex items-center justify-center rounded-full bg-tiandy-500 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-tiandy-500/30 transition hover:bg-tiandy-600"
               >
-                Shop Tiandy Cameras
+                {t('Shop Tiandy Cameras')}
               </Link>
             </div>
           </div>
@@ -386,19 +386,18 @@ export default function Home() {
               </span>
             )}
             <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight text-white drop-shadow sm:text-5xl">
-              Power tomorrow today
+              {t('Power tomorrow today')}
               <br />
-              with solar
+              {t('with solar')}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-white/90">
-              Panels, inverters, and batteries sized for your home or business — supplied and
-              installed by the team that knows the gear.
+              {t('Panels, inverters, and batteries sized for your home or business — supplied and installed by the team that knows the gear.')}
             </p>
             <Link
               to="/solar-prices"
               className="mt-8 inline-flex items-center gap-3 rounded-full bg-white py-2 pl-6 pr-2 text-sm font-bold uppercase tracking-wide text-sky-700 shadow-xl transition hover:bg-sky-50"
             >
-              View Solar Prices
+              {t('View Solar Prices')}
               <span className="grid h-9 w-9 place-items-center rounded-full bg-sky-600 text-base text-white">
                 →
               </span>
@@ -415,34 +414,32 @@ export default function Home() {
                 className="h-28 w-full rounded-2xl object-cover"
               />
               <p className="mt-4 text-sm font-bold uppercase tracking-wide text-white">
-                Complete solar systems
+                {t('Complete solar systems')}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-white/85">
-                Panels, inverters, and batteries supplied as one working system — sized for your
-                actual load.
+                {t('Panels, inverters, and batteries supplied as one working system — sized for your actual load.')}
               </p>
               <Link
                 to="/solar-prices"
                 className="mt-3 inline-block text-xs font-bold uppercase tracking-wide text-white underline-offset-4 hover:underline"
               >
-                Discover our systems →
+                {t('Discover our systems →')}
               </Link>
             </div>
 
             <div className="glass rounded-3xl p-5">
               <span className="text-3xl">🔋</span>
               <p className="mt-3 text-sm font-bold uppercase tracking-wide text-white">
-                SolarMax batteries
+                {t('SolarMax batteries')}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-white/85">
-                More power, more backup — tubular and lithium batteries built for long, hot days and
-                nightly runtime.
+                {t('More power, more backup — tubular and lithium batteries built for long, hot days and nightly runtime.')}
               </p>
               <Link
                 to="/shop"
                 className="mt-3 inline-block text-xs font-bold uppercase tracking-wide text-white underline-offset-4 hover:underline"
               >
-                Shop batteries →
+                {t('Shop batteries →')}
               </Link>
             </div>
           </div>
@@ -450,7 +447,7 @@ export default function Home() {
           {/* Brands we supply */}
           <div className="mt-14">
             <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-white/80">
-              Brands we work with
+              {t('Brands we work with')}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
               {solarBrands.map((b) => {

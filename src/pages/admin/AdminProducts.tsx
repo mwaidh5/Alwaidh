@@ -11,6 +11,7 @@ import {
 import { uploadProductDoc, uploadProductImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import MediaPicker from '../../components/MediaPicker';
+import { useLang } from '../../lib/i18n';
 import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
 import type { Product, CategorySlug } from '../../types/product';
@@ -35,6 +36,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function AdminProducts() {
+  const { t } = useLang();
   const [products, setProducts] = useState<Product[] | null>(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<FormState | null>(null);
@@ -221,7 +223,7 @@ export default function AdminProducts() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Products</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">{t('Products')}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {products ? `${products.length} total · ${filtered.length} shown` : 'Loading…'}
           </p>
@@ -232,11 +234,11 @@ export default function AdminProducts() {
             onClick={() => setShowTrash((v) => !v)}
             className={showTrash ? 'btn-primary' : 'btn-secondary'}
           >
-            {showTrash ? '← Back to products' : `🗑️ Trash (${trashed.length})`}
+            {showTrash ? t('← Back to products') : `🗑️ ${t('Trash')} (${trashed.length})`}
           </button>
           {!showTrash && (
             <button type="button" onClick={startCreate} className="btn-primary">
-              + Add product
+              {t('+ Add product')}
             </button>
           )}
         </div>
@@ -249,7 +251,7 @@ export default function AdminProducts() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, brand, or id"
+            placeholder={t('Search by name, brand, or id')}
             className="input max-w-xs"
           />
           <select
@@ -257,7 +259,7 @@ export default function AdminProducts() {
             onChange={(e) => setFilter(e.target.value as typeof filter)}
             className="input max-w-xs"
           >
-            <option value="all">All categories</option>
+            <option value="all">{t('All categories')}</option>
             {categoryOptions.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
@@ -355,7 +357,7 @@ export default function AdminProducts() {
       ) : products === null ? (
         <p className="text-center text-sm text-slate-500">Loading…</p>
       ) : filtered.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">No products match.</p>
+        <p className="card p-10 text-center text-sm text-slate-500">{t('No products match.')}</p>
       ) : (
         <>
         {/* Phone: tap-friendly cards with big Edit / Delete buttons. */}
@@ -406,14 +408,14 @@ export default function AdminProducts() {
                   onClick={() => startEdit(p)}
                   className="btn-primary w-full py-2.5"
                 >
-                  Edit
+                  {t('Edit')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(p.id)}
                   className="w-full rounded-lg border border-red-300 bg-white py-2.5 font-semibold text-red-700 active:bg-red-50"
                 >
-                  Delete
+                  {t('Delete')}
                 </button>
               </div>
             </div>
@@ -490,14 +492,14 @@ export default function AdminProducts() {
                       onClick={() => startEdit(p)}
                       className="text-sm font-semibold text-brand-700 hover:underline"
                     >
-                      Edit
+                      {t('Edit')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(p.id)}
                       className="ml-3 text-sm font-semibold text-red-700 hover:underline"
                     >
-                      Delete
+                      {t('Delete')}
                     </button>
                   </td>
                 </tr>
@@ -537,6 +539,7 @@ function ProductDialog({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const { t } = useLang();
   const isNew = !state.id;
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -717,7 +720,7 @@ function ProductDialog({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-xl max-h-[90vh]">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-          <h2 className="font-bold text-slate-900">{isNew ? 'New product' : 'Edit product'}</h2>
+          <h2 className="font-bold text-slate-900">{isNew ? t('New product') : t('Edit product')}</h2>
           <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-800">
             ✕
           </button>
@@ -837,7 +840,7 @@ function ProductDialog({
                   disabled={uploading || removingBg}
                   className="btn-secondary"
                 >
-                  {uploading ? 'Uploading…' : state.images.length ? '+ Add images' : 'Upload images'}
+                  {uploading ? t('Uploading…') : state.images.length ? t('+ Add images') : t('Upload images')}
                 </button>
                 <button
                   type="button"
@@ -845,7 +848,7 @@ function ProductDialog({
                   disabled={uploading || removingBg}
                   className="btn-secondary"
                 >
-                  🖼️ Choose from website
+                  {t('🖼️ Choose from website')}
                 </button>
                 {state.images.length > 0 && (
                   <button
@@ -854,7 +857,7 @@ function ProductDialog({
                     disabled={uploading || removingBg}
                     className="btn-secondary"
                   >
-                    {removingBg ? 'Removing…' : 'Remove background (main)'}
+                    {removingBg ? t('Removing…') : t('Remove background (main)')}
                   </button>
                 )}
               </div>
@@ -961,10 +964,10 @@ function ProductDialog({
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
           <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="button" onClick={onSave} className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : isNew ? 'Create' : 'Save changes'}
+            {busy ? t('Saving…') : isNew ? t('Create') : t('Save changes')}
           </button>
         </div>
       </div>
@@ -1111,7 +1114,7 @@ function Field({
   return (
     <div className={full ? 'sm:col-span-2' : ''}>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
+        {useLang().t(label)}
       </label>
       {children}
     </div>

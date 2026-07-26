@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../lib/i18n';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../lib/format';
 import { createOrder } from '../lib/orderStore';
@@ -11,6 +12,7 @@ export default function Cart() {
     useCart();
   const { user } = useAuth();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const { t } = useLang();
   const [checkout, setCheckout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<{ id: string } | null>(null);
@@ -46,7 +48,7 @@ export default function Cart() {
         </p>
         <p className="mt-1 text-slate-600">We'll be in touch shortly to confirm payment & shipping.</p>
         <Link to="/shop" className="btn-primary mt-6 inline-flex">
-          Continue shopping
+          {t('Continue shopping')}
         </Link>
       </div>
     );
@@ -55,10 +57,10 @@ export default function Cart() {
   if (items.length === 0) {
     return (
       <div className="container-page py-20 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Your cart is empty</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t('Your cart is empty.')}</h1>
         <p className="mt-2 text-slate-600">Add a few items to get started.</p>
         <Link to="/" className="btn-primary mt-6 inline-flex">
-          Continue shopping
+          {t('Continue shopping')}
         </Link>
       </div>
     );
@@ -103,7 +105,7 @@ export default function Cart() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="text-2xl font-extrabold text-slate-900">Your cart</h1>
+      <h1 className="text-2xl font-extrabold text-slate-900">{t('Your cart')}</h1>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr,360px]">
         <div className="card divide-y divide-slate-200">
@@ -151,7 +153,7 @@ export default function Cart() {
                       onClick={() => remove(item.productId)}
                       className="text-sm text-red-600 hover:underline"
                     >
-                      Remove
+                      {t('Remove')}
                     </button>
                   </div>
                 </div>
@@ -171,23 +173,23 @@ export default function Cart() {
         <aside className="card h-fit p-6">
           <h2 className="font-semibold text-slate-900">Order summary</h2>
           <div className="mt-4 flex justify-between text-sm">
-            <span className="text-slate-600">Subtotal</span>
+            <span className="text-slate-600">{t('Subtotal')}</span>
             <span className="font-semibold">{formatPrice(subtotal, currency)}</span>
           </div>
           {tax > 0 && (
             <div className="mt-1 flex justify-between text-sm">
-              <span className="text-slate-600">Tax ({settings?.taxRatePercent}%)</span>
+              <span className="text-slate-600">{t('Tax')} ({settings?.taxRatePercent}%)</span>
               <span className="font-semibold">{formatPrice(tax, currency)}</span>
             </div>
           )}
           <div className="mt-1 flex justify-between text-sm">
-            <span className="text-slate-600">Shipping</span>
+            <span className="text-slate-600">{t('Shipping')}</span>
             <span className="font-semibold">
               {shipping > 0 ? formatPrice(shipping, currency) : 'Free'}
             </span>
           </div>
           <div className="mt-4 border-t border-slate-200 pt-4 flex justify-between">
-            <span className="font-semibold">Total</span>
+            <span className="font-semibold">{t('Total')}</span>
             <span className="text-lg font-extrabold text-brand-700">
               {formatPrice(total, currency)}
             </span>
@@ -201,7 +203,7 @@ export default function Cart() {
                 disabled={!checkoutEnabled}
                 className="btn-primary mt-6 w-full disabled:bg-slate-300"
               >
-                {checkoutEnabled ? 'Checkout' : 'Checkout unavailable'}
+                {checkoutEnabled ? t('Checkout') : t('Checkout unavailable')}
               </button>
               {!checkoutEnabled && (
                 <p className="mt-2 text-xs text-slate-500">
