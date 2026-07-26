@@ -46,3 +46,8 @@ _test_*
 
 # Self-hosted background-removal model (regenerated from node_modules at build)
 public/imgly-data/
+
+# CI-generated Android signing properties — never commit
+android/key.properties
+*.jks
+*.keystore
