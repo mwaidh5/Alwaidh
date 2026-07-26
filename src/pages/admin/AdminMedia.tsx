@@ -1,6 +1,14 @@
-import { useEffect, useState } from 'react';
-import { listAllMedia, deleteMedia, type MediaItem } from '../../lib/mediaStore';
-import { productStorageMode } from '../../lib/productStore';
+import { useEffect, useMemo, useState } from 'react';
+import { listAllMedia, deleteMedia, storagePathFromUrl, type MediaItem } from '../../lib/mediaStore';
+import {
+  productStorageMode,
+  subscribeDeletedProducts,
+  subscribeProducts,
+} from '../../lib/productStore';
+import { useSettings } from '../../lib/useSettings';
+import type { Product } from '../../types/product';
+
+type Filter = 'all' | 'used' | 'unused';
 
 export default function AdminMedia() {
   const [items, setItems] = useState<MediaItem[] | null>(null);
@@ -8,12 +16,23 @@ export default function AdminMedia() {
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState<MediaItem | null>(null);
   const [copied, setCopied] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<Filter>('all');
+  const [deleting, setDeleting] = useState(false);
+
+  // Everything that can reference an image, so we can show what's in use.
+  const settings = useSettings();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [trashed, setTrashed] = useState<Product[]>([]);
+  useEffect(() => subscribeProducts(setProducts), []);
+  useEffect(() => subscribeDeletedProducts(setTrashed), []);
 
   async function load() {
     setLoading(true);
     setError('');
     try {
       setItems(await listAllMedia());
+      setSelected(new Set());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load media.');
     } finally {
@@ -24,6 +43,68 @@ export default function AdminMedia() {
   useEffect(() => {
     load();
   }, []);
+
+  /** path → human-readable list of places using it. */
+  const usage = useMemo(() => {
+    const map = new Map<string, string[]>();
+    const add = (url: string | undefined, label: string) => {
+      const path = url ? storagePathFromUrl(url) : null;
+      if (!path) return;
+      const list = map.get(path) ?? [];
+      if (!list.includes(label)) list.push(label);
+      map.set(path, list);
+    };
+    for (const p of products) {
+      const name = p.name || 'Untitled product';
+      p.images.forEach((u) => add(u, name));
+      add(p.datasheet, `${name} — datasheet`);
+      add(p.manual, `${name} — manual`);
+    }
+    // Trashed products still reference their images; deleting those would
+    // break the product if it is ever restored.
+    for (const p of trashed) {
+      const name = `${p.name || 'Untitled product'} (in Trash)`;
+      p.images.forEach((u) => add(u, name));
+      add(p.datasheet, `${name} — datasheet`);
+      add(p.manual, `${name} — manual`);
+    }
+    add(settings.logoImage, 'Site logo');
+    add(settings.heroImage, 'Homepage hero');
+    add(settings.solarBannerImage, 'Solar banner');
+    add(settings.tiandyLogo, 'Tiandy logo');
+    return map;
+  }, [products, trashed, settings]);
+
+  const visible = useMemo(() => {
+    const list = items ?? [];
+    if (filter === 'used') return list.filter((i) => usage.has(i.path));
+    if (filter === 'unused') return list.filter((i) => !usage.has(i.path));
+    return list;
+  }, [items, filter, usage]);
+
+  const usedCount = (items ?? []).filter((i) => usage.has(i.path)).length;
+  const unusedCount = (items ?? []).length - usedCount;
+  const selectedInUse = [...selected].filter((p) => usage.has(p)).length;
+
+  function toggle(path: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }
+
+  function selectAllVisible() {
+    const paths = visible.map((i) => i.path);
+    const allSelected = paths.length > 0 && paths.every((p) => selected.has(p));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) paths.forEach((p) => next.delete(p));
+      else paths.forEach((p) => next.add(p));
+      return next;
+    });
+  }
 
   async function copy(url: string) {
     try {
@@ -36,15 +117,47 @@ export default function AdminMedia() {
   }
 
   async function remove(item: MediaItem) {
-    if (!confirm(`Delete this image?\n${item.name}\n\nIf a product or page still uses it, the image will go blank.`))
-      return;
+    const where = usage.get(item.path);
+    const warning = where?.length
+      ? `\n\n⚠️ This image is still used by:\n• ${where.join('\n• ')}\nIt will go blank there.`
+      : '';
+    if (!confirm(`Delete this image?\n${item.name}${warning}`)) return;
     try {
       await deleteMedia(item.path);
       setItems((prev) => (prev ? prev.filter((i) => i.path !== item.path) : prev));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(item.path);
+        return next;
+      });
       if (preview?.path === item.path) setPreview(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Delete failed.');
     }
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    const warning = selectedInUse
+      ? `\n\n⚠️ ${selectedInUse} of them ${selectedInUse === 1 ? 'is' : 'are'} still in use and will go blank where they appear.`
+      : '';
+    if (!confirm(`Delete ${selected.size} image(s)? This cannot be undone.${warning}`)) return;
+    setDeleting(true);
+    setError('');
+    const paths = [...selected];
+    const failed: string[] = [];
+    await Promise.all(
+      paths.map((p) =>
+        deleteMedia(p).catch(() => {
+          failed.push(p);
+        }),
+      ),
+    );
+    const removed = new Set(paths.filter((p) => !failed.includes(p)));
+    setItems((prev) => (prev ? prev.filter((i) => !removed.has(i.path)) : prev));
+    setSelected(new Set(failed));
+    if (failed.length) setError(`${failed.length} image(s) could not be deleted.`);
+    setDeleting(false);
   }
 
   const local = productStorageMode() === 'local';
@@ -55,7 +168,9 @@ export default function AdminMedia() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Media library</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Every image uploaded to your store. Click to preview, copy a link to reuse it, or delete.
+            {items
+              ? `${items.length} images · ${usedCount} in use · ${unusedCount} unused`
+              : 'Every image uploaded to your store.'}
           </p>
         </div>
         <button type="button" onClick={load} disabled={loading} className="btn-secondary">
@@ -72,44 +187,148 @@ export default function AdminMedia() {
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
       )}
 
+      {!loading && items && items.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold">
+            {(
+              [
+                { key: 'all', label: `All (${items.length})` },
+                { key: 'used', label: `In use (${usedCount})` },
+                { key: 'unused', label: `Unused (${unusedCount})` },
+              ] as { key: Filter; label: string }[]
+            ).map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                className={`rounded-md px-3 py-1.5 transition ${
+                  filter === f.key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={selectAllVisible}
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            {visible.length > 0 && visible.every((i) => selected.has(i.path))
+              ? 'Clear selection'
+              : `Select all shown (${visible.length})`}
+          </button>
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-3 rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm shadow-sm">
+          <span className="font-semibold text-brand-800">{selected.size} selected</span>
+          {selectedInUse > 0 && (
+            <span className="text-amber-800">⚠️ {selectedInUse} still in use</span>
+          )}
+          <button
+            type="button"
+            onClick={deleteSelected}
+            disabled={deleting}
+            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+          >
+            {deleting ? 'Deleting…' : `Delete ${selected.size} selected`}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-slate-500 hover:underline"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <p className="card p-10 text-center text-sm text-slate-500">Loading images…</p>
       ) : items && items.length === 0 ? (
         <p className="card p-10 text-center text-sm text-slate-500">No images uploaded yet.</p>
+      ) : visible.length === 0 ? (
+        <p className="card p-10 text-center text-sm text-slate-500">
+          No {filter === 'used' ? 'used' : 'unused'} images.
+        </p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {(items ?? []).map((item) => (
-            <div key={item.path} className="card overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setPreview(item)}
-                className="block aspect-square w-full overflow-hidden bg-slate-100"
+          {visible.map((item) => {
+            const where = usage.get(item.path);
+            const isSelected = selected.has(item.path);
+            return (
+              <div
+                key={item.path}
+                className={`card overflow-hidden ${isSelected ? 'ring-2 ring-brand-500' : ''}`}
               >
-                <img src={item.url} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
-              </button>
-              <div className="space-y-2 p-2">
-                <p className="truncate text-xs text-slate-500" title={item.path}>
-                  {item.path}
-                </p>
-                <div className="flex items-center justify-between gap-2">
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => copy(item.url)}
-                    className="text-xs font-semibold text-brand-700 hover:underline"
+                    onClick={() => setPreview(item)}
+                    className="block aspect-square w-full overflow-hidden bg-slate-100"
                   >
-                    {copied === item.url ? 'Copied!' : 'Copy link'}
+                    <img
+                      src={item.url}
+                      alt={item.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(item)}
-                    className="text-xs font-semibold text-red-700 hover:underline"
+                  <label
+                    className="absolute left-2 top-2 flex cursor-pointer items-center rounded-md bg-white/90 p-1 shadow-sm"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    Delete
-                  </button>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggle(item.path)}
+                      aria-label={`Select ${item.name}`}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                  </label>
+                  <span
+                    title={where?.length ? `Used by:\n• ${where.join('\n• ')}` : 'Not used anywhere'}
+                    className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      where?.length ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {where?.length ? 'In use' : 'Unused'}
+                  </span>
+                </div>
+                <div className="space-y-2 p-2">
+                  {where?.length ? (
+                    <p className="truncate text-xs font-medium text-slate-700" title={where.join(', ')}>
+                      {where[0]}
+                      {where.length > 1 && ` +${where.length - 1}`}
+                    </p>
+                  ) : (
+                    <p className="truncate text-xs text-slate-400">Not used anywhere</p>
+                  )}
+                  <p className="truncate text-[11px] text-slate-400" title={item.path}>
+                    {item.path}
+                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copy(item.url)}
+                      className="text-xs font-semibold text-brand-700 hover:underline"
+                    >
+                      {copied === item.url ? 'Copied!' : 'Copy link'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(item)}
+                      className="text-xs font-semibold text-red-700 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -118,10 +337,22 @@ export default function AdminMedia() {
           className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/70 p-4"
           onClick={() => setPreview(null)}
         >
-          <div className="max-h-[90vh] max-w-3xl overflow-hidden rounded-xl bg-white" onClick={(e) => e.stopPropagation()}>
-            <img src={preview.url} alt={preview.name} className="max-h-[75vh] w-full object-contain bg-slate-100" />
+          <div
+            className="max-h-[90vh] max-w-3xl overflow-hidden rounded-xl bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={preview.url}
+              alt={preview.name}
+              className="max-h-[75vh] w-full bg-slate-100 object-contain"
+            />
             <div className="flex items-center justify-between gap-3 p-3">
-              <p className="truncate text-xs text-slate-500">{preview.path}</p>
+              <div className="min-w-0">
+                <p className="truncate text-xs text-slate-500">{preview.path}</p>
+                <p className="truncate text-xs font-medium text-slate-700">
+                  {usage.get(preview.path)?.join(', ') || 'Not used anywhere'}
+                </p>
+              </div>
               <div className="flex flex-none gap-3 text-sm">
                 <button
                   type="button"
