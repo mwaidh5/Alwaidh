@@ -28,6 +28,12 @@ workflows:
         script: npm ci
       - name: Build the web app
         script: npm run build
+      - name: Trim assets the app doesn't need
+        # The app loads the live site (server.url in capacitor.config.ts), so
+        # every asset is served from the web — no need to ship the ~127 MB
+        # background-removal model inside the binary. Hosting deploys are
+        # built separately, so the website still has it.
+        script: rm -rf dist/imgly-data
       - name: Sync Capacitor iOS
         script: npx cap sync ios
       - name: Fetch or create signing files
@@ -98,6 +104,12 @@ workflows:
         script: npm ci
       - name: Build the web app
         script: npm run build
+      - name: Trim assets the app doesn't need
+        # The app loads the live site (server.url in capacitor.config.ts), so
+        # every asset is served from the web — no need to ship the ~127 MB
+        # background-removal model inside the binary. Hosting deploys are
+        # built separately, so the website still has it.
+        script: rm -rf dist/imgly-data
       - name: Sync Capacitor Android
         script: npx cap sync android
       - name: Set the version code
