@@ -49,32 +49,57 @@ export default function About() {
         <div className="container-page py-12">
           <p className="text-sm font-semibold uppercase tracking-wider text-brand-100">About us</p>
           <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Power, IT, and security — under one roof.
+            Powering Iraq’s homes and businesses since 1992.
           </h1>
           <p className="mt-3 max-w-2xl text-white/90">
-            Alwaidh supplies and installs reliable computer systems, solar energy solutions, and
-            Tiandy security cameras. We help homes, offices, and businesses choose the right gear
-            and keep it running.
+            Al-Waidh Technology Trading Co. LLC — founded as Al-Waidh Computers Bureau in 1992 — is
+            one of Iraq’s leading suppliers of computers, solar energy systems, and power
+            protection. We supply, install, and service, from a single laptop to a complete solar
+            plant.
           </p>
+
+          <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[
+              { k: 'Since', v: '1992' },
+              { k: 'Showrooms in Baghdad', v: '3' },
+              { k: 'Warehouse', v: '600 m²' },
+              { k: 'Coverage', v: 'All Iraq' },
+            ].map((s) => (
+              <div key={s.k} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
+                <dd className="text-2xl font-extrabold leading-none">{s.v}</dd>
+                <dt className="mt-1 text-xs font-medium text-white/80">{s.k}</dt>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       <section className="container-page grid gap-10 py-12 lg:grid-cols-2">
         <div className="space-y-6">
           <Block
-            icon="💡"
+            icon="🏢"
             title="Who we are"
-            body="A small team of engineers and technicians passionate about practical, dependable technology. We have hands-on experience designing computer rollouts, sizing solar systems, and deploying CCTV networks."
+            body="Formerly Al-Waidh Computers, today Al-Waidh Technology for Computers and Solar Systems Trading Co. LLC (Baghdad, licence no. 25460). Our main showroom is on Sinaa Street beside the University of Technology, with two further showrooms, our own service lab for computers and solar inverters, and a 600 m² warehouse in Sufaraniya."
           />
           <Block
-            icon="🎯"
-            title="What we do"
-            body="From a single laptop to a full off-grid solar build, we source quality components, deliver them quickly, and back them with honest support."
+            icon="📦"
+            title="What we supply"
+            body="Laptops, desktops and all-in-ones with their accessories — printers, scanners and POS systems. Solar panels, inverters and batteries. UPS units from 1 kVA up to 4 MVA, voltage stabilisers, and Tiandy security cameras and NVRs."
+          />
+          <Block
+            icon="🔧"
+            title="We install and service"
+            body="We don't just sell boxes. We size and install complete solar systems and power protection, and repair what we supply in our own lab — including work such as the solar energy system at Al-Bilal station in Karbala."
+          />
+          <Block
+            icon="🚚"
+            title="Where we reach"
+            body="We wholesale computers and power equipment across every Iraqi province, from the Kurdistan Region in the north to Basrah in the south, and sell retail through our Baghdad showrooms and online with delivery."
           />
           <Block
             icon="🤝"
-            title="Why customers stay with us"
-            body="Straight answers, fair prices, and real support after the sale. We carry brands we'd install in our own homes."
+            title="Brands we represent"
+            body="Distributor for Jinko Solar panels and SolarMax inverters in Iraq, exclusive distributor for GE UPS (Switzerland) and for Indian low-frequency inverters, and a Lenovo Business Partner for Iraq. We also supply Deye and Voltronic inverters."
           />
         </div>
 
@@ -83,6 +108,36 @@ export default function About() {
           <p className="mt-1 text-sm text-slate-600">
             Have a question or want a quote? Send us a message and we'll get back to you.
           </p>
+
+          <dl className="mt-5 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+            <div className="flex gap-2">
+              <dt className="w-24 flex-none text-slate-500">Showroom</dt>
+              <dd className="text-slate-800">Sinaa Street, Baghdad, Iraq</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-24 flex-none text-slate-500">Hours</dt>
+              <dd className="text-slate-800">Saturday – Thursday, 8:30 AM – 3:30 PM</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-24 flex-none text-slate-500">Phone</dt>
+              <dd>
+                <a href="tel:+9647705397778" className="font-semibold text-brand-700 hover:underline">
+                  +964 770 539 7778
+                </a>
+              </dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-24 flex-none text-slate-500">Email</dt>
+              <dd>
+                <a
+                  href="mailto:info@alwaidhcomputers.com"
+                  className="font-semibold text-brand-700 hover:underline"
+                >
+                  info@alwaidhcomputers.com
+                </a>
+              </dd>
+            </div>
+          </dl>
 
           {status === 'success' ? (
             <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
