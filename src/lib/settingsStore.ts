@@ -27,6 +27,10 @@ export interface SiteSettings {
   tiandyLogo: string;
   /** Logo shown on each homepage category tile, keyed by category slug. */
   categoryLogos: Record<string, string>;
+  /** SolarMax logo shown in the homepage solar section. */
+  solarLogo: string;
+  /** Logos of the brands we deal with, keyed by brand slug. */
+  brandLogos: Record<string, string>;
   solarPriceColumns: PriceColumn[];
 }
 
@@ -49,6 +53,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   logoImage: '',
   tiandyLogo: '',
   categoryLogos: {},
+  solarLogo: '',
+  brandLogos: {},
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
@@ -92,6 +98,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.categoryLogos && typeof data.categoryLogos === 'object'
         ? (data.categoryLogos as Record<string, string>)
         : DEFAULT_SETTINGS.categoryLogos,
+    brandLogos:
+      data.brandLogos && typeof data.brandLogos === 'object'
+        ? (data.brandLogos as Record<string, string>)
+        : DEFAULT_SETTINGS.brandLogos,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])

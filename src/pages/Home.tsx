@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { CategorySlug } from '../types/product';
 import { categories } from '../data/categories';
+import { solarBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
@@ -357,8 +358,9 @@ export default function Home() {
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        {/* Brand sky-blue wash: light at the top, deeper where the text sits */}
-        <div className="absolute inset-0 bg-gradient-to-b from-sky-300/85 via-sky-500/85 to-sky-600/95" />
+        {/* Keep the installation photo readable: a light touch at the top,
+            deepening into brand sky-blue behind the text below. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-sky-700/75 to-sky-800/95" />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-white/25 blur-3xl"
@@ -370,9 +372,19 @@ export default function Home() {
 
         <div className="container-page relative py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-              ☀️ SolarMax · الواعظ للقدرة
-            </span>
+            {settings.solarLogo ? (
+              <span className="inline-flex items-center rounded-2xl bg-white/95 px-5 py-3 shadow-lg ring-1 ring-black/5">
+                <img
+                  src={settings.solarLogo}
+                  alt="SolarMax — الواعظ للقدرة"
+                  className="h-14 w-auto sm:h-16"
+                />
+              </span>
+            ) : (
+              <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white">
+                ☀️ SolarMax · الواعظ للقدرة
+              </span>
+            )}
             <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight text-white drop-shadow sm:text-5xl">
               Power tomorrow today
               <br />
@@ -394,7 +406,7 @@ export default function Home() {
           </div>
 
           {/* Glass feature cards */}
-          <div className="mt-14 grid gap-4 md:grid-cols-3">
+          <div className="mt-14 grid gap-4 md:grid-cols-2">
             <div className="glass rounded-3xl p-5">
               <img
                 src={imageFor('solar')}
@@ -417,17 +429,6 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="glass flex flex-col items-center justify-center rounded-3xl p-5 text-center">
-              <span className="text-3xl">🛡️</span>
-              <p className="mt-2 text-4xl font-extrabold leading-none text-white">1.5 Year</p>
-              <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-white/85">
-                Warranty
-              </p>
-              <p dir="rtl" className="mt-3 text-xs text-white/85">
-                ضمان سنة ونصف
-              </p>
-            </div>
-
             <div className="glass rounded-3xl p-5">
               <span className="text-3xl">🔋</span>
               <p className="mt-3 text-sm font-bold uppercase tracking-wide text-white">
@@ -443,6 +444,38 @@ export default function Home() {
               >
                 Shop batteries →
               </Link>
+            </div>
+          </div>
+
+          {/* Brands we supply */}
+          <div className="mt-14">
+            <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-white/80">
+              Brands we work with
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              {solarBrands.map((b) => {
+                const logo = settings.brandLogos?.[b.slug];
+                return (
+                  <span
+                    key={b.slug}
+                    title={b.name}
+                    className="flex h-16 min-w-[130px] items-center justify-center rounded-2xl bg-white/95 px-5 shadow-md ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                  >
+                    {logo ? (
+                      <img
+                        src={logo}
+                        alt={b.name}
+                        loading="lazy"
+                        className="max-h-10 max-w-[140px] object-contain"
+                      />
+                    ) : (
+                      <span className="text-lg font-extrabold tracking-tight text-slate-800">
+                        {b.name}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
