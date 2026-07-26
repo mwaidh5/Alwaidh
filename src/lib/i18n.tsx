@@ -288,6 +288,44 @@ const AR: Record<string, string> = {
   'Clear selection': 'إلغاء التحديد',
   'Checkout unavailable': 'الشراء غير متاح',
   'Your cart is empty': 'سلتك فارغة',
+
+  // ---- About page ----
+  'About us': 'من نحن',
+  'Computers since 1992. Powering homes since 2017.':
+    'حاسبات منذ 1992. ونضيء البيوت منذ 2017.',
+  'Al-Waidh Technology Trading Co. LLC — founded as Al-Waidh Computers Bureau in 1992 — is one of Iraq’s leading suppliers of computers, solar energy systems, and power protection. We supply, install, and service, from a single laptop to a complete solar plant.':
+    'شركة الواعظ للتكنولوجيا للتجارة المحدودة — تأسست كمكتب الواعظ للحاسبات عام 1992 — من الشركات الرائدة في العراق لتجهيز الحاسبات وأنظمة الطاقة الشمسية وحماية الطاقة. نجهّز ونركّب ونصلّح، من حاسبة واحدة إلى منظومة شمسية متكاملة.',
+  'In business since': 'في السوق منذ',
+  'Solar since': 'الطاقة الشمسية منذ',
+  'Showrooms in Baghdad': 'صالات عرض في بغداد',
+  Coverage: 'التغطية',
+  'All Iraq': 'كل العراق',
+  'Who we are': 'من نحن',
+  'Formerly Al-Waidh Computers, today Al-Waidh Technology for Computers and Solar Systems Trading Co. LLC (Baghdad, licence no. 25460). Our main showroom is on Sinaa Street beside the University of Technology, with two further showrooms, our own service lab for computers and solar inverters, and a 600 m² warehouse in Sufaraniya.':
+    'سابقاً الواعظ للحاسبات، واليوم شركة الواعظ للتكنولوجيا لتجارة الحاسبات والأنظمة الشمسية المحدودة (بغداد، إجازة رقم 25460). صالتنا الرئيسية في شارع الصناعة قرب الجامعة التكنولوجية، إضافة إلى صالتي عرض أخريين، ومختبر صيانة خاص بنا للحاسبات والعاكسات الشمسية، ومخزن بمساحة 600 م² في حي السفارانية.',
+  'What we supply': 'ما نجهّزه',
+  'Laptops, desktops and all-in-ones with their accessories — printers, scanners and POS systems. Solar panels, inverters and batteries. UPS units from 1 kVA up to 4 MVA, voltage stabilisers, and Tiandy security cameras and NVRs.':
+    'لابتوبات وحاسبات مكتبية وحاسبات متكاملة مع ملحقاتها — طابعات وسكانرات وأنظمة نقاط بيع. ألواح شمسية وعاكسات وبطاريات. أجهزة UPS من 1 كيلوفولت أمبير حتى 4 ميغافولت أمبير، ومنظمات فولتية، وكاميرات مراقبة تياندي وأجهزة تسجيل.',
+  'We install and service': 'نركّب ونصلّح',
+  "We don't just sell boxes. We size and install complete solar systems and power protection, and repair what we supply in our own lab — including work such as the solar energy system at Al-Bilal station in Karbala.":
+    'لا نبيع صناديق فقط. نحسب ونركّب منظومات شمسية متكاملة وأنظمة حماية الطاقة، ونصلّح ما نجهّزه في مختبرنا الخاص — ومن أعمالنا منظومة الطاقة الشمسية لمحطة البلال في كربلاء.',
+  'Where we reach': 'أين نصل',
+  'We wholesale computers and power equipment across every Iraqi province, from the Kurdistan Region in the north to Basrah in the south, and sell retail through our Baghdad showrooms and online with delivery.':
+    'نبيع بالجملة الحاسبات ومعدات الطاقة في جميع المحافظات العراقية، من إقليم كردستان شمالاً إلى البصرة جنوباً، ونبيع بالمفرد عبر صالاتنا في بغداد وأونلاين مع التوصيل.',
+  'Brands we represent': 'الوكالات التي نمثلها',
+  "Iraq's first Lenovo distributor, since 2010. Distributor for Jinko Solar panels and SolarMax inverters, exclusive distributor for GE UPS (Switzerland) and for Indian low-frequency inverters, and an authorised Tiandy reseller for security cameras.":
+    'أول موزّع لـ Lenovo في العراق منذ 2010. موزّع ألواح Jinko Solar وعاكسات SolarMax، وموزّع حصري لـ GE UPS (سويسرا) وللعاكسات الهندية ذات التردد الواطئ، ووكيل معتمد لكاميرات تياندي.',
+  'We supply and support these brands across Iraq.':
+    'نجهّز وندعم هذه العلامات في عموم العراق.',
+  'Solar energy': 'الطاقة الشمسية',
+  'Power protection': 'حماية الطاقة',
+  'Security cameras': 'كاميرات المراقبة',
+  "Have a question or want a quote? Send us a message and we'll get back to you.":
+    'عندك سؤال أو تريد عرض سعر؟ أرسل لنا رسالة وسنعاود الاتصال بك.',
+  Showroom: 'صالة العرض',
+  Hours: 'أوقات الدوام',
+  'Sinaa Street, Baghdad, Iraq': 'شارع الصناعة، بغداد، العراق',
+  'Saturday – Thursday, 8:30 AM – 3:30 PM': 'السبت – الخميس، 8:30 صباحاً – 3:30 مساءً',
 };
 
 interface LanguageValue {
