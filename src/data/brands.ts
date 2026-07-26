@@ -15,3 +15,14 @@ export const solarBrands: Brand[] = [
   { slug: 'sinexcel', name: 'Sinexcel' },
   { slug: 'fortuners', name: 'Fortuners' },
 ];
+
+/** Everything we carry, grouped for the About page. */
+export const brandGroups: { key: string; brands: string[] }[] = [
+  {
+    key: 'Solar energy',
+    brands: ['Jinko Solar', 'SolarMax', 'SAJ', 'Deye', 'Voltronic', 'Hailei', 'Sinexcel', 'Fortuners'],
+  },
+  { key: 'Computers', brands: ['Lenovo'] },
+  { key: 'Power protection', brands: ['GE UPS'] },
+  { key: 'Security cameras', brands: ['Tiandy'] },
+];

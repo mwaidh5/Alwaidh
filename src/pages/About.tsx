@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { submitContact, storageMode } from '../lib/contactSubmissions';
+import { brandGroups } from '../data/brands';
+import { useLang } from '../lib/i18n';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -10,6 +12,7 @@ export default function About() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
+  const { t } = useLang();
   const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,23 +50,24 @@ export default function About() {
     <div>
       <section className="bg-gradient-to-br from-brand-700 to-brand-500 text-white">
         <div className="container-page py-12">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-100">About us</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-100">
+            {t('About us')}
+          </p>
           <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Powering Iraq’s homes and businesses since 1992.
+            {t('Computers since 1992. Powering homes since 2017.')}
           </h1>
           <p className="mt-3 max-w-2xl text-white/90">
-            Al-Waidh Technology Trading Co. LLC — founded as Al-Waidh Computers Bureau in 1992 — is
-            one of Iraq’s leading suppliers of computers, solar energy systems, and power
-            protection. We supply, install, and service, from a single laptop to a complete solar
-            plant.
+            {t(
+              'Al-Waidh Technology Trading Co. LLC — founded as Al-Waidh Computers Bureau in 1992 — is one of Iraq’s leading suppliers of computers, solar energy systems, and power protection. We supply, install, and service, from a single laptop to a complete solar plant.',
+            )}
           </p>
 
           <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { k: 'Since', v: '1992' },
-              { k: 'Showrooms in Baghdad', v: '3' },
-              { k: 'Warehouse', v: '600 m²' },
-              { k: 'Coverage', v: 'All Iraq' },
+              { k: t('In business since'), v: '1992' },
+              { k: t('Solar since'), v: '2017' },
+              { k: t('Showrooms in Baghdad'), v: '3' },
+              { k: t('Coverage'), v: t('All Iraq') },
             ].map((s) => (
               <div key={s.k} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
                 <dd className="text-2xl font-extrabold leading-none">{s.v}</dd>
@@ -99,27 +103,27 @@ export default function About() {
           <Block
             icon="🤝"
             title="Brands we represent"
-            body="Distributor for Jinko Solar panels and SolarMax inverters in Iraq, exclusive distributor for GE UPS (Switzerland) and for Indian low-frequency inverters, and a Lenovo Business Partner for Iraq. We also supply Deye and Voltronic inverters."
+            body="Iraq's first Lenovo distributor, since 2010. Distributor for Jinko Solar panels and SolarMax inverters, exclusive distributor for GE UPS (Switzerland) and for Indian low-frequency inverters, and an authorised Tiandy reseller for security cameras."
           />
         </div>
 
         <div className="card p-6 sm:p-8">
-          <h2 className="text-xl font-extrabold text-slate-900">Contact us</h2>
+          <h2 className="text-xl font-extrabold text-slate-900">{t('Contact us')}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Have a question or want a quote? Send us a message and we'll get back to you.
+            {t("Have a question or want a quote? Send us a message and we'll get back to you.")}
           </p>
 
           <dl className="mt-5 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
             <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">Showroom</dt>
-              <dd className="text-slate-800">Sinaa Street, Baghdad, Iraq</dd>
+              <dt className="w-24 flex-none text-slate-500">{t('Showroom')}</dt>
+              <dd className="text-slate-800">{t('Sinaa Street, Baghdad, Iraq')}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">Hours</dt>
-              <dd className="text-slate-800">Saturday – Thursday, 8:30 AM – 3:30 PM</dd>
+              <dt className="w-24 flex-none text-slate-500">{t('Hours')}</dt>
+              <dd className="text-slate-800">{t('Saturday – Thursday, 8:30 AM – 3:30 PM')}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">Phone</dt>
+              <dt className="w-24 flex-none text-slate-500">{t('Phone')}</dt>
               <dd>
                 <a href="tel:+9647705397778" className="font-semibold text-brand-700 hover:underline">
                   +964 770 539 7778
@@ -127,7 +131,7 @@ export default function About() {
               </dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">Email</dt>
+              <dt className="w-24 flex-none text-slate-500">{t('Email')}</dt>
               <dd>
                 <a
                   href="mailto:info@alwaidhcomputers.com"
@@ -224,16 +228,42 @@ export default function About() {
           )}
         </div>
       </section>
+
+      <section className="border-t border-slate-200 bg-slate-50">
+        <div className="container-page py-12">
+          <h2 className="text-2xl font-extrabold text-slate-900">{t('Brands we work with')}</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {t('We supply and support these brands across Iraq.')}
+          </p>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {brandGroups.map((g) => (
+              <div key={g.key} className="card p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">
+                  {t(g.key)}
+                </h3>
+                <ul className="mt-3 space-y-1.5">
+                  {g.brands.map((b) => (
+                    <li key={b} className="text-sm font-semibold text-slate-800">
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 function Block({ icon, title, body }: { icon: string; title: string; body: string }) {
+  const { t } = useLang();
   return (
     <div className="card p-6">
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
-        <h3 className="text-lg font-extrabold text-slate-900">{title}</h3>
+        <h3 className="text-lg font-extrabold text-slate-900">{t(title)}</h3>
       </div>
       <p className="mt-2 text-slate-600">{body}</p>
     </div>
