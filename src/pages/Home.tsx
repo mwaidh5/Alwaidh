@@ -166,6 +166,18 @@ export default function Home() {
                 className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+              {settings.categoryLogos?.[c.slug] ? (
+                <span className="absolute left-4 top-4 grid h-14 w-14 place-items-center rounded-xl bg-white/95 p-1.5 shadow-md ring-1 ring-black/5">
+                  <img
+                    src={settings.categoryLogos[c.slug]}
+                    alt={`${c.name} logo`}
+                    loading="lazy"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </span>
+              ) : (
+                <span className="absolute left-4 top-4 text-3xl drop-shadow">{c.icon}</span>
+              )}
               <div className="absolute inset-x-0 bottom-0 p-5 text-white">
                 <p className="text-lg font-bold">{c.name}</p>
                 <span className="text-xs font-semibold uppercase tracking-wide text-white/80 underline-offset-4 group-hover:underline">
@@ -256,9 +268,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Tiandy cameras spotlight */}
-      {tiandy.length > 0 && (
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 py-16">
+      {/* Tiandy cameras spotlight — always shown: it is a brand statement,
+          not just a product list, so it stays even with no cameras loaded. */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 py-16">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-tiandy-300/30 blur-3xl"
@@ -286,6 +298,19 @@ export default function Home() {
                 View all →
               </Link>
             </div>
+
+            {tiandy.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-10 text-center">
+                <p className="text-3xl">📷</p>
+                <p className="mt-3 font-semibold text-slate-800">
+                  Camera range coming online soon
+                </p>
+                <p className="mx-auto mt-1 max-w-md text-sm text-slate-600">
+                  We supply and install the full Tiandy line-up — IP cameras, NVRs, and complete
+                  CCTV systems. Ask us for a quote in the meantime.
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {tiandy.map((p) => (
@@ -322,8 +347,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        </section>
-      )}
+      </section>
 
       {/* Solar energy — frosted glass over the SolarMax sky blue */}
       <section className="relative overflow-hidden">

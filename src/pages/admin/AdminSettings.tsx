@@ -6,6 +6,7 @@ import {
   type SiteSettings,
 } from '../../lib/settingsStore';
 import { uploadImage } from '../../lib/imageUpload';
+import { categories } from '../../data/categories';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -220,6 +221,17 @@ export default function AdminSettings() {
             folder="site"
             onChange={(url) => update('tiandyLogo', url)}
           />
+          {categories.map((c) => (
+            <ImageField
+              key={c.slug}
+              label={`${c.name} logo (homepage category tile)`}
+              value={settings.categoryLogos?.[c.slug] ?? ''}
+              folder="site"
+              onChange={(url) =>
+                update('categoryLogos', { ...(settings.categoryLogos ?? {}), [c.slug]: url })
+              }
+            />
+          ))}
         </Section>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
