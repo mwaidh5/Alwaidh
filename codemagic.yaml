@@ -122,6 +122,9 @@ workflows:
       - name: Build the signed app bundle
         script: |
           cd android
+          # The repo is committed from Windows, which doesn't carry the
+          # executable bit reliably — make sure the wrapper can run.
+          chmod +x gradlew
           ./gradlew bundleRelease
     artifacts:
       - android/app/build/outputs/**/*.aab
