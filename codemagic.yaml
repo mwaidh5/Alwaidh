@@ -63,3 +63,55 @@ workflows:
         # submit_to_testflight false avoids the external-review step that
         # demands feedback email / reviewer contact info.
         submit_to_testflight: false
+
+  # ---------------------------------------------------------------------------
+  # Android / Google Play. Builds a signed .aab and (optionally) uploads it to
+  # the Play Console's internal testing track — the Android equivalent of
+  # TestFlight internal testing: no review wait, staff install from a link.
+  #
+  # Codemagic setup needed once:
+  #   1. Code signing -> Android keystore: upload (or generate) a keystore and
+  #      give it the reference name "alwaidh_keystore".
+  #   2. Only for automatic upload: add a Google Play service-account JSON as
+  #      the secure variable GCLOUD_SERVICE_ACCOUNT_CREDENTIALS in the group
+  #      "google_play", then uncomment the publishing block at the bottom.
+  #      Without it the build still produces an .aab you can upload by hand.
+  # ---------------------------------------------------------------------------
+  android-play:
+    name: Alwaidh Staff — Android (Play internal testing)
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      node: 22
+      java: 21
+      android_signing:
+        - alwaidh_keystore
+      # groups:
+      #   - google_play
+      vars:
+        PACKAGE_NAME: 'com.alwaidh.staff'
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build the web app
+        script: npm run build
+      - name: Sync Capacitor Android
+        script: npx cap sync android
+      - name: Set the version code
+        # Play rejects a version code it has seen before, so use the build
+        # counter — it always increases.
+        script: |
+          cd android
+          sed -i "s/versionCode 1/versionCode $BUILD_NUMBER/" app/build.gradle
+      - name: Build the signed app bundle
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    # publishing:
+    #   google_play:
+    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+    #     track: internal
+    #     submit_as_draft: false
