@@ -7,6 +7,7 @@ import {
 } from '../../lib/settingsStore';
 import { uploadImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
+import { solarBrands } from '../../data/brands';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -221,6 +222,12 @@ export default function AdminSettings() {
             folder="site"
             onChange={(url) => update('tiandyLogo', url)}
           />
+          <ImageField
+            label="SolarMax logo (homepage solar section)"
+            value={settings.solarLogo}
+            folder="site"
+            onChange={(url) => update('solarLogo', url)}
+          />
           {categories.map((c) => (
             <ImageField
               key={c.slug}
@@ -229,6 +236,17 @@ export default function AdminSettings() {
               folder="site"
               onChange={(url) =>
                 update('categoryLogos', { ...(settings.categoryLogos ?? {}), [c.slug]: url })
+              }
+            />
+          ))}
+          {solarBrands.map((b) => (
+            <ImageField
+              key={b.slug}
+              label={`${b.name} logo (brands strip)`}
+              value={settings.brandLogos?.[b.slug] ?? ''}
+              folder="site"
+              onChange={(url) =>
+                update('brandLogos', { ...(settings.brandLogos ?? {}), [b.slug]: url })
               }
             />
           ))}
