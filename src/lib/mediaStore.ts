@@ -24,6 +24,22 @@ function publicUrl(bucket: string, fullPath: string): string {
   )}?alt=media`;
 }
 
+/**
+ * Storage path behind a download URL, e.g.
+ * ".../o/products%2Fabc%2F1-x.jpg?alt=media&token=…" → "products/abc/1-x.jpg".
+ * Returns null for links that don't point at our bucket (e.g. Unsplash), and
+ * ignores the token so links saved at different times still match.
+ */
+export function storagePathFromUrl(url: string): string | null {
+  const match = /\/o\/([^?]+)/.exec(url ?? '');
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
 /** Collect every file under `prefix`, walking subfolders in parallel. */
 async function walk(prefix: string, bucket: string, out: MediaItem[]): Promise<void> {
   if (!storage) return;
