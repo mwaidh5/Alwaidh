@@ -25,6 +25,8 @@ export interface SiteSettings {
   solarBannerImage: string;
   logoImage: string;
   tiandyLogo: string;
+  /** Logo shown on each homepage category tile, keyed by category slug. */
+  categoryLogos: Record<string, string>;
   solarPriceColumns: PriceColumn[];
 }
 
@@ -46,6 +48,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   solarBannerImage: '',
   logoImage: '',
   tiandyLogo: '',
+  categoryLogos: {},
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
@@ -85,6 +88,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     solarStaffEmails: Array.isArray(data.solarStaffEmails)
       ? (data.solarStaffEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.solarStaffEmails,
+    categoryLogos:
+      data.categoryLogos && typeof data.categoryLogos === 'object'
+        ? (data.categoryLogos as Record<string, string>)
+        : DEFAULT_SETTINGS.categoryLogos,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])
