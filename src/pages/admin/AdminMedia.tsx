@@ -72,7 +72,9 @@ export default function AdminMedia() {
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
       )}
 
-      {items && items.length === 0 && !loading ? (
+      {loading ? (
+        <p className="card p-10 text-center text-sm text-slate-500">Loading images…</p>
+      ) : items && items.length === 0 ? (
         <p className="card p-10 text-center text-sm text-slate-500">No images uploaded yet.</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
