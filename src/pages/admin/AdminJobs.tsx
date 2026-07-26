@@ -49,11 +49,6 @@ const EMPTY: FormState = {
   updatedAtMs: null,
 };
 
-/** "mahmood" from "mahmood@gmail.com" — compact name for the cards. */
-function shortWho(email: string): string {
-  return email.split('@')[0] || email;
-}
-
 function fmtWhen(ms: number | null): string {
   if (!ms) return '';
   return new Date(ms).toLocaleDateString('en-GB', {
@@ -345,7 +340,6 @@ export default function AdminJobs() {
                   }}
                   onView={setViewing}
                   onDelete={handleDelete}
-                  onPreviewInvoice={previewInvoice}
                 />
               </div>
             ))}
@@ -392,7 +386,6 @@ function Column({
   onEdit,
   onView,
   onDelete,
-  onPreviewInvoice,
 }: {
   status: JobStatus;
   label: string;
@@ -400,7 +393,6 @@ function Column({
   onEdit: (j: Job) => void;
   onView: (j: Job) => void;
   onDelete: (j: Job) => void;
-  onPreviewInvoice: (url: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const style = STATUS_STYLES[status];
@@ -433,7 +425,6 @@ function Column({
             onEdit={() => onEdit(j)}
             onView={() => onView(j)}
             onDelete={() => onDelete(j)}
-            onPreviewInvoice={onPreviewInvoice}
           />
         ))}
         {jobs.length === 0 && (
@@ -452,13 +443,11 @@ function JobCard({
   onEdit,
   onView,
   onDelete,
-  onPreviewInvoice,
 }: {
   job: Job;
   onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
-  onPreviewInvoice: (url: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id });
   const style = transform
@@ -473,7 +462,6 @@ function JobCard({
         onEdit={onEdit}
         onView={onView}
         onDelete={onDelete}
-        onPreviewInvoice={onPreviewInvoice}
       />
     </div>
   );
@@ -486,7 +474,6 @@ function JobCardView({
   onEdit,
   onView,
   onDelete,
-  onPreviewInvoice,
   overlay,
 }: {
   job: Job;
@@ -495,7 +482,6 @@ function JobCardView({
   onEdit?: () => void;
   onView?: () => void;
   onDelete?: () => void;
-  onPreviewInvoice?: (url: string) => void;
   overlay?: boolean;
 }) {
   const isRepair = job.type === 'repair';
@@ -510,10 +496,12 @@ function JobCardView({
         className={`absolute inset-y-0 left-0 w-1 ${isRepair ? 'bg-amber-400' : 'bg-brand-500'}`}
         aria-hidden="true"
       />
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
+      {/* Compact by design: just who and what. Everything else — address,
+          phone, notes, invoice, history — lives behind the Details button. */}
+      <div className="p-2.5">
+        <div className="flex items-start justify-between gap-1.5">
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+            className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
               isRepair ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
             }`}
           >
@@ -522,7 +510,7 @@ function JobCardView({
           <button
             type="button"
             aria-label="Drag"
-            className="-m-1 cursor-grab touch-none rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
+            className="-m-1 cursor-grab touch-none rounded p-1 text-[11px] leading-none text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
             {...dragListeners}
             {...dragAttributes}
           >
@@ -530,103 +518,45 @@ function JobCardView({
           </button>
         </div>
 
-        <p className="mt-1.5 text-sm font-bold text-slate-900">{job.customer || 'Unnamed'}</p>
-        {job.system && <p className="text-xs text-slate-500">{job.system}</p>}
+        <p className="mt-1 truncate text-sm font-bold leading-snug text-slate-900">
+          {job.customer || 'Unnamed'}
+        </p>
+        {job.system && <p className="truncate text-[11px] text-slate-500">{job.system}</p>}
 
-        {(job.address || job.phone) && (
-          <div className="mt-2 space-y-0.5 text-xs text-slate-500">
-            {job.address && (
-              <a
-                href={
-                  job.mapUrl ||
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`
-                }
-                target="_blank"
-                rel="noreferrer"
-                className="block truncate hover:text-brand-700 hover:underline"
-                title="Open in Google Maps"
-              >
-                📍 {job.address}
-              </a>
-            )}
-            {job.phone && <p className="truncate">📞 {job.phone}</p>}
-          </div>
-        )}
-
-        {job.notes && (
-          <p className="mt-2 line-clamp-2 rounded-md bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
-            {job.notes}
-          </p>
-        )}
-
-        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-          {job.installer ? (
-            <span className="flex min-w-0 items-center gap-1.5" title={`Installer: ${job.installer}`}>
-              <span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-slate-800 text-[10px] font-bold text-white">
-                {job.installer
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((w) => w.charAt(0).toUpperCase())
-                  .join('')}
-              </span>
-              <span className="truncate text-xs font-medium text-slate-600">{job.installer}</span>
-            </span>
-          ) : (
-            <span className="text-xs text-slate-400">Unassigned</span>
-          )}
-          <div className="flex flex-none items-center gap-1">
-            {job.invoiceUrl && (
+        <div className="mt-2 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] text-slate-500">
+            {job.installer || 'Unassigned'}
+            {job.invoiceUrl && <span title="Has an invoice"> · 📄</span>}
+          </span>
+          {!overlay && (
+            <div className="flex flex-none items-center gap-1">
               <button
                 type="button"
-                onClick={() => onPreviewInvoice?.(job.invoiceUrl)}
-                title="Preview invoice"
-                className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
+                onClick={onView}
+                title="View all details"
+                className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-[11px] font-bold text-brand-700 transition hover:bg-brand-100"
               >
-                📄
+                👁 Details
               </button>
-            )}
-            {!overlay && (
-              <>
-                <button
-                  type="button"
-                  onClick={onView}
-                  title="View all details"
-                  className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
-                >
-                  👁️
-                </button>
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  title="Edit job"
-                  className="rounded-md px-1.5 py-1 text-sm hover:bg-slate-100"
-                >
-                  ✏️
-                </button>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  title="Delete job"
-                  className="rounded-md px-1.5 py-1 text-sm hover:bg-red-50"
-                >
-                  🗑️
-                </button>
-              </>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={onEdit}
+                title="Edit job"
+                className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                title="Delete job"
+                className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-red-50 hover:text-red-600"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
         </div>
-
-        {(job.createdBy || job.createdAtMs) && (
-          <p
-            className="mt-1.5 truncate text-[10px] text-slate-400"
-            title={`Added by ${job.createdBy || 'unknown'}${
-              job.createdAtMs ? ` on ${fmtWhen(job.createdAtMs)}` : ''
-            }`}
-          >
-            ➕ {job.createdBy ? shortWho(job.createdBy) : 'unknown'}
-            {job.createdAtMs ? ` · ${fmtWhen(job.createdAtMs)}` : ''}
-          </p>
-        )}
       </div>
     </div>
   );
