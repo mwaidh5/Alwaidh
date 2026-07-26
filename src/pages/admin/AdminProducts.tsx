@@ -10,6 +10,7 @@ import {
 } from '../../lib/productStore';
 import { uploadProductDoc, uploadProductImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
+import MediaPicker from '../../components/MediaPicker';
 import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
 import type { Product, CategorySlug } from '../../types/product';
@@ -545,6 +546,7 @@ function ProductDialog({
   // an extension/antivirus/proxy) — offers picking the file instead.
   const [bgFallback, setBgFallback] = useState(false);
   const bgFileInput = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [docBusy, setDocBusy] = useState<'datasheet' | 'manual' | null>(null);
   const [docError, setDocError] = useState('');
   // Bytes of images uploaded in this dialog, keyed by their URL — lets
@@ -837,6 +839,14 @@ function ProductDialog({
                 >
                   {uploading ? 'Uploading…' : state.images.length ? '+ Add images' : 'Upload images'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  disabled={uploading || removingBg}
+                  className="btn-secondary"
+                >
+                  🖼️ Choose from website
+                </button>
                 {state.images.length > 0 && (
                   <button
                     type="button"
@@ -958,6 +968,13 @@ function ProductDialog({
           </button>
         </div>
       </div>
+      <MediaPicker
+        open={pickerOpen}
+        multiple
+        title="Choose images already on the website"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => setState({ ...state, images: [...state.images, ...urls] })}
+      />
     </div>
   );
 }

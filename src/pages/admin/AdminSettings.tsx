@@ -8,6 +8,7 @@ import {
 import { uploadImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import { solarBrands } from '../../data/brands';
+import MediaPicker from '../../components/MediaPicker';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -303,6 +304,7 @@ function ImageField({
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   async function handle(file: File) {
     setErr('');
@@ -343,6 +345,14 @@ function ImageField({
             >
               {uploading ? 'Uploading…' : 'Upload image'}
             </button>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              disabled={uploading}
+              className="btn-secondary"
+            >
+              🖼️ Choose from website
+            </button>
             {value && (
               <button
                 type="button"
@@ -372,6 +382,12 @@ function ImageField({
           {err && <p className="text-xs text-red-700">{err}</p>}
         </div>
       </div>
+      <MediaPicker
+        open={pickerOpen}
+        title={`Choose an image — ${label}`}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => urls[0] && onChange(urls[0])}
+      />
     </div>
   );
 }
