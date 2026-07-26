@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
+import Privacy from './pages/Privacy';
 import Login from './pages/Login';
 import Account from './pages/Account';
 import Admin from './pages/Admin';
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/login" element={<Login />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin" element={<Admin />}>
