@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../lib/useSettings';
+import { useLang } from '../lib/i18n';
 
 export default function Footer() {
   // Same logo as the navbar — changing it in Settings updates both.
   const settings = useSettings();
+  const { t } = useLang();
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="container-page grid gap-8 py-10 sm:grid-cols-2 md:grid-cols-4">
@@ -25,36 +27,36 @@ export default function Footer() {
             )}
           </div>
           <p className="mt-3 text-sm text-slate-600">
-            Computers, solar energy solutions, and Tiandy security cameras — all in one shop.
+            {t('Computers, solar energy solutions, and Tiandy security cameras — all in one shop.')}
           </p>
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">Browse</h4>
+          <h4 className="font-semibold text-slate-900">{t('Browse')}</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li><Link className="hover:text-brand-700" to="/shop">Shop</Link></li>
-            <li><Link className="hover:text-brand-700" to="/solar-prices">Solar Prices</Link></li>
-            <li><Link className="hover:text-brand-700" to="/cart">Cart</Link></li>
+            <li><Link className="hover:text-brand-700" to="/shop">{t('Shop')}</Link></li>
+            <li><Link className="hover:text-brand-700" to="/solar-prices">{t('Solar Prices')}</Link></li>
+            <li><Link className="hover:text-brand-700" to="/cart">{t('Cart')}</Link></li>
           </ul>
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">Support</h4>
+          <h4 className="font-semibold text-slate-900">{t('Support')}</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li><Link className="hover:text-brand-700" to="/about">Contact us</Link></li>
-            <li>Shipping &amp; Returns</li>
-            <li>Warranty</li>
+            <li><Link className="hover:text-brand-700" to="/about">{t('Contact us')}</Link></li>
+            <li>{t('Shipping & Returns')}</li>
+            <li>{t('Warranty')}</li>
           </ul>
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">Company</h4>
+          <h4 className="font-semibold text-slate-900">{t('Company')}</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li><Link className="hover:text-brand-700" to="/about">About</Link></li>
-            <li>Privacy</li>
-            <li>Terms</li>
+            <li><Link className="hover:text-brand-700" to="/about">{t('About')}</Link></li>
+            <li>{t('Privacy')}</li>
+            <li>{t('Terms')}</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} {settings.storeName || 'Alwaidh'}. All rights reserved.
+        &copy; {new Date().getFullYear()} {settings.storeName || 'Alwaidh'}. {t('All rights reserved.')}
       </div>
     </footer>
   );

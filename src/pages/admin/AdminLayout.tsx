@@ -4,6 +4,7 @@ import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
+import { useLang } from '../../lib/i18n';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar staff.
@@ -23,6 +24,7 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
 
 export default function AdminLayout() {
   const { user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess, signOut } = useAuth();
+  const { t, lang, setLang } = useLang();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -74,7 +76,7 @@ export default function AdminLayout() {
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <div className="card overflow-hidden">
               <div className="border-b border-slate-200 bg-slate-900 px-4 py-3 text-white">
-                <p className="text-xs uppercase tracking-wider text-slate-300">Admin</p>
+                <p className="text-xs uppercase tracking-wider text-slate-300">{t('Admin')}</p>
                 <p className="truncate text-sm font-semibold">{settings?.storeName ?? 'Alwaidh'}</p>
               </div>
               <button
@@ -83,7 +85,7 @@ export default function AdminLayout() {
                 className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 lg:hidden"
                 aria-expanded={open}
               >
-                Menu
+                {t('Menu')}
                 <span>{open ? '▴' : '▾'}</span>
               </button>
               <nav className={`${open ? 'block' : 'hidden'} lg:block`}>
@@ -102,21 +104,28 @@ export default function AdminLayout() {
                         }
                       >
                         <span aria-hidden>{item.icon}</span>
-                        {item.label}
+                        {t(item.label)}
                       </NavLink>
                     </li>
                   ))}
                 </ul>
                 <div className="border-t border-slate-200 p-3 text-xs text-slate-500">
                   <p className="truncate">
-                    Signed in as <span className="font-semibold text-slate-700">{user.email}</span>
+                    {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {lang === 'ar' ? 'English' : 'العربية'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => signOut()}
                     className="mt-2 w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    Sign out
+                    {t('Sign out')}
                   </button>
                 </div>
               </nav>

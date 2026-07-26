@@ -1,0 +1,346 @@
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+
+export type Lang = 'en' | 'ar';
+
+const LS_KEY = 'alwaidh.lang.v1';
+
+/**
+ * Arabic strings, keyed by the English source text. Anything missing falls
+ * back to English, so wrapping a string is always safe and the site never
+ * shows a blank or a raw key.
+ */
+const AR: Record<string, string> = {
+  // ---- Navigation & shell ----
+  Home: 'الرئيسية',
+  Shop: 'المتجر',
+  'Solar Prices': 'أسعار الطاقة الشمسية',
+  Cart: 'السلة',
+  About: 'من نحن',
+  'Contact us': 'اتصل بنا',
+  'Sign in': 'تسجيل الدخول',
+  'Sign out': 'تسجيل الخروج',
+  'Sign up': 'إنشاء حساب',
+  'My account': 'حسابي',
+  Dashboard: 'لوحة التحكم',
+  Search: 'بحث',
+  'Search products…': 'ابحث عن منتج…',
+  Menu: 'القائمة',
+  Browse: 'تصفح',
+  Support: 'الدعم',
+  Company: 'الشركة',
+  Privacy: 'الخصوصية',
+  Terms: 'الشروط',
+  Warranty: 'الضمان',
+  'Shipping & Returns': 'الشحن والإرجاع',
+  'All rights reserved.': 'جميع الحقوق محفوظة.',
+  'Computers, solar energy solutions, and Tiandy security cameras — all in one shop.':
+    'حواسيب وأنظمة طاقة شمسية وكاميرات مراقبة تياندي — في متجر واحد.',
+
+  // ---- Home ----
+  'Your Tech Destination': 'وجهتك التقنية',
+  'Shop by Category': 'تسوّق حسب الفئة',
+  'Shop Now →': 'تسوّق الآن →',
+  'View all →': 'عرض الكل →',
+  'New Season': 'موسم جديد',
+  Collection: 'تشكيلة',
+  Computers: 'الحواسيب',
+  'Solar Energy': 'الطاقة الشمسية',
+  'Tiandy Cameras': 'كاميرات تياندي',
+  'Security Cameras': 'كاميرات المراقبة',
+  Cameras: 'المراقبة',
+  'Camera range coming online soon': 'تشكيلة الكاميرات ستتوفر قريباً',
+  'We supply and install the full Tiandy line-up — IP cameras, NVRs, and complete CCTV systems. Ask us for a quote in the meantime.':
+    'نوفّر ونركّب تشكيلة تياندي الكاملة — كاميرات IP وأجهزة تسجيل وأنظمة مراقبة متكاملة. تواصل معنا للحصول على عرض سعر.',
+  'Professional IP cameras and NVRs from an authorised Tiandy reseller — built for homes, shops, and business sites.':
+    'كاميرات IP وأجهزة تسجيل احترافية من وكيل معتمد لتياندي — للمنازل والمحلات والمواقع التجارية.',
+  'Shop Tiandy Cameras': 'تسوّق كاميرات تياندي',
+  'Power tomorrow today': 'شغّل الغد من اليوم',
+  'with solar': 'بالطاقة الشمسية',
+  'Panels, inverters, and batteries sized for your home or business — supplied and installed by the team that knows the gear.':
+    'ألواح وعاكسات وبطاريات مصممة لمنزلك أو عملك — توريد وتركيب من فريق يعرف المعدات.',
+  'View Solar Prices': 'عرض أسعار الطاقة الشمسية',
+  'Complete solar systems': 'أنظمة شمسية متكاملة',
+  'Panels, inverters, and batteries supplied as one working system — sized for your actual load.':
+    'ألواح وعاكسات وبطاريات كنظام واحد متكامل — مصمم حسب استهلاكك الفعلي.',
+  'Discover our systems →': 'اكتشف أنظمتنا →',
+  'SolarMax batteries': 'بطاريات SolarMax',
+  'More power, more backup — tubular and lithium batteries built for long, hot days and nightly runtime.':
+    'طاقة أكبر واحتياطي أطول — بطاريات تيوبلر وليثيوم مصنوعة للأيام الحارة والتشغيل الليلي.',
+  'Shop batteries →': 'تسوّق البطاريات →',
+  'Brands we work with': 'العلامات التجارية التي نتعامل معها',
+  'Expert support': 'دعم متخصص',
+  Security: 'أنظمة',
+  'Fast delivery': 'توصيل سريع',
+  'Same-day dispatch on in-stock items across Baghdad and beyond.':
+    'شحن في نفس اليوم للمنتجات المتوفرة في بغداد وبقية المحافظات.',
+  'Genuine products': 'منتجات أصلية',
+  'Solar experts': 'خبراء الطاقة الشمسية',
+  'Security cameras & NVRs': 'كاميرات وأجهزة تسجيل',
+  'All Products': 'كل المنتجات',
+  'View All Products': 'عرض كل المنتجات',
+  'Fresh in store': 'وصل حديثاً',
+  'Latest Collection': 'أحدث التشكيلات',
+  'Real help sizing solar systems, PCs, and CCTV — before and after you buy.':
+    'مساعدة حقيقية في اختيار أنظمة الطاقة والحواسيب والمراقبة — قبل الشراء وبعده.',
+
+  // ---- Product & shop ----
+  'Add to cart': 'أضف إلى السلة',
+  'Added ✓': 'تمت الإضافة ✓',
+  'In stock': 'متوفر',
+  'Out of stock': 'غير متوفر',
+  Out: 'نفد',
+  Specifications: 'المواصفات',
+  Datasheet: 'ورقة البيانات',
+  'Open in new tab ↗': 'فتح في تبويب جديد ↗',
+  'Download manual (PDF)': 'تحميل الدليل (PDF)',
+  'Loading datasheet…': 'جاري تحميل ورقة البيانات…',
+  'Product not found': 'المنتج غير موجود',
+  'Back to home': 'العودة للرئيسية',
+  'Loading product…': 'جاري تحميل المنتج…',
+  'All categories': 'كل الفئات',
+  'No products match.': 'لا توجد منتجات مطابقة.',
+  Price: 'السعر',
+  Category: 'الفئة',
+  Brand: 'الماركة',
+  Product: 'المنتج',
+  Products: 'المنتجات',
+  Filters: 'عوامل التصفية',
+  'Sort by': 'ترتيب حسب',
+  Newest: 'الأحدث',
+  'Price: low to high': 'السعر: من الأقل للأعلى',
+  'Price: high to low': 'السعر: من الأعلى للأقل',
+
+  // ---- Cart & checkout ----
+  'Your cart': 'سلتك',
+  'Your cart is empty.': 'سلتك فارغة.',
+  'Continue shopping': 'مواصلة التسوق',
+  Subtotal: 'المجموع الفرعي',
+  Shipping: 'الشحن',
+  Tax: 'الضريبة',
+  Total: 'الإجمالي',
+  Checkout: 'إتمام الشراء',
+  Remove: 'إزالة',
+  Quantity: 'الكمية',
+  Qty: 'الكمية',
+
+  // ---- Auth ----
+  Email: 'البريد الإلكتروني',
+  Password: 'كلمة المرور',
+  'Continue with Google': 'المتابعة عبر جوجل',
+  'Forgot password?': 'نسيت كلمة المرور؟',
+  'Create an account': 'إنشاء حساب',
+  'Full name': 'الاسم الكامل',
+  'Send verification email': 'إرسال بريد التحقق',
+  'Not authorised': 'غير مصرّح',
+
+  // ---- Admin shell ----
+  Overview: 'نظرة عامة',
+  'Solar Jobs': 'أعمال الطاقة الشمسية',
+  Media: 'الوسائط',
+  Orders: 'الطلبات',
+  Users: 'المستخدمون',
+  Submissions: 'الرسائل',
+  Analytics: 'التحليلات',
+  Settings: 'الإعدادات',
+  Admin: 'الإدارة',
+  'Signed in as': 'مسجّل الدخول باسم',
+  Loading: 'جاري التحميل',
+  'Loading…': 'جاري التحميل…',
+  Save: 'حفظ',
+  'Saving…': 'جاري الحفظ…',
+  Cancel: 'إلغاء',
+  Delete: 'حذف',
+  Edit: 'تعديل',
+  Close: 'إغلاق',
+  Refresh: 'تحديث',
+  Restore: 'استعادة',
+  'Copy link': 'نسخ الرابط',
+  'Copied!': 'تم النسخ!',
+  Selected: 'محدد',
+  Clear: 'مسح',
+  Preview: 'معاينة',
+  Upload: 'رفع',
+  'Upload image': 'رفع صورة',
+  'Upload images': 'رفع صور',
+  'Uploading…': 'جاري الرفع…',
+  '🖼️ Choose from website': '🖼️ اختر من الموقع',
+  'Choose from website': 'اختر من الموقع',
+  'Use image': 'استخدام الصورة',
+  'Tap an image to select': 'اضغط على صورة لاختيارها',
+  'Tap images to select': 'اضغط على الصور لاختيارها',
+  'Search by name or folder…': 'ابحث بالاسم أو المجلد…',
+  'No images on the site yet.': 'لا توجد صور على الموقع بعد.',
+  'Loading images…': 'جاري تحميل الصور…',
+
+  // ---- Admin: products ----
+  'Add product': 'إضافة منتج',
+  '+ Add product': '+ إضافة منتج',
+  'New product': 'منتج جديد',
+  'Edit product': 'تعديل المنتج',
+  'Save changes': 'حفظ التغييرات',
+  Create: 'إنشاء',
+  Name: 'الاسم',
+  Currency: 'العملة',
+  'Rating (0–5)': 'التقييم (0–5)',
+  'Available for purchase': 'متاح للشراء',
+  'Product images': 'صور المنتج',
+  'Short description': 'وصف مختصر',
+  'Specs (one per line, key: value)': 'المواصفات (سطر لكل مواصفة، المفتاح: القيمة)',
+  'Remove background (main)': 'إزالة الخلفية (الرئيسية)',
+  'Removing…': 'جاري الإزالة…',
+  Main: 'رئيسية',
+  Trash: 'المحذوفات',
+  'The Trash is empty.': 'سلة المحذوفات فارغة.',
+  'Delete forever': 'حذف نهائي',
+  '↩️ Restore': '↩️ استعادة',
+  'Search by name, brand, or id': 'ابحث بالاسم أو الماركة أو المعرّف',
+  'In use': 'قيد الاستخدام',
+  Unused: 'غير مستخدم',
+  'Not used anywhere': 'غير مستخدم في أي مكان',
+  'Media library': 'مكتبة الوسائط',
+
+  // ---- Admin: jobs ----
+  'New job': 'عمل جديد',
+  '+ New job': '+ عمل جديد',
+  'Edit job': 'تعديل العمل',
+  'Job details': 'تفاصيل العمل',
+  Details: 'التفاصيل',
+  'View all details': 'عرض كل التفاصيل',
+  'Track installs and repairs. Drag a card between columns to update its status.':
+    'تابع التركيبات والصيانة. اسحب البطاقة بين الأعمدة لتغيير الحالة.',
+  'New Requests': 'طلبات جديدة',
+  Scheduled: 'مجدول',
+  'In Progress': 'قيد التنفيذ',
+  Completed: 'مكتمل',
+  'Cancelled / Delayed': 'ملغى / مؤجل',
+  'Customer name': 'اسم الزبون',
+  Phone: 'الهاتف',
+  Address: 'العنوان',
+  'Job type': 'نوع العمل',
+  Install: 'تركيب',
+  Repair: 'صيانة',
+  'System / details': 'النظام / التفاصيل',
+  Installer: 'الفني',
+  'Technician name': 'اسم الفني',
+  Status: 'الحالة',
+  Notes: 'ملاحظات',
+  'Invoice (PDF)': 'الفاتورة (PDF)',
+  Invoice: 'الفاتورة',
+  Unassigned: 'غير مُسند',
+  'Map link (Google Maps)': 'رابط الموقع (خرائط جوجل)',
+  'Paste a Google Maps link — Waze link is made automatically':
+    'الصق رابط خرائط جوجل — يتم إنشاء رابط ويز تلقائياً',
+  'Google Maps': 'خرائط جوجل',
+  Waze: 'ويز',
+  Added: 'أُضيف',
+  'Last edited': 'آخر تعديل',
+  'Drag jobs here': 'اسحب الأعمال هنا',
+  'Search customer, installer, address…': 'ابحث بالزبون أو الفني أو العنوان…',
+  All: 'الكل',
+  Installs: 'التركيبات',
+  Repairs: 'الصيانة',
+
+  // ---- Admin: settings ----
+  'Store name': 'اسم المتجر',
+  'Contact email': 'البريد الإلكتروني للتواصل',
+  'Support phone': 'هاتف الدعم',
+  'Default currency': 'العملة الافتراضية',
+  'Save settings': 'حفظ الإعدادات',
+  'Reset to defaults': 'استعادة الافتراضيات',
+  'Use default': 'استخدام الافتراضي',
+  Default: 'افتراضي',
+  Images: 'الصور',
+  'Homepage hero image': 'صورة الواجهة الرئيسية',
+  'Homepage solar banner image': 'صورة بانر الطاقة الشمسية',
+  'Logo (navbar)': 'الشعار (الشريط العلوي)',
+  Language: 'اللغة',
+  English: 'English',
+  Arabic: 'العربية',
+  Storefront: 'الواجهة',
+  'Site behaviour': 'سلوك الموقع',
+  'Team & roles': 'الفريق والصلاحيات',
+  'Site images': 'صور الموقع',
+  'Default currency (ISO)': 'العملة الافتراضية (ISO)',
+  'Tax rate (%)': 'نسبة الضريبة (%)',
+  'Flat shipping cost': 'كلفة شحن ثابتة',
+  'Enable checkout': 'تفعيل الشراء',
+  'Show solar prices link': 'إظهار رابط أسعار الطاقة',
+  'Maintenance mode': 'وضع الصيانة',
+  'Top-of-page banner message': 'رسالة الشريط العلوي',
+  'Admins — full access': 'المدراء — صلاحية كاملة',
+  'Computer staff — computers & cameras': 'موظفو الحاسبات — الحاسبات والكاميرات',
+  'Solar staff — solar products, prices & jobs': 'موظفو الطاقة — المنتجات والأسعار والأعمال',
+  'Tiandy logo (homepage camera section)': 'شعار تياندي (قسم الكاميرات)',
+  'SolarMax logo (homepage solar section)': 'شعار SolarMax (قسم الطاقة الشمسية)',
+  'Settings saved.': 'تم حفظ الإعدادات.',
+  Role: 'الصلاحية',
+  Customer: 'زبون',
+  'Full staff — computers, cameras & solar': 'موظف كامل — حاسبات وكاميرات وطاقة',
+  'Admin — full access': 'مدير — صلاحية كاملة',
+  'Computer staff — computers & cameras ': 'موظف حاسبات — حاسبات وكاميرات',
+  'No images uploaded yet.': 'لم يتم رفع أي صور بعد.',
+  'Every image uploaded to your store.': 'كل الصور المرفوعة إلى متجرك.',
+  'images': 'صور',
+  'in use': 'قيد الاستخدام',
+  'unused': 'غير مستخدم',
+  'Delete selected': 'حذف المحدد',
+  'Select all shown': 'تحديد كل الظاهر',
+  'Clear selection': 'إلغاء التحديد',
+  'Checkout unavailable': 'الشراء غير متاح',
+  'Your cart is empty': 'سلتك فارغة',
+};
+
+interface LanguageValue {
+  lang: Lang;
+  dir: 'ltr' | 'rtl';
+  setLang: (l: Lang) => void;
+  /** Translate a string; unknown text is returned unchanged (English). */
+  t: (text: string) => string;
+}
+
+const LanguageContext = createContext<LanguageValue>({
+  lang: 'en',
+  dir: 'ltr',
+  setLang: () => {},
+  t: (s) => s,
+});
+
+function readInitial(): Lang {
+  try {
+    return localStorage.getItem(LS_KEY) === 'ar' ? 'ar' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLang] = useState<Lang>(readInitial);
+
+  useEffect(() => {
+    const dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dir;
+    try {
+      localStorage.setItem(LS_KEY, lang);
+    } catch {
+      /* private mode — the choice just won't persist */
+    }
+  }, [lang]);
+
+  const value = useMemo<LanguageValue>(
+    () => ({
+      lang,
+      dir: lang === 'ar' ? 'rtl' : 'ltr',
+      setLang,
+      t: (text: string) => (lang === 'ar' ? (AR[text] ?? text) : text),
+    }),
+    [lang],
+  );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+/** `const { t, lang, setLang } = useLang();` */
+export function useLang(): LanguageValue {
+  return useContext(LanguageContext);
+}

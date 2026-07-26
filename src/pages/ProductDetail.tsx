@@ -4,26 +4,28 @@ import { useProducts } from '../lib/useProducts';
 import { getCategory } from '../data/categories';
 import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../lib/i18n';
 
 export default function ProductDetail() {
   const { id = '' } = useParams();
   const { products, loading } = useProducts();
   const product = products.find((p) => p.id === id);
   const { add } = useCart();
+  const { t } = useLang();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
 
   if (loading) {
-    return <p className="container-page py-20 text-center text-slate-500">Loading product…</p>;
+    return <p className="container-page py-20 text-center text-slate-500">{t('Loading product…')}</p>;
   }
 
   if (!product) {
     return (
       <div className="container-page py-20 text-center">
-        <h1 className="text-2xl font-bold">Product not found</h1>
+        <h1 className="text-2xl font-bold">{t('Product not found')}</h1>
         <Link to="/" className="mt-4 inline-block text-brand-700 hover:underline">
-          Back to home
+          {t('Back to home')}
         </Link>
       </div>
     );
@@ -42,12 +44,12 @@ export default function ProductDetail() {
   return (
     <div className="container-page py-10">
       <nav className="mb-6 text-sm text-slate-500">
-        <Link to="/" className="hover:text-brand-700">Home</Link>
+        <Link to="/" className="hover:text-brand-700">{t('Home')}</Link>
         <span className="mx-2">/</span>
         {category && (
           <>
             <Link to={`/category/${category.slug}`} className="hover:text-brand-700">
-              {category.name}
+              {t(category.name)}
             </Link>
             <span className="mx-2">/</span>
           </>
@@ -95,7 +97,7 @@ export default function ProductDetail() {
                 product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
               }`}
             >
-              {product.inStock ? 'In stock' : 'Out of stock'}
+              {t(product.inStock ? 'In stock' : 'Out of stock')}
             </span>
           </div>
 
@@ -127,12 +129,12 @@ export default function ProductDetail() {
               disabled={!product.inStock}
               className="btn-primary disabled:bg-slate-300"
             >
-              {added ? 'Added ✓' : 'Add to cart'}
+              {added ? t('Added ✓') : t('Add to cart')}
             </button>
           </div>
 
           <div className="mt-8">
-            <h2 className="font-semibold text-slate-900">Specifications</h2>
+            <h2 className="font-semibold text-slate-900">{t('Specifications')}</h2>
             <dl className="mt-3 divide-y divide-slate-200 rounded-lg border border-slate-200">
               {Object.entries(product.specs).map(([k, v]) => (
                 <div key={k} className="grid grid-cols-3 gap-4 px-4 py-3 text-sm">
@@ -151,7 +153,7 @@ export default function ProductDetail() {
                 rel="noreferrer"
                 className="btn-secondary inline-flex items-center gap-2"
               >
-                📄 Download manual (PDF)
+                📄 {t('Download manual (PDF)')}
               </a>
             </div>
           )}
@@ -164,18 +166,19 @@ export default function ProductDetail() {
 }
 
 function DatasheetSection({ url }: { url: string }) {
+  const { t } = useLang();
   const isPdf = /\.pdf(\?|$)/i.test(safeDecode(url));
   return (
     <section className="mt-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-slate-900">Datasheet</h2>
+        <h2 className="text-xl font-bold text-slate-900">{t('Datasheet')}</h2>
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
           className="text-sm font-semibold text-brand-700 hover:underline"
         >
-          Open in new tab ↗
+          {t('Open in new tab ↗')}
         </a>
       </div>
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
@@ -195,6 +198,7 @@ function DatasheetSection({ url }: { url: string }) {
  * and the iOS webview shows only a low-res first page).
  */
 function PdfPages({ url }: { url: string }) {
+  const { t } = useLang();
   const holder = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
@@ -247,7 +251,7 @@ function PdfPages({ url }: { url: string }) {
   return (
     <div className="max-h-[80vh] overflow-y-auto">
       {status === 'loading' && (
-        <p className="p-8 text-center text-sm text-slate-500">Loading datasheet…</p>
+        <p className="p-8 text-center text-sm text-slate-500">{t('Loading datasheet…')}</p>
       )}
       <div ref={holder} />
     </div>

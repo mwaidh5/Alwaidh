@@ -9,8 +9,10 @@ import { uploadImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
 import { solarBrands } from '../../data/brands';
 import MediaPicker from '../../components/MediaPicker';
+import { useLang } from '../../lib/i18n';
 
 export default function AdminSettings() {
+  const { t } = useLang();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -64,7 +66,7 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-extrabold text-slate-900">Settings</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900">{t('Settings')}</h1>
         <p className="mt-1 text-sm text-slate-600">
           Site-wide configuration. Some settings affect the public site immediately.
         </p>
@@ -255,10 +257,10 @@ export default function AdminSettings() {
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
           <button type="button" onClick={resetDefaults} className="text-sm text-slate-500 hover:underline">
-            Reset to defaults
+            {t('Reset to defaults')}
           </button>
           <button type="submit" disabled={busy} className="btn-primary">
-            {busy ? 'Saving…' : 'Save settings'}
+            {busy ? t('Saving…') : t('Save settings')}
           </button>
         </div>
       </form>
@@ -269,7 +271,7 @@ export default function AdminSettings() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="card p-5">
-      <h2 className="text-base font-bold text-slate-900">{title}</h2>
+      <h2 className="text-base font-bold text-slate-900">{useLang().t(title)}</h2>
       <div className="mt-3 space-y-4">{children}</div>
     </div>
   );
@@ -283,7 +285,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
+        {useLang().t(label)}
       </label>
       {children}
     </div>
@@ -305,6 +307,7 @@ function ImageField({
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { t } = useLang();
 
   async function handle(file: File) {
     setErr('');
@@ -323,7 +326,7 @@ function ImageField({
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
+        {useLang().t(label)}
       </label>
       <div className="flex flex-wrap items-start gap-3">
         <div className="h-20 w-32 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
@@ -343,7 +346,7 @@ function ImageField({
               disabled={uploading}
               className="btn-secondary"
             >
-              {uploading ? 'Uploading…' : 'Upload image'}
+              {uploading ? t('Uploading…') : t('Upload image')}
             </button>
             <button
               type="button"
@@ -351,7 +354,7 @@ function ImageField({
               disabled={uploading}
               className="btn-secondary"
             >
-              🖼️ Choose from website
+              {t('🖼️ Choose from website')}
             </button>
             {value && (
               <button
@@ -359,7 +362,7 @@ function ImageField({
                 onClick={() => onChange('')}
                 className="text-sm font-semibold text-red-700 hover:underline"
               >
-                Use default
+                {t('Use default')}
               </button>
             )}
           </div>
@@ -404,7 +407,7 @@ function EmailListField({
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
+        {useLang().t(label)}
       </label>
       <textarea
         className="input min-h-[70px]"

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
+import { useLang } from '../lib/i18n';
 
 const navLinks = [
   { to: '/', label: 'Home', end: true },
@@ -16,7 +17,8 @@ const navLinks = [
 export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, hasAdminAccess, signOut } = useAuth();
-  const dashboardLabel = isAdmin ? 'Admin' : 'Dashboard';
+  const { t, lang, setLang } = useLang();
+  const dashboardLabel = t(isAdmin ? 'Admin' : 'Dashboard');
   const { products } = useProducts();
   const settings = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            aria-label="Menu"
+            aria-label={t('Menu')}
             aria-expanded={mobileOpen}
             className="grid h-10 w-10 flex-none place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 md:hidden"
           >
@@ -116,7 +118,7 @@ export default function Navbar() {
                 }`
               }
             >
-              {link.label}
+              {t(link.label)}
             </NavLink>
           ))}
 
@@ -135,6 +137,17 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Language switch — label shows the language you'd switch TO. */}
+          <button
+            type="button"
+            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            className="grid h-10 min-w-10 place-items-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            aria-label={lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+            title={lang === 'ar' ? 'English' : 'العربية'}
+          >
+            {lang === 'ar' ? 'EN' : 'ع'}
+          </button>
+
           {/* Search (icon only) */}
           <div className="relative" ref={searchRef}>
             <button
@@ -154,7 +167,7 @@ export default function Navbar() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products…"
+                    placeholder={t('Search products…')}
                     className="input"
                   />
                 </form>
@@ -243,7 +256,7 @@ export default function Navbar() {
                     className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                     role="menuitem"
                   >
-                    My account & orders
+                    {t('My account')}
                   </Link>
                   {hasAdminAccess && (
                     <Link
@@ -261,7 +274,7 @@ export default function Navbar() {
                     className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                     role="menuitem"
                   >
-                    Sign out
+                    {t('Sign out')}
                   </button>
                 </div>
               )}
@@ -269,20 +282,20 @@ export default function Navbar() {
           ) : (
             <Link
               to="/login"
-              aria-label="Sign in"
+              aria-label={t('Sign in')}
               className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:px-3"
             >
               <UserIcon />
-              <span className="hidden sm:inline">Sign in</span>
+              <span className="hidden sm:inline">{t('Sign in')}</span>
             </Link>
           )}
 
           <Link
             to="/cart"
             className="relative inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:px-3"
-            aria-label="Cart"
+            aria-label={t('Cart')}
           >
-            <span className="hidden sm:inline">Cart</span>
+            <span className="hidden sm:inline">{t('Cart')}</span>
             <CartIcon className="sm:hidden" />
             <span className="grid min-w-[1.5rem] place-items-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
               {itemCount}
@@ -306,7 +319,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                {link.label}
+                {t(link.label)}
               </NavLink>
             ))}
             {hasAdminAccess && (
@@ -326,14 +339,14 @@ export default function Navbar() {
                 to="/account"
                 className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
-                My account &amp; orders
+                {t('My account')}
               </Link>
             ) : (
               <Link
                 to="/login"
                 className="block rounded-md bg-brand-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-700"
               >
-                Sign in
+                {t('Sign in')}
               </Link>
             )}
           </div>
