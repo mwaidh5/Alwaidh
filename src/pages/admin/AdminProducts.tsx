@@ -541,6 +541,10 @@ function ProductDialog({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [removingBg, setRemovingBg] = useState(false);
+  // Set when the stored image can't be downloaded on this device (blocked by
+  // an extension/antivirus/proxy) — offers picking the file instead.
+  const [bgFallback, setBgFallback] = useState(false);
+  const bgFileInput = useRef<HTMLInputElement>(null);
   const [docBusy, setDocBusy] = useState<'datasheet' | 'manual' | null>(null);
   const [docError, setDocError] = useState('');
   // Bytes of images uploaded in this dialog, keyed by their URL — lets
@@ -638,13 +642,11 @@ function ProductDialog({
     }
   }
 
-  async function handleRemoveBackground() {
-    const target = state.images[0];
-    if (!target) return;
+  /** Cut out the background of `source` and make it the primary image. */
+  async function runBackgroundRemoval(source: Blob) {
     setUploadError('');
     setRemovingBg(true);
     try {
-      const source = await readSourceImage(target);
       const { removeBackground } = await import('@imgly/background-removal');
       // The AI model is served from our own origin (see public/imgly-data,
       // populated by scripts/copy-imgly-assets.mjs) rather than the flaky
@@ -654,9 +656,11 @@ function ProductDialog({
         model: 'small',
       });
       const file = new File([blob], 'bg-removed.png', { type: 'image/png' });
-      const { url } = await uploadProductImage(file, state.id || undefined);
+      const { url, file: stored } = await uploadProductImage(file, state.id || undefined);
+      if (stored) uploadedFiles.current.set(url, stored);
       // Replace the primary image with the cut-out version.
       setState({ ...state, images: [url, ...state.images.slice(1)] });
+      setBgFallback(false);
     } catch (e) {
       const raw = e instanceof Error ? e.message : 'Background removal failed.';
       // A missing lazy chunk means the site was redeployed while this page
@@ -680,6 +684,33 @@ function ProductDialog({
       setRemovingBg(false);
     }
   }
+
+  async function handleRemoveBackground() {
+    const target = state.images[0];
+    if (!target) return;
+    setUploadError('');
+    setBgFallback(false);
+    setRemovingBg(true);
+    let source: Blob | null = null;
+    try {
+      source = await readSourceImage(target);
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : 'Could not read the image.';
+      setUploadError(
+        raw.startsWith('SOURCE_UNREADABLE:')
+          ? raw.slice('SOURCE_UNREADABLE:'.length).trim()
+          : raw,
+      );
+      // The image itself is unreachable from this device — offer the
+      // no-network route: pick the photo file directly.
+      setBgFallback(true);
+      return;
+    } finally {
+      setRemovingBg(false);
+    }
+    await runBackgroundRemoval(source);
+  }
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-xl max-h-[90vh]">
@@ -845,6 +876,33 @@ function ProductDialog({
                 placeholder="…or paste an image URL and press Enter"
               />
               {uploadError && <p className="text-xs text-red-700">{uploadError}</p>}
+              {bgFallback && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5">
+                  <p className="text-xs text-amber-900">
+                    You can still do it without downloading: choose the same photo from this
+                    device and the background is removed right here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => bgFileInput.current?.click()}
+                    disabled={removingBg}
+                    className="btn-secondary mt-2 py-1.5 text-sm"
+                  >
+                    📁 Choose photo from this device
+                  </button>
+                  <input
+                    ref={bgFileInput}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (f) runBackgroundRemoval(f);
+                    }}
+                  />
+                </div>
+              )}
               <p className="text-xs text-slate-500">
                 JPG, PNG, WEBP, AVIF, or GIF · max 5 MB each. The first image is the main one shown
                 in listings — hover a thumbnail to reorder or remove. “Remove background” runs an
