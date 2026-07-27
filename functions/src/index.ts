@@ -13,8 +13,9 @@ import { getMessaging } from 'firebase-admin/messaging';
 
 initializeApp();
 
-// Keep everything in one region and cap instances — this is a small shop.
-setGlobalOptions({ region: 'europe-west1', maxInstances: 5 });
+// Match the Firestore database's location (nam5) so triggers fire without
+// crossing regions, and cap instances — this is a small shop.
+setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 
 export const TOPICS = {
   jobs: 'staff-jobs',
