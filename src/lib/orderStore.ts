@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -121,6 +122,20 @@ export async function listOrders(): Promise<Order[]> {
     return snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id));
   }
   return readLocal();
+}
+
+/** Live order feed for staff — powers the dashboard's new-order badge. */
+export function subscribeOrders(cb: (list: Order[]) => void): () => void {
+  const database = db;
+  if (!database) {
+    cb(readLocal());
+    return () => {};
+  }
+  return onSnapshot(
+    query(collection(database, COLLECTION), orderBy('createdAt', 'desc')),
+    (snap) => cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id))),
+    () => cb([]),
+  );
 }
 
 /** Orders belonging to one signed-in user, newest first. */
