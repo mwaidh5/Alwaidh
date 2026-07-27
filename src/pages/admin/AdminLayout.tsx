@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
 import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
+import { enablePush, handlePushTaps, pushState, topicsFor, type PushState } from '../../lib/push';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar staff.
@@ -33,7 +34,19 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
 export default function AdminLayout() {
   const { user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess, signOut } = useAuth();
   const { t, lang, setLang } = useLang();
+  const navigate = useNavigate();
   const alerts = useStaffAlerts();
+  const [push, setPush] = useState<PushState>('unsupported');
+
+  // Notification permission state, and tapping a notification opens its page.
+  useEffect(() => {
+    pushState().then(setPush);
+    let cleanup: (() => void) | undefined;
+    handlePushTaps((path) => navigate(path)).then((fn) => {
+      cleanup = fn;
+    });
+    return () => cleanup?.();
+  }, [navigate]);
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -140,6 +153,30 @@ export default function AdminLayout() {
                   <p className="truncate">
                     {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
                   </p>
+                  {push !== 'unsupported' && (
+                    <button
+                      type="button"
+                      disabled={push === 'granted'}
+                      onClick={async () =>
+                        setPush(
+                          await enablePush(
+                            topicsFor({ isAdmin, isSolarStaff, isComputerStaff }),
+                          ),
+                        )
+                      }
+                      className={`mt-2 w-full rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                        push === 'granted'
+                          ? 'border-green-300 bg-green-50 text-green-800'
+                          : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {push === 'granted'
+                        ? `🔔 ${t('Notifications on')}`
+                        : push === 'denied'
+                          ? `🔕 ${t('Notifications blocked — enable them in phone settings')}`
+                          : `🔔 ${t('Turn on notifications')}`}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}

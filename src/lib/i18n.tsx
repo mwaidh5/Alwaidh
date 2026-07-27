@@ -200,6 +200,10 @@ const AR: Record<string, string> = {
   'Media library': 'مكتبة الوسائط',
   Draft: 'مسودة',
   'New since you last looked': 'جديد منذ آخر زيارة',
+  'Turn on notifications': 'تفعيل الإشعارات',
+  'Notifications on': 'الإشعارات مفعّلة',
+  'Notifications blocked — enable them in phone settings':
+    'الإشعارات محظورة — فعّلها من إعدادات الهاتف',
   'Make draft': 'تحويل إلى مسودة',
   Delivery: 'التوصيل',
   'Default delivery fee': 'أجرة التوصيل الافتراضية',
