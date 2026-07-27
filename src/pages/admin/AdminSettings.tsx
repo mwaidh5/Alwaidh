@@ -132,7 +132,7 @@ export default function AdminSettings() {
                 onChange={(e) => update('taxRatePercent', Number(e.target.value))}
               />
             </Field>
-            <Field label="Flat shipping cost">
+            <Field label="Default delivery fee">
               <input
                 type="number"
                 step="0.01"

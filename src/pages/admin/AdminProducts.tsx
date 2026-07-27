@@ -31,6 +31,7 @@ const EMPTY_FORM: FormState = {
   inStock: true,
   shortDescription: '',
   specsText: '',
+  deliveryFee: null,
   draft: false,
   datasheet: '',
   manual: '',
@@ -180,6 +181,10 @@ export default function AdminProducts() {
         inStock: editing.inStock,
         shortDescription: editing.shortDescription.trim(),
         specs,
+        deliveryFee:
+          editing.deliveryFee === null || editing.deliveryFee === undefined
+            ? null
+            : Number(editing.deliveryFee) || 0,
         draft: asDraft ?? Boolean(editing.draft),
         datasheet: (editing.datasheet ?? '').trim(),
         manual: (editing.manual ?? '').trim(),
@@ -317,6 +322,22 @@ export default function AdminProducts() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => applyToSelected('Publish', (p) => ({ ...p, draft: false }))}
+            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50"
+          >
+            {t('Publish')}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => applyToSelected('Make draft', (p) => ({ ...p, draft: true }))}
+            className="rounded border border-amber-300 bg-white px-2 py-1 font-semibold text-amber-800 hover:bg-amber-50"
+          >
+            {t('Make draft')}
+          </button>
           <button
             type="button"
             disabled={busy}
@@ -822,6 +843,21 @@ function ProductDialog({
               className="input"
               value={state.rating}
               onChange={(e) => setState({ ...state, rating: Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Delivery fee (blank = store default)">
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={state.deliveryFee ?? ''}
+              placeholder={t('Uses the default delivery fee')}
+              onChange={(e) =>
+                setState({
+                  ...state,
+                  deliveryFee: e.target.value === '' ? null : Number(e.target.value),
+                })
+              }
             />
           </Field>
           <Field label="In stock">

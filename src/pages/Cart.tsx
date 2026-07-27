@@ -67,7 +67,18 @@ export default function Cart() {
   }
 
   const taxRate = (settings?.taxRatePercent ?? 0) / 100;
-  const shipping = settings?.shippingFlat ?? 0;
+  // Delivery: each product may override the store default. One trip delivers
+  // the whole order, so the cart is charged the highest fee in it rather
+  // than the sum — a heavy panel sets the price, a mouse alongside is free.
+  const defaultDelivery = settings?.shippingFlat ?? 0;
+  const shipping = items.length
+    ? Math.max(
+        ...items.map((i) => {
+          const fee = productLookup[i.productId]?.deliveryFee;
+          return typeof fee === 'number' ? fee : defaultDelivery;
+        }),
+      )
+    : defaultDelivery;
   const tax = subtotal * taxRate;
   const total = subtotal + tax + shipping;
 
@@ -76,8 +87,8 @@ export default function Cart() {
 
   async function handlePlaceOrder() {
     setError('');
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Please enter your name and email.');
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
+      setError(t('Please enter your name, email, and phone number.'));
       return;
     }
     setBusy(true);
@@ -86,7 +97,7 @@ export default function Cart() {
       const id = await createOrder({
         customerName: form.name.trim(),
         customerEmail: form.email.trim(),
-        customerPhone: form.phone.trim() || undefined,
+        customerPhone: form.phone.trim(),
         shippingAddress: form.address.trim() || undefined,
         notes: form.notes.trim() || undefined,
         lines,
@@ -183,7 +194,7 @@ export default function Cart() {
             </div>
           )}
           <div className="mt-1 flex justify-between text-sm">
-            <span className="text-slate-600">{t('Shipping')}</span>
+            <span className="text-slate-600">{t('Delivery')}</span>
             <span className="font-semibold">
               {shipping > 0 ? formatPrice(shipping, currency) : 'Free'}
             </span>
@@ -221,7 +232,7 @@ export default function Cart() {
             >
               <input
                 className="input"
-                placeholder="Full name"
+                placeholder={t('Full name')}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
@@ -229,20 +240,22 @@ export default function Cart() {
               <input
                 type="email"
                 className="input"
-                placeholder="Email"
+                placeholder={t('Email')}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
               />
               <input
+                type="tel"
                 className="input"
-                placeholder="Phone (optional)"
+                placeholder={t('Phone')}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                required
               />
               <textarea
                 className="input min-h-[60px]"
-                placeholder="Shipping address"
+                placeholder={t('Shipping address')}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
