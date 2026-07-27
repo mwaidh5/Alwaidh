@@ -204,6 +204,10 @@ const AR: Record<string, string> = {
   'Default delivery fee': 'أجرة التوصيل الافتراضية',
   'Delivery fee (blank = store default)': 'أجرة التوصيل (اتركها فارغة لاستخدام الافتراضية)',
   'Uses the default delivery fee': 'تُستخدم أجرة التوصيل الافتراضية',
+  'Needs its own delivery': 'يحتاج توصيل منفصل',
+  'its fee is added on top, even when the cart holds other items':
+    'تُضاف أجرته فوق الأجرة الأخرى حتى لو كانت السلة تحتوي منتجات ثانية',
+  'Ships separately': 'يُشحن بشكل منفصل',
   'Please enter your name, email, and phone number.':
     'يرجى إدخال الاسم والبريد الإلكتروني ورقم الهاتف.',
   'Shipping address': 'عنوان التوصيل',

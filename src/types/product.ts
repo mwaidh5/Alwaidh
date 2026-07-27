@@ -24,6 +24,7 @@ export interface Product {
   datasheet?: string;   // PDF or image URL — shown on the product page
   manual?: string;      // PDF URL — offered as a download only
   deliveryFee?: number | null; // overrides the store's default delivery fee
+  separateDelivery?: boolean;  // ships on its own: fee is ADDED, not merged
   draft?: boolean;      // true = hidden from the shop, staff-only
   deletedAtMs?: number | null; // set = product is in the Trash
   deletedBy?: string;   // who moved it to the Trash

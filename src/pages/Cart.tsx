@@ -67,18 +67,24 @@ export default function Cart() {
   }
 
   const taxRate = (settings?.taxRatePercent ?? 0) / 100;
-  // Delivery: each product may override the store default. One trip delivers
-  // the whole order, so the cart is charged the highest fee in it rather
-  // than the sum — a heavy panel sets the price, a mouse alongside is free.
+  // Delivery. Most items travel together, so the shared part of the order is
+  // charged once at its highest fee — a heavy panel sets the price and a mouse
+  // beside it adds nothing. Items marked "separate delivery" ship on their own
+  // van, so each of those fees is added on top.
   const defaultDelivery = settings?.shippingFlat ?? 0;
-  const shipping = items.length
-    ? Math.max(
-        ...items.map((i) => {
-          const fee = productLookup[i.productId]?.deliveryFee;
-          return typeof fee === 'number' ? fee : defaultDelivery;
-        }),
-      )
-    : defaultDelivery;
+  const feeFor = (productId: string) => {
+    const fee = productLookup[productId]?.deliveryFee;
+    return typeof fee === 'number' ? fee : defaultDelivery;
+  };
+  const shipsSeparately = (productId: string) =>
+    Boolean(productLookup[productId]?.separateDelivery);
+  const sharedItems = items.filter((i) => !shipsSeparately(i.productId));
+  const separateItems = items.filter((i) => shipsSeparately(i.productId));
+  const sharedDelivery = sharedItems.length
+    ? Math.max(...sharedItems.map((i) => feeFor(i.productId)))
+    : 0;
+  const separateDelivery = separateItems.reduce((sum, i) => sum + feeFor(i.productId), 0);
+  const shipping = items.length ? sharedDelivery + separateDelivery : defaultDelivery;
   const tax = subtotal * taxRate;
   const total = subtotal + tax + shipping;
 

@@ -32,6 +32,7 @@ const EMPTY_FORM: FormState = {
   shortDescription: '',
   specsText: '',
   deliveryFee: null,
+  separateDelivery: false,
   draft: false,
   datasheet: '',
   manual: '',
@@ -185,6 +186,7 @@ export default function AdminProducts() {
           editing.deliveryFee === null || editing.deliveryFee === undefined
             ? null
             : Number(editing.deliveryFee) || 0,
+        separateDelivery: Boolean(editing.separateDelivery),
         draft: asDraft ?? Boolean(editing.draft),
         datasheet: (editing.datasheet ?? '').trim(),
         manual: (editing.manual ?? '').trim(),
@@ -859,6 +861,20 @@ function ProductDialog({
                 })
               }
             />
+            <label className="mt-2 flex items-start gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={Boolean(state.separateDelivery)}
+                onChange={(e) => setState({ ...state, separateDelivery: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300"
+              />
+              <span>
+                {t('Needs its own delivery')} —{' '}
+                <span className="text-slate-500">
+                  {t('its fee is added on top, even when the cart holds other items')}
+                </span>
+              </span>
+            </label>
           </Field>
           <Field label="In stock">
             <label className="flex items-center gap-2 pt-2 text-sm">

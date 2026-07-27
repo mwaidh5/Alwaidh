@@ -61,6 +61,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     shortDescription: String(data.shortDescription ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
     deliveryFee: typeof data.deliveryFee === 'number' ? data.deliveryFee : null,
+    separateDelivery: Boolean(data.separateDelivery ?? false),
     draft: Boolean(data.draft ?? false),
     datasheet: String(data.datasheet ?? ''),
     manual: String(data.manual ?? ''),
