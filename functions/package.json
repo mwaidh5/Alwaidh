@@ -1,0 +1,18 @@
+{
+  "name": "alwaidh-functions",
+  "description": "Push notifications for new solar jobs, orders and customer messages",
+  "private": true,
+  "engines": { "node": "22" },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "npm run build && firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
