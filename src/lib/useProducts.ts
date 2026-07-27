@@ -12,7 +12,8 @@ export function useProducts(): ProductsState {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     return subscribeProducts((list) => {
-      setProducts(list);
+      // Drafts are staff-only: they never reach the shop, search, or cart.
+      setProducts(list.filter((p) => !p.draft));
       setLoading(false);
     });
   }, []);
