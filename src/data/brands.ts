@@ -16,13 +16,20 @@ export const solarBrands: Brand[] = [
   { slug: 'fortuners', name: 'Fortuners' },
 ];
 
-/** Everything we carry, grouped for the About page. */
-export const brandGroups: { key: string; brands: string[] }[] = [
-  {
-    key: 'Solar energy',
-    brands: ['Jinko Solar', 'SolarMax', 'SAJ', 'Deye', 'Voltronic', 'Hailei', 'Sinexcel', 'Fortuners'],
-  },
-  { key: 'Computers', brands: ['Lenovo'] },
-  { key: 'Power protection', brands: ['GE UPS'] },
-  { key: 'Security cameras', brands: ['Tiandy'] },
+/**
+ * Every brand we carry, shown as one continuous carousel on the About
+ * page. Logos come from settings.brandLogos (keyed by slug) when uploaded;
+ * until then the wordmark is shown.
+ */
+export const allBrands: Brand[] = [
+  { slug: 'jinko', name: 'Jinko Solar' },
+  { slug: 'solarmax', name: 'SolarMax' },
+  { slug: 'saj', name: 'SAJ' },
+  { slug: 'deye', name: 'Deye' },
+  { slug: 'voltronic', name: 'Voltronic' },
+  { slug: 'hailei', name: 'Hailei' },
+  { slug: 'sinexcel', name: 'Sinexcel' },
+  { slug: 'fortuners', name: 'Fortuners' },
+  { slug: 'lenovo', name: 'Lenovo' },
+  { slug: 'tiandy', name: 'Tiandy' },
 ];

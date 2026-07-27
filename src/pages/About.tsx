@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { submitContact, storageMode } from '../lib/contactSubmissions';
-import { brandGroups } from '../data/brands';
+import { allBrands } from '../data/brands';
+import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -230,29 +231,58 @@ export default function About() {
       </section>
 
       <section className="border-t border-slate-200 bg-slate-50">
-        <div className="container-page py-12">
-          <h2 className="text-2xl font-extrabold text-slate-900">{t('Brands we work with')}</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {t('We supply and support these brands across Iraq.')}
-          </p>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {brandGroups.map((g) => (
-              <div key={g.key} className="card p-5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">
-                  {t(g.key)}
-                </h3>
-                <ul className="mt-3 space-y-1.5">
-                  {g.brands.map((b) => (
-                    <li key={b} className="text-sm font-semibold text-slate-800">
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        <div className="py-12">
+          <div className="container-page">
+            <h2 className="text-2xl font-extrabold text-slate-900">{t('Brands we work with')}</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {t('We supply and support these brands across Iraq.')}
+            </p>
           </div>
+          <BrandCarousel />
         </div>
       </section>
+    </div>
+  );
+}
+
+
+/**
+ * Continuously scrolling brand strip. The track holds the list twice so the
+ * CSS animation can loop seamlessly; hovering pauses it, and it stops
+ * entirely for anyone who prefers reduced motion.
+ */
+function BrandCarousel() {
+  const settings = useSettings();
+  const loop = [...allBrands, ...allBrands];
+  return (
+    <div className="marquee-pause relative mt-8 overflow-hidden">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-slate-50 to-transparent sm:w-24" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-slate-50 to-transparent sm:w-24" />
+      <ul className="marquee-track flex w-max items-center gap-4">
+        {loop.map((b, i) => {
+          const logo = settings.brandLogos?.[b.slug];
+          return (
+            <li
+              key={`${b.slug}-${i}`}
+              aria-hidden={i >= allBrands.length}
+              className="flex h-20 w-40 flex-none items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 shadow-sm"
+            >
+              {logo ? (
+                <img
+                  src={logo}
+                  alt={b.name}
+                  loading="lazy"
+                  className="max-h-12 max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-center text-base font-extrabold tracking-tight text-slate-800">
+                  {b.name}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -61,4 +61,25 @@
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
+  /* Continuously scrolling strip (brand carousel). The track holds two
+     copies of the list, so shifting by half its width loops seamlessly. */
+  .marquee-track {
+    animation: marquee-scroll 40s linear infinite;
+  }
+  .marquee-pause:hover .marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
 }
