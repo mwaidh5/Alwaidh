@@ -5,10 +5,18 @@ import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
+import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar staff.
 type Access = 'admin' | 'products' | 'solar';
+/** Routes that carry a "what's new" badge. */
+const ALERT_FOR: Record<string, AlertKey> = {
+  '/admin/jobs': 'jobs',
+  '/admin/orders': 'orders',
+  '/admin/submissions': 'submissions',
+};
+
 const navItems: { to: string; label: string; icon: string; end?: boolean; access: Access }[] = [
   { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin' },
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products' },
@@ -25,12 +33,19 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
 export default function AdminLayout() {
   const { user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess, signOut } = useAuth();
   const { t, lang, setLang } = useLang();
+  const alerts = useStaffAlerts();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   useEffect(() => subscribeSettings(setSettings), []);
   useEffect(() => setOpen(false), [location.pathname]);
+
+  // Opening a section marks it read on this device.
+  useEffect(() => {
+    const key = ALERT_FOR[location.pathname];
+    if (key) markSeen(key);
+  }, [location.pathname]);
 
   if (loading) {
     return <p className="container-page py-16 text-center text-slate-500">Loading…</p>;
@@ -104,7 +119,19 @@ export default function AdminLayout() {
                         }
                       >
                         <span aria-hidden>{item.icon}</span>
-                        {t(item.label)}
+                        <span className="flex-1">{t(item.label)}</span>
+                        {(() => {
+                          const key = ALERT_FOR[item.to];
+                          const count = key ? alerts[key] : 0;
+                          return count > 0 ? (
+                            <span
+                              title={t('New since you last looked')}
+                              className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white"
+                            >
+                              {count > 99 ? '99+' : count}
+                            </span>
+                          ) : null;
+                        })()}
                       </NavLink>
                     </li>
                   ))}

@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -68,6 +69,35 @@ export async function submitContact(input: NewContactSubmission): Promise<void> 
     createdAt: Date.now(),
   };
   writeLocal([entry, ...list]);
+}
+
+/** Live message feed for staff — powers the dashboard's new-message badge. */
+export function subscribeContactSubmissions(cb: (list: ContactSubmission[]) => void): () => void {
+  if (!db) {
+    cb(readLocal());
+    return () => {};
+  }
+  return onSnapshot(
+    query(collection(db, COLLECTION), orderBy('createdAt', 'desc')),
+    (snap) =>
+      cb(
+        snap.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          const ts = data.createdAt;
+          return {
+            id: d.id,
+            name: String(data.name ?? ''),
+            email: String(data.email ?? ''),
+            phone: data.phone ? String(data.phone) : undefined,
+            subject: data.subject ? String(data.subject) : undefined,
+            message: String(data.message ?? ''),
+            createdAt:
+              ts instanceof Timestamp ? ts.toMillis() : typeof ts === 'number' ? ts : Date.now(),
+          };
+        }),
+      ),
+    () => cb([]),
+  );
 }
 
 export async function listContactSubmissions(): Promise<ContactSubmission[]> {
