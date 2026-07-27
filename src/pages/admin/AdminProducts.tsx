@@ -31,6 +31,7 @@ const EMPTY_FORM: FormState = {
   inStock: true,
   shortDescription: '',
   specsText: '',
+  draft: false,
   datasheet: '',
   manual: '',
 };
@@ -60,6 +61,7 @@ export default function AdminProducts() {
 
   const [trashed, setTrashed] = useState<Product[]>([]);
   const [showTrash, setShowTrash] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'draft'>('all');
 
   useEffect(() => {
     return subscribeProducts((list) => setProducts(list));
@@ -128,6 +130,8 @@ export default function AdminProducts() {
     const list = products ?? [];
     return list.filter((p) => {
       if (!allowedCategories.includes(p.category)) return false;
+      if (statusFilter === 'live' && p.draft) return false;
+      if (statusFilter === 'draft' && !p.draft) return false;
       if (filter !== 'all' && p.category !== filter) return false;
       if (query.trim()) {
         const q = query.trim().toLowerCase();
@@ -139,7 +143,7 @@ export default function AdminProducts() {
       }
       return true;
     });
-  }, [products, filter, query, allowedCategories]);
+  }, [products, filter, query, allowedCategories, statusFilter]);
 
   function startCreate() {
     setError('');
@@ -156,7 +160,7 @@ export default function AdminProducts() {
     });
   }
 
-  async function handleSave() {
+  async function handleSave(asDraft?: boolean) {
     if (!editing) return;
     setError('');
     setBusy(true);
@@ -176,6 +180,7 @@ export default function AdminProducts() {
         inStock: editing.inStock,
         shortDescription: editing.shortDescription.trim(),
         specs,
+        draft: asDraft ?? Boolean(editing.draft),
         datasheet: (editing.datasheet ?? '').trim(),
         manual: (editing.manual ?? '').trim(),
       };
@@ -254,6 +259,28 @@ export default function AdminProducts() {
             placeholder={t('Search by name, brand, or id')}
             className="input max-w-xs"
           />
+          <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold">
+            {(
+              [
+                { key: 'all', label: t('All') },
+                { key: 'live', label: t('Live') },
+                { key: 'draft', label: t('Drafts') },
+              ] as { key: 'all' | 'live' | 'draft'; label: string }[]
+            ).map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setStatusFilter(f.key)}
+                className={`rounded-md px-3 py-1.5 transition ${
+                  statusFilter === f.key
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as typeof filter)}
@@ -397,8 +424,13 @@ export default function AdminProducts() {
                         p.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {p.inStock ? 'In stock' : 'Out'}
+                      {t(p.inStock ? 'In stock' : 'Out')}
                     </span>
+                    {p.draft && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        {t('Draft')}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -483,8 +515,13 @@ export default function AdminProducts() {
                         p.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {p.inStock ? 'In stock' : 'Out'}
+                      {t(p.inStock ? 'In stock' : 'Out')}
                     </span>
+                    {p.draft && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        {t('Draft')}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
@@ -537,7 +574,7 @@ function ProductDialog({
   busy: boolean;
   categoryOptions: { slug: CategorySlug; name: string }[];
   onCancel: () => void;
-  onSave: () => void;
+  onSave: (asDraft: boolean) => void;
 }) {
   const { t } = useLang();
   const isNew = !state.id;
@@ -725,6 +762,11 @@ function ProductDialog({
             ✕
           </button>
         </div>
+        {state.draft && (
+          <p className="mx-5 mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+            {t('This product is a draft — it is hidden from the shop until you publish it.')}
+          </p>
+        )}
         <div className="grid gap-4 p-5 sm:grid-cols-2">
           <Field label="Name" full>
             <input
@@ -966,8 +1008,21 @@ function ProductDialog({
           <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
             {t('Cancel')}
           </button>
-          <button type="button" onClick={onSave} className="btn-primary" disabled={busy}>
-            {busy ? t('Saving…') : isNew ? t('Create') : t('Save changes')}
+          <button
+            type="button"
+            onClick={() => onSave(true)}
+            className="btn-secondary"
+            disabled={busy}
+            title={t('Only staff can see drafts — customers never do.')}
+          >
+            {state.draft && !isNew ? t('Keep as draft') : t('Save as draft')}
+          </button>
+          <button type="button" onClick={() => onSave(false)} className="btn-primary" disabled={busy}>
+            {busy
+              ? t('Saving…')
+              : state.draft || isNew
+                ? t('Publish')
+                : t('Save changes')}
           </button>
         </div>
       </div>

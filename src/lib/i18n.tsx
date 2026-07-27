@@ -198,6 +198,16 @@ const AR: Record<string, string> = {
   Unused: 'غير مستخدم',
   'Not used anywhere': 'غير مستخدم في أي مكان',
   'Media library': 'مكتبة الوسائط',
+  Draft: 'مسودة',
+  Drafts: 'المسودات',
+  Live: 'منشور',
+  Publish: 'نشر',
+  'Save as draft': 'حفظ كمسودة',
+  'Keep as draft': 'الإبقاء كمسودة',
+  'Only staff can see drafts — customers never do.':
+    'المسودات تظهر للموظفين فقط ولا يراها الزبائن.',
+  'This product is a draft — it is hidden from the shop until you publish it.':
+    'هذا المنتج مسودة — لن يظهر في المتجر حتى تقوم بنشره.',
 
   // ---- Admin: jobs ----
   'New job': 'عمل جديد',

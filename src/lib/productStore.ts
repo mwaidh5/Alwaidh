@@ -60,6 +60,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
+    draft: Boolean(data.draft ?? false),
     datasheet: String(data.datasheet ?? ''),
     manual: String(data.manual ?? ''),
     deletedAtMs: toMillis(data.deletedAt),
