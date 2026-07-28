@@ -100,16 +100,14 @@ function normalize(data: Record<string, unknown>, id: string): Job {
  * Tries the precise pin (!3d…!4d…), then the ?q=lat,lng form, then the
  * @lat,lng viewport; if the link hides its coordinates (e.g. maps.app.goo.gl
  * short links), falls back to a Waze search for the place name or address.
- * Returns '' when there is nothing usable.
+ *
+ * Returns '' when no map link was saved — guessing from the written address
+ * sent drivers to the wrong place, so the button stays hidden until someone
+ * actually pastes a link.
  */
 export function wazeFromGoogleMaps(mapUrl: string, addressFallback = ''): string {
   const url = mapUrl.trim();
-  // No map link at all (e.g. jobs created before the field existed):
-  // fall back to a Waze search for the written address.
-  if (!url) {
-    const q = addressFallback.trim();
-    return q ? `https://www.waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes` : '';
-  }
+  if (!url) return '';
   let decoded = url;
   try {
     decoded = decodeURIComponent(url);
