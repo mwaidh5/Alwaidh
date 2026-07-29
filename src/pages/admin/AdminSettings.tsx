@@ -39,7 +39,15 @@ export default function AdminSettings() {
     setSaved(false);
     setBusy(true);
     try {
-      await saveSettings(settings);
+      // Roles are managed in the Users tab. Re-read them at save time so an
+      // older copy held by this page can't roll back a recent role change.
+      const latest = await loadSettings();
+      await saveSettings({
+        ...settings,
+        extraAdminEmails: latest.extraAdminEmails,
+        computerStaffEmails: latest.computerStaffEmails,
+        solarStaffEmails: latest.solarStaffEmails,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -172,29 +180,6 @@ export default function AdminSettings() {
               onChange={(e) => update('bannerMessage', e.target.value)}
             />
           </Field>
-        </Section>
-
-        <Section title="Team & roles">
-          <p className="text-sm text-slate-600">
-            Grant staff access by email (one per line). Admins can do everything. Computer staff can
-            edit computer &amp; camera products. Solar staff can edit solar products, prices, and jobs.
-            Staff should sign in with Google using the same email.
-          </p>
-          <EmailListField
-            label="Admins — full access"
-            value={settings.extraAdminEmails}
-            onChange={(v) => update('extraAdminEmails', v)}
-          />
-          <EmailListField
-            label="Computer staff — computers & cameras"
-            value={settings.computerStaffEmails}
-            onChange={(v) => update('computerStaffEmails', v)}
-          />
-          <EmailListField
-            label="Solar staff — solar products, prices & jobs"
-            value={settings.solarStaffEmails}
-            onChange={(v) => update('solarStaffEmails', v)}
-          />
         </Section>
 
         <Section title="Product sub-categories">
@@ -413,7 +398,11 @@ function ImageField({
   );
 }
 
-/** A simple one-per-line list editor. */
+/**
+ * One-per-line list editor. The typed text is held in local state: parsing on
+ * every keystroke discarded the blank line Enter had just created, so the
+ * caret snapped back and starting a new line was impossible.
+ */
 function ListField({
   label,
   value,
@@ -424,6 +413,20 @@ function ListField({
   onChange: (v: string[]) => void;
 }) {
   const { t } = useLang();
+  const parse = (raw: string) =>
+    raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+  const [text, setText] = useState(value.join('\n'));
+
+  // Adopt outside changes (settings finishing their load) without throwing
+  // away what is being typed — only the parsed result has to match.
+  useEffect(() => {
+    const incoming = value.join('\n');
+    setText((current) => (parse(current).join('\n') === incoming ? current : incoming));
+  }, [value]);
+
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -431,42 +434,14 @@ function ListField({
       </label>
       <textarea
         className="input min-h-[90px]"
-        value={value.join('\n')}
+        value={text}
         placeholder={t('One per line')}
-        onChange={(e) =>
-          onChange(
-            e.target.value
-              .split('\n')
-              .map((line) => line.trim())
-              .filter(Boolean),
-          )
-        }
+        onChange={(e) => {
+          setText(e.target.value);
+          onChange(parse(e.target.value));
+        }}
       />
-      <p className="mt-1 text-xs text-slate-500">{value.length} in this list</p>
-    </div>
-  );
-}
-
-function EmailListField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string[];
-  onChange: (v: string[]) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {useLang().t(label)}
-      </label>
-      <textarea
-        className="input min-h-[70px]"
-        value={value.join('\n')}
-        onChange={(e) => onChange(e.target.value.split('\n'))}
-        placeholder="name@example.com"
-      />
+      <p className="mt-1 text-xs text-slate-500">{parse(text).length} in this list</p>
     </div>
   );
 }
