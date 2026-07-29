@@ -6,6 +6,7 @@ import { useProducts } from '../lib/useProducts';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
+import { useAuth } from '../context/AuthContext';
 
 type SortKey = 'featured' | 'price-asc' | 'price-desc' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -43,9 +44,19 @@ export default function Shop() {
     [products],
   );
 
+  const [activeSub, setActiveSub] = useState<string>('all');
+
+  // Sub-categories actually present in the current category selection.
+  const subOptions = useMemo(() => {
+    const relevant =
+      activeCategory === 'all' ? products : products.filter((p) => p.category === activeCategory);
+    return [...new Set(relevant.map((p) => p.subcategory).filter(Boolean))].sort() as string[];
+  }, [products, activeCategory]);
+
   const filtered = useMemo(() => {
     let list = products.slice();
     if (activeCategory !== 'all') list = list.filter((p) => p.category === activeCategory);
+    if (activeSub !== 'all') list = list.filter((p) => p.subcategory === activeSub);
     if (selectedBrands.length) list = list.filter((p) => selectedBrands.includes(p.brand));
     if (inStockOnly) list = list.filter((p) => p.inStock);
     if (maxPrice != null) list = list.filter((p) => p.price <= maxPrice);
@@ -72,12 +83,12 @@ export default function Shop() {
         break;
     }
     return list;
-  }, [products, activeCategory, selectedBrands, inStockOnly, maxPrice, query, sort]);
+  }, [products, activeCategory, activeSub, selectedBrands, inStockOnly, maxPrice, query, sort]);
 
   // Reset to the first page whenever the result set changes.
   useEffect(() => {
     setPage(1);
-  }, [activeCategory, selectedBrands, inStockOnly, maxPrice, query, sort]);
+  }, [activeCategory, activeSub, selectedBrands, inStockOnly, maxPrice, query, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, pageCount);
@@ -90,6 +101,7 @@ export default function Shop() {
     );
 
   const clearFilters = () => {
+    setActiveSub('all');
     setActiveCategory('all');
     setSelectedBrands([]);
     setInStockOnly(false);
@@ -173,6 +185,28 @@ export default function Shop() {
               ))}
             </ul>
           </SidebarSection>
+
+          {subOptions.length > 0 && (
+            <SidebarSection title="Sub-categories">
+              <ul className="space-y-2 text-sm">
+                <FilterRow
+                  label="All"
+                  count={filtered.length}
+                  active={activeSub === 'all'}
+                  onClick={() => setActiveSub('all')}
+                />
+                {subOptions.map((sub) => (
+                  <FilterRow
+                    key={sub}
+                    label={sub}
+                    count={products.filter((p) => p.subcategory === sub).length}
+                    active={activeSub === sub}
+                    onClick={() => setActiveSub(sub)}
+                  />
+                ))}
+              </ul>
+            </SidebarSection>
+          )}
 
           <SidebarSection title="Brands">
             <ul className="space-y-2 text-sm">
@@ -424,9 +458,30 @@ function PageButton({
   );
 }
 
+/** Staff-only shortcut: jump from the shop straight into the product editor. */
+function StaffEditButton({ product }: { product: Product }) {
+  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
+  const canEdit =
+    isAdmin ||
+    (isComputerStaff && (product.category === 'computers' || product.category === 'tiandy-cameras')) ||
+    (isSolarStaff && product.category === 'solar');
+  if (!canEdit) return null;
+  return (
+    <Link
+      to={`/admin/products?edit=${product.id}`}
+      onClick={(e) => e.stopPropagation()}
+      title="Edit this product"
+      className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
+    >
+      ✏️ Edit
+    </Link>
+  );
+}
+
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
   return (
-    <div className="card group flex flex-col overflow-hidden text-center">
+    <div className="card group relative flex flex-col overflow-hidden text-center">
+      <StaffEditButton product={product} />
       <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-6">
         <img
           src={product.image}
@@ -461,7 +516,8 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
 
 function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
   return (
-    <div className="card flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
+    <div className="card group relative flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
+      <StaffEditButton product={product} />
       <Link
         to={`/product/${product.id}`}
         className="block aspect-square w-full flex-none overflow-hidden rounded-lg bg-slate-50 p-4 sm:w-40"
