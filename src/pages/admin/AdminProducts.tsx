@@ -14,6 +14,8 @@ import MediaPicker from '../../components/MediaPicker';
 import { useLang } from '../../lib/i18n';
 import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../lib/useSettings';
+import { useSearchParams } from 'react-router-dom';
 import type { Product, CategorySlug } from '../../types/product';
 
 type FormState = Omit<Product, 'specs'> & { specsText: string };
@@ -31,6 +33,7 @@ const EMPTY_FORM: FormState = {
   inStock: true,
   shortDescription: '',
   specsText: '',
+  subcategory: '',
   deliveryFee: null,
   separateDelivery: false,
   draft: false,
@@ -72,6 +75,18 @@ export default function AdminProducts() {
   useEffect(() => {
     return subscribeDeletedProducts(setTrashed);
   }, []);
+
+  // Staff can jump here straight from a product page: /admin/products?edit=<id>
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const wanted = searchParams.get('edit');
+    if (!wanted || !products) return;
+    const match = products.find((p) => p.id === wanted);
+    if (match) {
+      startEdit(match);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, products, setSearchParams]);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -174,6 +189,7 @@ export default function AdminProducts() {
         name: editing.name.trim(),
         category: editing.category,
         brand: editing.brand.trim(),
+        subcategory: (editing.subcategory ?? '').trim(),
         price: Number(editing.price) || 0,
         currency: editing.currency.trim().toUpperCase() || 'IQD',
         image: images[0] ?? '',
@@ -600,6 +616,7 @@ function ProductDialog({
   onSave: (asDraft: boolean) => void;
 }) {
   const { t } = useLang();
+  const settings = useSettings();
   const isNew = !state.id;
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -819,6 +836,25 @@ function ProductDialog({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Sub-category">
+            <select
+              className="input"
+              value={state.subcategory ?? ''}
+              onChange={(e) => setState({ ...state, subcategory: e.target.value })}
+            >
+              <option value="">{t('— none —')}</option>
+              {(settings.subcategories?.[state.category] ?? []).map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
+            {(settings.subcategories?.[state.category] ?? []).length === 0 && (
+              <p className="mt-1 text-xs text-slate-500">
+                {t('Add sub-categories in Settings → Product sub-categories.')}
+              </p>
+            )}
           </Field>
           <Field label="Price">
             <input

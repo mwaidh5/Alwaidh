@@ -31,6 +31,8 @@ export interface SiteSettings {
   solarLogo: string;
   /** Logos of the brands we deal with, keyed by brand slug. */
   brandLogos: Record<string, string>;
+  /** Sub-categories staff can pick from, keyed by main category slug. */
+  subcategories: Record<string, string[]>;
   solarPriceColumns: PriceColumn[];
 }
 
@@ -55,6 +57,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   categoryLogos: {},
   solarLogo: '',
   brandLogos: {},
+  subcategories: {},
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
@@ -102,6 +105,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.brandLogos && typeof data.brandLogos === 'object'
         ? (data.brandLogos as Record<string, string>)
         : DEFAULT_SETTINGS.brandLogos,
+    subcategories:
+      data.subcategories && typeof data.subcategories === 'object'
+        ? (data.subcategories as Record<string, string[]>)
+        : DEFAULT_SETTINGS.subcategories,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])

@@ -199,6 +199,13 @@ const AR: Record<string, string> = {
   'Not used anywhere': 'غير مستخدم في أي مكان',
   'Media library': 'مكتبة الوسائط',
   Draft: 'مسودة',
+  'Sub-category': 'الفئة الفرعية',
+  'Sub-categories': 'الفئات الفرعية',
+  'Product sub-categories': 'الفئات الفرعية للمنتجات',
+  '— none —': '— بدون —',
+  'One per line': 'واحد في كل سطر',
+  'Add sub-categories in Settings → Product sub-categories.':
+    'أضف الفئات الفرعية من الإعدادات ← الفئات الفرعية للمنتجات.',
   'New since you last looked': 'جديد منذ آخر زيارة',
   'Turn on notifications': 'تفعيل الإشعارات',
   'Notifications on': 'الإشعارات مفعّلة',

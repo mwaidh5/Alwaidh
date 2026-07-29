@@ -197,6 +197,24 @@ export default function AdminSettings() {
           />
         </Section>
 
+        <Section title="Product sub-categories">
+          <p className="text-sm text-slate-600">
+            Group products inside a category — for example Laptops, Desktops and Printers under
+            Computers. One per line; staff pick from these when editing a product, and shoppers can
+            filter by them.
+          </p>
+          {categories.map((c) => (
+            <ListField
+              key={c.slug}
+              label={`${c.name} sub-categories`}
+              value={settings.subcategories?.[c.slug] ?? []}
+              onChange={(v) =>
+                update('subcategories', { ...(settings.subcategories ?? {}), [c.slug]: v })
+              }
+            />
+          ))}
+        </Section>
+
         <Section title="Site images">
           <p className="text-sm text-slate-600">
             Replace the main images used across the website. Changes go live as soon as you save.
@@ -391,6 +409,40 @@ function ImageField({
         onClose={() => setPickerOpen(false)}
         onSelect={(urls) => urls[0] && onChange(urls[0])}
       />
+    </div>
+  );
+}
+
+/** A simple one-per-line list editor. */
+function ListField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const { t } = useLang();
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {t(label)}
+      </label>
+      <textarea
+        className="input min-h-[90px]"
+        value={value.join('\n')}
+        placeholder={t('One per line')}
+        onChange={(e) =>
+          onChange(
+            e.target.value
+              .split('\n')
+              .map((line) => line.trim())
+              .filter(Boolean),
+          )
+        }
+      />
+      <p className="mt-1 text-xs text-slate-500">{value.length} in this list</p>
     </div>
   );
 }
