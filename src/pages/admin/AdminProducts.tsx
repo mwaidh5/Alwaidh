@@ -34,6 +34,7 @@ const EMPTY_FORM: FormState = {
   shortDescription: '',
   specsText: '',
   subcategory: '',
+  subcategories: [],
   deliveryFee: null,
   separateDelivery: false,
   draft: false,
@@ -189,7 +190,9 @@ export default function AdminProducts() {
         name: editing.name.trim(),
         category: editing.category,
         brand: editing.brand.trim(),
-        subcategory: (editing.subcategory ?? '').trim(),
+        subcategories: (editing.subcategories ?? []).map((x) => x.trim()).filter(Boolean),
+        // Mirror the first one so older readers keep working.
+        subcategory: (editing.subcategories ?? [])[0]?.trim() ?? '',
         price: Number(editing.price) || 0,
         currency: editing.currency.trim().toUpperCase() || 'IQD',
         image: images[0] ?? '',
@@ -837,23 +840,44 @@ function ProductDialog({
               ))}
             </select>
           </Field>
-          <Field label="Sub-category">
-            <select
-              className="input"
-              value={state.subcategory ?? ''}
-              onChange={(e) => setState({ ...state, subcategory: e.target.value })}
-            >
-              <option value="">{t('— none —')}</option>
-              {(settings.subcategories?.[state.category] ?? []).map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
-            {(settings.subcategories?.[state.category] ?? []).length === 0 && (
-              <p className="mt-1 text-xs text-slate-500">
+          <Field label="Sub-categories" full>
+            {(settings.subcategories?.[state.category] ?? []).length === 0 ? (
+              <p className="text-xs text-slate-500">
                 {t('Add sub-categories in Settings → Product sub-categories.')}
               </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(settings.subcategories?.[state.category] ?? []).map((sub) => {
+                  const chosen = (state.subcategories ?? []).includes(sub);
+                  return (
+                    <label
+                      key={sub}
+                      className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                        chosen
+                          ? 'border-brand-500 bg-brand-50 text-brand-800'
+                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={chosen}
+                        onChange={(e) => {
+                          const current = state.subcategories ?? [];
+                          setState({
+                            ...state,
+                            subcategories: e.target.checked
+                              ? [...current, sub]
+                              : current.filter((x) => x !== sub),
+                          });
+                        }}
+                      />
+                      {chosen ? '✓ ' : ''}
+                      {sub}
+                    </label>
+                  );
+                })}
+              </div>
             )}
           </Field>
           <Field label="Price">
