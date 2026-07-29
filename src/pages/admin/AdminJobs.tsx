@@ -581,12 +581,9 @@ function JobDetailsModal({
   const statusMeta = JOB_STATUSES.find((s) => s.key === job.status);
   const style = STATUS_STYLES[job.status];
   const waze = wazeFromGoogleMaps(job.mapUrl, job.address);
-  // Old jobs have no saved map link — search Google Maps for the address.
-  const gmaps =
-    job.mapUrl ||
-    (job.address
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`
-      : '');
+  // Only the link someone actually saved: a search built from the written
+  // address sends drivers wherever Google guesses, which isn't navigation.
+  const gmaps = job.mapUrl.trim();
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
