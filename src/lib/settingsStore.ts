@@ -63,6 +63,26 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 
 const SINGLETON_PATH = ['settings', 'site'] as const;
 const LS_KEY = 'alwaidh.settings.v1';
+/** Last settings seen from the server, so a reload paints the real logo and
+ *  banners immediately instead of flashing the built-in defaults. */
+const CACHE_KEY = 'alwaidh.settings.cache.v1';
+
+export function cachedSettings(): SiteSettings {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<SiteSettings>) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+function cache(s: SiteSettings): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(s));
+  } catch {
+    /* private mode — just means no head start next time */
+  }
+}
 
 function readLocal(): SiteSettings {
   try {
@@ -130,7 +150,9 @@ export function subscribeSettings(cb: (s: SiteSettings) => void): () => void {
   const database = db;
   if (database) {
     return onSnapshot(doc(database, SINGLETON_PATH[0], SINGLETON_PATH[1]), (snap) => {
-      cb(snap.exists() ? normalize(snap.data() as Record<string, unknown>) : DEFAULT_SETTINGS);
+      const next = snap.exists() ? normalize(snap.data() as Record<string, unknown>) : DEFAULT_SETTINGS;
+      cache(next);
+      cb(next);
     });
   }
   cb(readLocal());

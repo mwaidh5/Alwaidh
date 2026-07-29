@@ -3,7 +3,7 @@ import type { CategorySlug } from '../types/product';
 import { categories } from '../data/categories';
 import { solarBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
-import { useSettings } from '../lib/useSettings';
+import { useSettingsStatus } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
@@ -52,16 +52,20 @@ function TiandyLogo({ src }: { src: string }) {
 }
 
 export default function Home() {
-  const { products } = useProducts();
-  const settings = useSettings();
+  const { products, loading: productsLoading } = useProducts();
+  const { settings, loaded: settingsLoaded } = useSettingsStatus();
   const { t } = useLang();
   const collection = products.slice(0, 8);
   const tiandy = products.filter((p) => p.category === 'tiandy-cameras').slice(0, 4);
-  const heroImage = settings.heroImage || HERO_IMAGE;
-  const bannerImage = settings.solarBannerImage || SOLAR_IMAGE;
+  // Until settings arrive we don't know if the shop uploaded its own images,
+  // so show nothing rather than flashing a stock photo that then swaps out.
+  const heroImage = settings.heroImage || (settingsLoaded ? HERO_IMAGE : '');
+  const bannerImage = settings.solarBannerImage || (settingsLoaded ? SOLAR_IMAGE : '');
 
+  // Same for category tiles: a real product photo once loaded, otherwise a
+  // plain tint — never the stock image.
   const imageFor = (slug: CategorySlug) =>
-    products.find((p) => p.category === slug)?.image ?? HERO_IMAGE;
+    products.find((p) => p.category === slug)?.image ?? (productsLoading ? '' : HERO_IMAGE);
 
   return (
     <div className="bg-white">
@@ -105,11 +109,18 @@ export default function Home() {
             </div>
           </div>
           <div className="relative">
-            <img
-              src={heroImage}
-              alt="Featured products"
-              className="aspect-[5/4] w-full rounded-3xl object-cover shadow-xl ring-1 ring-slate-900/5"
-            />
+            {heroImage ? (
+              <img
+                src={heroImage}
+                alt="Featured products"
+                className="aspect-[5/4] w-full rounded-3xl object-cover shadow-xl ring-1 ring-slate-900/5"
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="aspect-[5/4] w-full animate-pulse rounded-3xl bg-slate-200 shadow-xl ring-1 ring-slate-900/5"
+              />
+            )}
             <div className="absolute -bottom-4 left-6 flex items-center gap-2.5 rounded-2xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
               <span className="text-2xl">📷</span>
               <div className="leading-tight">
@@ -162,6 +173,9 @@ export default function Home() {
               to="/shop"
               className="group relative h-44 overflow-hidden rounded-2xl shadow-sm"
             >
+              {imageFor(c.slug) === '' && (
+                <div className="absolute inset-0 animate-pulse bg-slate-200" aria-hidden="true" />
+              )}
               <img
                 src={imageFor(c.slug)}
                 alt={c.name}
@@ -352,12 +366,14 @@ export default function Home() {
 
       {/* Solar energy — frosted glass over the SolarMax sky blue */}
       <section className="relative overflow-hidden">
-        <img
-          src={bannerImage}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        {bannerImage && (
+          <img
+            src={bannerImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
         {/* Keep the installation photo readable: a light touch at the top,
             deepening into brand sky-blue behind the text below. */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-sky-700/75 to-sky-800/95" />
