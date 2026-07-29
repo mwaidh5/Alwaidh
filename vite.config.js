@@ -42,6 +42,8 @@ export default defineConfig({
     },
     server: {
         port: 5173,
-        open: true,
+        // Don't hijack the system browser on `npm run dev` — the preview opens
+        // in the editor's own browser pane.
+        open: false,
     },
 });
