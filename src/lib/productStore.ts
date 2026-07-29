@@ -48,7 +48,16 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     name: String(data.name ?? ''),
     category: (data.category as Product['category']) ?? 'computers',
     brand: String(data.brand ?? ''),
-    subcategory: String(data.subcategory ?? ''),
+    ...(() => {
+      // Older products stored one sub-category as a string; treat that as a
+      // one-item list so nothing has to be migrated by hand.
+      const many = Array.isArray(data.subcategories)
+        ? data.subcategories.map(String).filter(Boolean)
+        : [];
+      const single = String(data.subcategory ?? '');
+      const subcategories = many.length ? many : single ? [single] : [];
+      return { subcategory: subcategories[0] ?? '', subcategories };
+    })(),
     price: Number(data.price ?? 0),
     currency: String(data.currency ?? 'IQD'),
     ...(() => {

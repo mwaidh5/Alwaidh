@@ -13,7 +13,8 @@ export interface Product {
   name: string;
   category: CategorySlug;
   brand: string;
-  subcategory?: string;  // optional grouping inside a category
+  subcategory?: string;      // first sub-category; kept for older records
+  subcategories?: string[];  // a product can sit in several at once
   price: number;        // in your local currency unit
   currency: string;     // e.g. "USD", "AED", "SAR"
   image: string;        // primary image (= images[0]); kept for thumbnails/back-compat

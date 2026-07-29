@@ -44,19 +44,20 @@ export default function Shop() {
     [products],
   );
 
-  const [activeSub, setActiveSub] = useState<string>('all');
+  const [selectedSubs, setSelectedSubs] = useState<string[]>([]);
 
   // Sub-categories actually present in the current category selection.
   const subOptions = useMemo(() => {
     const relevant =
       activeCategory === 'all' ? products : products.filter((p) => p.category === activeCategory);
-    return [...new Set(relevant.map((p) => p.subcategory).filter(Boolean))].sort() as string[];
+    return [...new Set(relevant.flatMap((p) => p.subcategories ?? []))].sort();
   }, [products, activeCategory]);
 
   const filtered = useMemo(() => {
     let list = products.slice();
     if (activeCategory !== 'all') list = list.filter((p) => p.category === activeCategory);
-    if (activeSub !== 'all') list = list.filter((p) => p.subcategory === activeSub);
+    if (selectedSubs.length)
+      list = list.filter((p) => (p.subcategories ?? []).some((sub) => selectedSubs.includes(sub)));
     if (selectedBrands.length) list = list.filter((p) => selectedBrands.includes(p.brand));
     if (inStockOnly) list = list.filter((p) => p.inStock);
     if (maxPrice != null) list = list.filter((p) => p.price <= maxPrice);
@@ -83,12 +84,12 @@ export default function Shop() {
         break;
     }
     return list;
-  }, [products, activeCategory, activeSub, selectedBrands, inStockOnly, maxPrice, query, sort]);
+  }, [products, activeCategory, selectedSubs, selectedBrands, inStockOnly, maxPrice, query, sort]);
 
   // Reset to the first page whenever the result set changes.
   useEffect(() => {
     setPage(1);
-  }, [activeCategory, activeSub, selectedBrands, inStockOnly, maxPrice, query, sort]);
+  }, [activeCategory, selectedSubs, selectedBrands, inStockOnly, maxPrice, query, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, pageCount);
@@ -101,7 +102,7 @@ export default function Shop() {
     );
 
   const clearFilters = () => {
-    setActiveSub('all');
+    setSelectedSubs([]);
     setActiveCategory('all');
     setSelectedBrands([]);
     setInStockOnly(false);
@@ -189,19 +190,17 @@ export default function Shop() {
           {subOptions.length > 0 && (
             <SidebarSection title="Sub-categories">
               <ul className="space-y-2 text-sm">
-                <FilterRow
-                  label="All"
-                  count={filtered.length}
-                  active={activeSub === 'all'}
-                  onClick={() => setActiveSub('all')}
-                />
                 {subOptions.map((sub) => (
                   <FilterRow
                     key={sub}
                     label={sub}
-                    count={products.filter((p) => p.subcategory === sub).length}
-                    active={activeSub === sub}
-                    onClick={() => setActiveSub(sub)}
+                    count={products.filter((p) => (p.subcategories ?? []).includes(sub)).length}
+                    active={selectedSubs.includes(sub)}
+                    onClick={() =>
+                      setSelectedSubs((prev) =>
+                        prev.includes(sub) ? prev.filter((x) => x !== sub) : [...prev, sub],
+                      )
+                    }
                   />
                 ))}
               </ul>
