@@ -50,6 +50,17 @@ const EMPTY: FormState = {
   updatedAtMs: null,
 };
 
+function fmtShort(ms: number | null): string {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const thisYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(thisYear ? {} : { year: '2-digit' }),
+  });
+}
+
 function fmtWhen(ms: number | null): string {
   if (!ms) return '';
   return new Date(ms).toLocaleDateString('en-GB', {
@@ -510,6 +521,16 @@ function JobCardView({
           >
             {isRepair ? '🔧 repair' : '⚡ install'}
           </span>
+          {job.createdAtMs && (
+            <span
+              className="ml-auto flex-none text-[10px] font-medium text-slate-400"
+              title={`${t('Added')}: ${fmtWhen(job.createdAtMs)}${
+                job.createdBy ? ` — ${job.createdBy}` : ''
+              }`}
+            >
+              {fmtShort(job.createdAtMs)}
+            </span>
+          )}
           <button
             type="button"
             aria-label="Drag"
