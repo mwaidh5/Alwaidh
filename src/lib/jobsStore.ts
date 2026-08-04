@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  type Firestore,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -38,6 +39,21 @@ export interface Job {
   createdAtMs: number | null; // when it was added (ms epoch)
   updatedBy: string; // email of the last person who changed it
   updatedAtMs: number | null; // when it was last changed (ms epoch)
+}
+
+/**
+ * One line in a job's history: who did what, and when. Comments live here
+ * too, so the whole story of a job reads in one list.
+ */
+export type JobEventKind = 'created' | 'edited' | 'status' | 'comment';
+
+export interface JobEvent {
+  id: string;
+  kind: JobEventKind;
+  by: string;          // email of the staff member
+  atMs: number | null;
+  text: string;        // comment body, or a short description of the change
+  mentions: string[];  // emails tagged in a comment
 }
 
 export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
@@ -163,11 +179,12 @@ type JobInput = Omit<Job, 'id' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'up
 export async function createJob(input: JobInput): Promise<void> {
   const database = db;
   if (database) {
-    await addDoc(collection(database, COLLECTION), {
+    const ref = await addDoc(collection(database, COLLECTION), {
       ...input,
       createdAt: serverTimestamp(),
       createdBy: currentEmail(),
     });
+    await logJobEvent(ref.id, 'created', 'Job created');
     return;
   }
   const list = readLocal();
@@ -193,6 +210,7 @@ export async function upsertJob(job: Job): Promise<void> {
       { ...rest, updatedAt: serverTimestamp(), updatedBy: currentEmail() },
       { merge: true },
     );
+    await logJobEvent(id, 'edited', 'Job details updated');
     return;
   }
   const list = readLocal();
@@ -213,6 +231,8 @@ export async function setJobStatus(id: string, status: JobStatus, order: number)
       updatedAt: serverTimestamp(),
       updatedBy: currentEmail(),
     });
+    const label = JOB_STATUSES.find((s) => s.key === status)?.label ?? status;
+    await logJobEvent(id, 'status', `Moved to ${label}`);
     return;
   }
   const list = readLocal();
@@ -230,4 +250,87 @@ export async function deleteJob(id: string): Promise<void> {
     return;
   }
   writeLocal(readLocal().filter((j) => j.id !== id));
+}
+
+
+// ---------------------------------------------------------------------------
+// Job activity: creation, edits, status moves and comments.
+// ---------------------------------------------------------------------------
+
+function activityRef(database: Firestore, jobId: string) {
+  return collection(database, COLLECTION, jobId, 'activity');
+}
+
+/** Record something that happened to a job. Never throws — a job save must
+ *  not fail just because its history line couldn't be written. */
+export async function logJobEvent(
+  jobId: string,
+  kind: JobEventKind,
+  text: string,
+  mentions: string[] = [],
+): Promise<void> {
+  const database = db;
+  if (!database || !jobId) return;
+  try {
+    await addDoc(activityRef(database, jobId), {
+      kind,
+      text,
+      mentions,
+      by: currentEmail(),
+      at: serverTimestamp(),
+    });
+  } catch (e) {
+    console.warn('Could not record job activity:', e instanceof Error ? e.message : e);
+  }
+}
+
+/** Post a comment, optionally tagging colleagues by email. */
+export async function addJobComment(
+  jobId: string,
+  text: string,
+  mentions: string[] = [],
+): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Comments need a database connection.');
+  const body = text.trim();
+  if (!body) return;
+  await addDoc(activityRef(database, jobId), {
+    kind: 'comment',
+    text: body,
+    mentions,
+    by: currentEmail(),
+    at: serverTimestamp(),
+  });
+}
+
+/** Live history for one job, oldest first. */
+export function subscribeJobActivity(
+  jobId: string,
+  cb: (events: JobEvent[]) => void,
+): () => void {
+  const database = db;
+  if (!database || !jobId) {
+    cb([]);
+    return () => {};
+  }
+  return onSnapshot(
+    query(activityRef(database, jobId), orderBy('at', 'asc')),
+    (snap) =>
+      cb(
+        snap.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          return {
+            id: d.id,
+            kind: (['created', 'edited', 'status', 'comment'].includes(String(data.kind))
+              ? data.kind
+              : 'comment') as JobEventKind,
+            by: String(data.by ?? ''),
+            atMs: toMillis(data.at),
+            text: String(data.text ?? ''),
+            mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
+          };
+        }),
+      ),
+    () => cb([]),
+  );
 }

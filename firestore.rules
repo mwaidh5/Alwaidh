@@ -88,6 +88,17 @@ service cloud.firestore {
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
       allow read, write: if isAdmin() || isSolarStaff();
+
+      // History and comments for a job. Entries are a record of what
+      // happened, so they can be added and read but never rewritten;
+      // an admin can still delete one.
+      match /activity/{entryId} {
+        allow read: if isAdmin() || isSolarStaff();
+        allow create: if (isAdmin() || isSolarStaff())
+                      && request.resource.data.by == request.auth.token.email;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
     }
   }
 }
