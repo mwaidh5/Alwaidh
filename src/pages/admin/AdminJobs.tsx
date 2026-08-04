@@ -27,6 +27,7 @@ import {
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
+import JobActivity from '../../components/JobActivity';
 
 type FormState = Job;
 
@@ -651,17 +652,7 @@ function JobDetailsModal({
             <DetailRow label="Notes">
               {job.notes ? <span className="whitespace-pre-wrap">{job.notes}</span> : '—'}
             </DetailRow>
-            <DetailRow label="Added">
-              {job.createdBy || job.createdAtMs
-                ? `${job.createdBy || 'unknown'}${job.createdAtMs ? ` · ${fmtWhen(job.createdAtMs)}` : ''}`
-                : '—'}
-            </DetailRow>
-            {job.updatedBy && (
-              <DetailRow label="Last edited">
-                {job.updatedBy}
-                {job.updatedAtMs ? ` · ${fmtWhen(job.updatedAtMs)}` : ''}
-              </DetailRow>
-            )}
+
           </dl>
 
           {(gmaps || waze || job.invoiceUrl) && (
@@ -697,6 +688,10 @@ function JobDetailsModal({
               )}
             </div>
           )}
+
+          <div className="border-t border-slate-200 pt-4">
+            <JobActivity job={job} />
+          </div>
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
           <button type="button" onClick={onClose} className="btn-secondary">
