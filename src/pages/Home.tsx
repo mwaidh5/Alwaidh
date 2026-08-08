@@ -58,28 +58,28 @@ function TiandyLogo({ src }: { src: string }) {
 function ProductCluster({ products, loading }: { products: Product[]; loading: boolean }) {
   const pick = (slug: CategorySlug) => products.find((p) => p.category === slug && p.image);
   const trio = [
-    { p: pick('tiandy-cameras'), cls: 'h-24 w-24 -rotate-6 translate-y-6 sm:h-28 sm:w-28' },
-    { p: pick('computers'), cls: 'z-10 h-36 w-36 sm:h-48 sm:w-48' },
-    { p: pick('solar'), cls: 'h-24 w-24 rotate-6 translate-y-6 sm:h-28 sm:w-28' },
+    { p: pick('tiandy-cameras'), cls: 'h-28 w-28 -rotate-6 translate-y-4 sm:h-36 sm:w-36' },
+    { p: pick('computers'), cls: 'z-10 h-40 w-40 sm:h-52 sm:w-52' },
+    { p: pick('solar'), cls: 'h-28 w-28 rotate-6 translate-y-4 sm:h-36 sm:w-36' },
   ].filter((x) => x.p);
 
   if (loading || trio.length === 0) {
     return (
       <div
         aria-hidden="true"
-        className="mx-auto h-36 w-64 animate-pulse rounded-3xl bg-white/20 sm:-mt-14 sm:h-48 lg:-mt-36"
+        className="mx-auto h-40 w-72 animate-pulse self-start rounded-3xl bg-white/20 sm:-mt-16 sm:h-52 lg:-mt-32"
       />
     );
   }
 
   return (
-    <div className="relative flex items-end justify-center gap-2 sm:-mt-14 lg:-mt-36">
+    <div className="relative flex items-end justify-center gap-3 self-start sm:-mt-16 lg:-mt-32">
       {trio.map(({ p, cls }) => (
         <span
           key={p!.id}
-          className={`grid place-items-center rounded-2xl bg-white/95 p-2 shadow-2xl ring-1 ring-black/5 ${cls}`}
+          className={`block overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 ${cls}`}
         >
-          <img src={p!.image} alt={p!.name} className="h-full w-full rounded-xl object-contain" />
+          <img src={p!.image} alt={p!.name} className="h-full w-full object-cover" />
         </span>
       ))}
     </div>
@@ -91,7 +91,6 @@ export default function Home() {
   const { settings, loaded: settingsLoaded } = useSettingsStatus();
   const { t } = useLang();
   const collection = products.slice(0, 8);
-  const featured = products.find((p) => p.inStock && p.image) ?? products[0];
   const tiandy = products.filter((p) => p.category === 'tiandy-cameras').slice(0, 4);
   // Until settings arrive we don't know if the shop uploaded its own images,
   // so show nothing rather than flashing a stock photo that then swaps out.
@@ -146,7 +145,7 @@ export default function Home() {
               <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
             </div>
 
-            <div className="relative grid items-start gap-8 lg:grid-cols-[1fr_auto_1fr]">
+            <div className="relative grid items-center gap-8 lg:grid-cols-2">
               {/* Left: the pitch */}
               <div className="max-w-sm">
                 <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white/90">
@@ -170,7 +169,24 @@ export default function Home() {
                   </span>
                 </Link>
 
-                <div className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
+                <div className="mt-8 grid max-w-xs grid-cols-3 gap-3 text-center">
+                  {[
+                    { icon: '\ud83d\udcbb', label: t('Computers') },
+                    { icon: '\u2600\ufe0f', label: t('Solar Energy') },
+                    { icon: '\ud83d\udcf7', label: t('Cameras') },
+                  ].map((f) => (
+                    <div key={f.label} className="rounded-2xl bg-white/10 px-2 py-3">
+                      <span className="text-2xl" aria-hidden>
+                        {f.icon}
+                      </span>
+                      <p className="mt-1 text-xs font-semibold leading-tight text-white/90">
+                        {f.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
                   <span className="flex -space-x-2" aria-hidden>
                     {['\ud83d\udcbb', '\u2600\ufe0f', '\ud83d\udcf7'].map((icon) => (
                       <span
@@ -192,50 +208,6 @@ export default function Home() {
               {/* Middle: real products, lifted above the panel */}
               <ProductCluster products={products} loading={productsLoading} />
 
-              {/* Right: what we do, plus a featured product */}
-              <div className="lg:pl-4">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  {[
-                    { icon: '\ud83d\udcbb', label: t('Computers') },
-                    { icon: '\u2600\ufe0f', label: t('Solar Energy') },
-                    { icon: '\ud83d\udcf7', label: t('Cameras') },
-                  ].map((f) => (
-                    <div key={f.label}>
-                      <span className="text-2xl" aria-hidden>
-                        {f.icon}
-                      </span>
-                      <p className="mt-1 text-xs font-semibold leading-tight text-white/90">
-                        {f.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {featured && (
-                  <div className="mt-8">
-                    <p className="text-center text-sm font-bold text-white">{t('Featured')}</p>
-                    <Link
-                      to={`/product/${featured.id}`}
-                      className="mt-3 block rounded-3xl bg-white p-3 shadow-xl transition hover:-translate-y-0.5"
-                    >
-                      <span className="block aspect-square overflow-hidden rounded-2xl bg-slate-50">
-                        <img
-                          src={featured.image}
-                          alt={featured.name}
-                          loading="lazy"
-                          className="h-full w-full object-contain"
-                        />
-                      </span>
-                      <span className="mt-3 block truncate text-center text-sm font-bold text-slate-900">
-                        {featured.name}
-                      </span>
-                      <span className="mt-2 flex items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white">
-                        {formatPrice(featured.price, featured.currency)}
-                      </span>
-                    </Link>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
