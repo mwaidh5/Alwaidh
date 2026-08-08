@@ -38,6 +38,18 @@ const AR: Record<string, string> = {
 
   // ---- Home ----
   'Your Tech Destination': 'وجهتك التقنية',
+  'Power Your': 'شغّل',
+  WORK: 'عملك',
+  'Secure Your': 'واحمِ',
+  WORLD: 'عالمك',
+  'Complete systems': 'أنظمة متكاملة',
+  'Where Power Meets Reliability': 'حيث تلتقي الطاقة بالموثوقية',
+  'Computers, solar energy, and security cameras — supplied, installed, and serviced by our own team.':
+    'حاسبات وأنظمة طاقة شمسية وكاميرات مراقبة — توريد وتركيب وصيانة من فريقنا.',
+  'Explore Now': 'تصفّح الآن',
+  'Trusted across Iraq': 'موثوقون في عموم العراق',
+  'since 1992': 'منذ 1992',
+  Featured: 'منتج مميز',
   'Shop by Category': 'تسوّق حسب الفئة',
   'Shop Now →': 'تسوّق الآن →',
   'View all →': 'عرض الكل →',

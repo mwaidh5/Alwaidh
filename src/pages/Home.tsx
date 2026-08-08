@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { CategorySlug } from '../types/product';
+import type { CategorySlug, Product } from '../types/product';
 import { categories } from '../data/categories';
 import { solarBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
@@ -51,15 +51,50 @@ function TiandyLogo({ src }: { src: string }) {
   );
 }
 
+/**
+ * The three things we sell, overlapping and lifted above the panel — real
+ * product photos rather than a stock image, so it follows the catalogue.
+ */
+function ProductCluster({ products, loading }: { products: Product[]; loading: boolean }) {
+  const pick = (slug: CategorySlug) => products.find((p) => p.category === slug && p.image);
+  const trio = [
+    { p: pick('tiandy-cameras'), cls: 'h-24 w-24 -rotate-6 translate-y-6 sm:h-28 sm:w-28' },
+    { p: pick('computers'), cls: 'z-10 h-36 w-36 sm:h-48 sm:w-48' },
+    { p: pick('solar'), cls: 'h-24 w-24 rotate-6 translate-y-6 sm:h-28 sm:w-28' },
+  ].filter((x) => x.p);
+
+  if (loading || trio.length === 0) {
+    return (
+      <div
+        aria-hidden="true"
+        className="mx-auto h-36 w-64 animate-pulse rounded-3xl bg-white/20 sm:-mt-14 sm:h-48 lg:-mt-36"
+      />
+    );
+  }
+
+  return (
+    <div className="relative flex items-end justify-center gap-2 sm:-mt-14 lg:-mt-36">
+      {trio.map(({ p, cls }) => (
+        <span
+          key={p!.id}
+          className={`grid place-items-center rounded-2xl bg-white/95 p-2 shadow-2xl ring-1 ring-black/5 ${cls}`}
+        >
+          <img src={p!.image} alt={p!.name} className="h-full w-full rounded-xl object-contain" />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   const { products, loading: productsLoading } = useProducts();
   const { settings, loaded: settingsLoaded } = useSettingsStatus();
   const { t } = useLang();
   const collection = products.slice(0, 8);
+  const featured = products.find((p) => p.inStock && p.image) ?? products[0];
   const tiandy = products.filter((p) => p.category === 'tiandy-cameras').slice(0, 4);
   // Until settings arrive we don't know if the shop uploaded its own images,
   // so show nothing rather than flashing a stock photo that then swaps out.
-  const heroImage = settings.heroImage || (settingsLoaded ? HERO_IMAGE : '');
   const bannerImage = settings.solarBannerImage || (settingsLoaded ? SOLAR_IMAGE : '');
 
   // Same for category tiles: a real product photo once loaded, otherwise a
@@ -69,68 +104,138 @@ export default function Home() {
 
   return (
     <div className="bg-white">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-white">
+      {/* Hero — split headline over a brand panel, with the product cluster
+          breaking out above it. */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50/60 via-white to-white">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-100/60 blur-3xl"
         />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-100/50 blur-3xl"
-        />
-        <div className="container-page relative grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-brand-700">
-              ⚡ {t('Your Tech Destination')}
-            </p>
-            <h1 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl">
-              {t('New Season')}
+        <div className="container-page relative pt-10 sm:pt-14">
+          {/* Split headline */}
+          <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+            <h1 className="text-4xl font-extrabold leading-[0.95] tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+              {t('Power Your')}
               <br />
-              <span className="text-brand-600">{t('Collection')}</span>
+              <span className="text-brand-600">{t('WORK')}</span>
             </h1>
-            <p className="mt-6 max-w-md text-lg text-slate-600">
-              Quality computers, solar energy systems, and Tiandy security cameras — chosen for
-              performance and built to last.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to="/shop"
-                className="inline-flex items-center justify-center rounded-full bg-brand-600 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
-              >
-                {t('Shop Now')}
-              </Link>
-              <Link
-                to="/solar-prices"
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:border-slate-400 hover:bg-slate-50"
-              >
-                {t('Solar Prices')}
-              </Link>
-            </div>
+            <h2 className="text-4xl font-extrabold leading-[0.95] tracking-tight text-slate-900 sm:text-right sm:text-6xl lg:text-7xl">
+              {t('Secure Your')}
+              <br />
+              <span className="text-brand-600">{t('WORLD')}</span>
+              <span aria-hidden className="ml-2 text-sun-400">
+                &#10022;
+              </span>
+            </h2>
           </div>
-          <div className="relative">
-            {heroImage ? (
-              <img
-                src={heroImage}
-                alt="Featured products"
-                className="aspect-[5/4] w-full rounded-3xl object-cover shadow-xl ring-1 ring-slate-900/5"
-              />
-            ) : (
-              <div
-                aria-hidden="true"
-                className="aspect-[5/4] w-full animate-pulse rounded-3xl bg-slate-200 shadow-xl ring-1 ring-slate-900/5"
-              />
-            )}
-            <div className="absolute -bottom-4 left-6 flex items-center gap-2.5 rounded-2xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-              <span className="text-2xl">📷</span>
-              <div className="leading-tight">
-                <p className="text-sm font-bold text-slate-900">Tiandy Authorised</p>
-                <p className="text-xs text-slate-500">{t('Security cameras & NVRs')}</p>
-              </div>
+
+          {/* Brand panel */}
+          <div className="relative mt-10 rounded-[2rem] bg-brand-600 px-6 pb-8 pt-10 sm:mt-16 sm:rounded-[2.5rem] sm:px-10 sm:pb-10 lg:pt-14">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem] sm:rounded-[2.5rem]"
+            >
+              {settings.heroImage && (
+                <img
+                  src={settings.heroImage}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity"
+                />
+              )}
+              <div className="absolute -left-10 top-10 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+              <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
             </div>
-            <div className="absolute -top-4 right-6 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-lg backdrop-blur">
-              <span>☀️</span>
-              <p className="text-sm font-bold text-slate-900">{t('Solar experts')}</p>
+
+            <div className="relative grid items-start gap-8 lg:grid-cols-[1fr_auto_1fr]">
+              {/* Left: the pitch */}
+              <div className="max-w-sm">
+                <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white/90">
+                  <span aria-hidden>&#10022;</span> {t('Complete systems')}
+                </p>
+                <p className="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+                  {t('Where Power Meets Reliability')}
+                </p>
+                <p className="mt-3 text-white/85">
+                  {t(
+                    'Computers, solar energy, and security cameras — supplied, installed, and serviced by our own team.',
+                  )}
+                </p>
+                <Link
+                  to="/shop"
+                  className="mt-7 inline-flex items-center gap-3 rounded-full bg-slate-900 py-2 pl-6 pr-2 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800"
+                >
+                  {t('Explore Now')}
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-900">
+                    &rarr;
+                  </span>
+                </Link>
+
+                <div className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
+                  <span className="flex -space-x-2" aria-hidden>
+                    {['\ud83d\udcbb', '\u2600\ufe0f', '\ud83d\udcf7'].map((icon) => (
+                      <span
+                        key={icon}
+                        className="grid h-8 w-8 place-items-center rounded-full bg-white text-sm ring-2 ring-brand-600"
+                      >
+                        {icon}
+                      </span>
+                    ))}
+                  </span>
+                  <p className="text-sm font-semibold leading-tight text-white">
+                    {t('Trusted across Iraq')}
+                    <br />
+                    <span className="font-normal text-white/80">{t('since 1992')}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Middle: real products, lifted above the panel */}
+              <ProductCluster products={products} loading={productsLoading} />
+
+              {/* Right: what we do, plus a featured product */}
+              <div className="lg:pl-4">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  {[
+                    { icon: '\ud83d\udcbb', label: t('Computers') },
+                    { icon: '\u2600\ufe0f', label: t('Solar Energy') },
+                    { icon: '\ud83d\udcf7', label: t('Cameras') },
+                  ].map((f) => (
+                    <div key={f.label}>
+                      <span className="text-2xl" aria-hidden>
+                        {f.icon}
+                      </span>
+                      <p className="mt-1 text-xs font-semibold leading-tight text-white/90">
+                        {f.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {featured && (
+                  <div className="mt-8">
+                    <p className="text-center text-sm font-bold text-white">{t('Featured')}</p>
+                    <Link
+                      to={`/product/${featured.id}`}
+                      className="mt-3 block rounded-3xl bg-white p-3 shadow-xl transition hover:-translate-y-0.5"
+                    >
+                      <span className="block aspect-square overflow-hidden rounded-2xl bg-slate-50">
+                        <img
+                          src={featured.image}
+                          alt={featured.name}
+                          loading="lazy"
+                          className="h-full w-full object-contain"
+                        />
+                      </span>
+                      <span className="mt-3 block truncate text-center text-sm font-bold text-slate-900">
+                        {featured.name}
+                      </span>
+                      <span className="mt-2 flex items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white">
+                        {formatPrice(featured.price, featured.currency)}
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
