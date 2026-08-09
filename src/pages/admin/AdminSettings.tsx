@@ -205,7 +205,7 @@ export default function AdminSettings() {
             Replace the main images used across the website. Changes go live as soon as you save.
           </p>
           <ImageField
-            label="Homepage hero image"
+            label="Homepage hero image (shown large on the blue panel)"
             value={settings.heroImage}
             folder="site"
             onChange={(url) => update('heroImage', url)}

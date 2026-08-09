@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { CategorySlug, Product } from '../types/product';
+import type { CategorySlug } from '../types/product';
 import { categories } from '../data/categories';
 import { solarBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
@@ -55,37 +55,6 @@ function TiandyLogo({ src }: { src: string }) {
  * The three things we sell, overlapping and lifted above the panel — real
  * product photos rather than a stock image, so it follows the catalogue.
  */
-function ProductCluster({ products, loading }: { products: Product[]; loading: boolean }) {
-  const pick = (slug: CategorySlug) => products.find((p) => p.category === slug && p.image);
-  const trio = [
-    { p: pick('tiandy-cameras'), cls: 'h-28 w-28 -rotate-6 translate-y-4 sm:h-36 sm:w-36' },
-    { p: pick('computers'), cls: 'z-10 h-40 w-40 sm:h-52 sm:w-52' },
-    { p: pick('solar'), cls: 'h-28 w-28 rotate-6 translate-y-4 sm:h-36 sm:w-36' },
-  ].filter((x) => x.p);
-
-  if (loading || trio.length === 0) {
-    return (
-      <div
-        aria-hidden="true"
-        className="mx-auto h-40 w-72 animate-pulse self-start rounded-3xl bg-white/20 sm:-mt-16 sm:h-52 lg:-mt-32"
-      />
-    );
-  }
-
-  return (
-    <div className="relative flex items-end justify-center gap-3 self-start sm:-mt-16 lg:-mt-32">
-      {trio.map(({ p, cls }) => (
-        <span
-          key={p!.id}
-          className={`block overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 ${cls}`}
-        >
-          <img src={p!.image} alt={p!.name} className="h-full w-full object-cover" />
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
   const { products, loading: productsLoading } = useProducts();
   const { settings, loaded: settingsLoaded } = useSettingsStatus();
@@ -134,18 +103,11 @@ export default function Home() {
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem] sm:rounded-[2.5rem]"
             >
-              {settings.heroImage && (
-                <img
-                  src={settings.heroImage}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity"
-                />
-              )}
               <div className="absolute -left-10 top-10 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
               <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
             </div>
 
-            <div className="relative grid items-center gap-8 lg:grid-cols-2">
+            <div className={`relative grid items-center gap-8 ${settings.heroImage ? 'lg:grid-cols-2' : ''}`}>
               {/* Left: the pitch */}
               <div className="max-w-sm">
                 <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white/90">
@@ -206,7 +168,13 @@ export default function Home() {
               </div>
 
               {/* Middle: real products, lifted above the panel */}
-              <ProductCluster products={products} loading={productsLoading} />
+              {settings.heroImage && (
+                <img
+                  src={settings.heroImage}
+                  alt={t('Our products')}
+                  className="mx-auto w-full max-w-sm self-start object-contain drop-shadow-2xl sm:-mt-16 lg:-mt-32 lg:max-w-md"
+                />
+              )}
 
             </div>
           </div>
