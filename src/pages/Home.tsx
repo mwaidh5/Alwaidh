@@ -431,8 +431,9 @@ export default function Home() {
           className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-white/20 blur-3xl"
         />
 
-        <div className="container-page relative py-20">
-          <div className="mx-auto max-w-2xl text-center">
+        <div className="container-page relative py-10 sm:py-14">
+          <div className="grid items-center gap-8 lg:grid-cols-2">
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
             {settings.solarLogo ? (
               <span className="inline-flex items-center rounded-2xl bg-white/95 px-5 py-3 shadow-lg ring-1 ring-black/5">
                 <img
@@ -446,17 +447,17 @@ export default function Home() {
                 ☀️ SolarMax · الواعظ للقدرة
               </span>
             )}
-            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight text-white drop-shadow sm:text-5xl">
+            <h2 className="mt-4 text-3xl font-extrabold uppercase tracking-tight text-white drop-shadow sm:text-4xl">
               {t('Power tomorrow today')}
               <br />
               {t('with solar')}
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-white/90">
+            <p className="mx-auto mt-3 max-w-xl text-white/90">
               {t('Panels, inverters, and batteries sized for your home or business — supplied and installed by the team that knows the gear.')}
             </p>
             <Link
               to="/solar-prices"
-              className="mt-8 inline-flex items-center gap-3 rounded-full bg-white py-2 pl-6 pr-2 text-sm font-bold uppercase tracking-wide text-sky-700 shadow-xl transition hover:bg-sky-50"
+              className="mt-6 inline-flex items-center gap-3 rounded-full bg-white py-2 pl-6 pr-2 text-sm font-bold uppercase tracking-wide text-sky-700 shadow-xl transition hover:bg-sky-50"
             >
               {t('View Solar Prices')}
               <span className="grid h-9 w-9 place-items-center rounded-full bg-sky-600 text-base text-white">
@@ -466,13 +467,13 @@ export default function Home() {
           </div>
 
           {/* Glass feature cards */}
-          <div className="mt-14 grid gap-4 md:grid-cols-2">
-            <div className="glass rounded-3xl p-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:mt-0">
+            <div className="glass rounded-3xl p-4">
               <img
                 src={imageFor('solar')}
                 alt=""
                 loading="lazy"
-                className="h-28 w-full rounded-2xl object-cover"
+                className="h-20 w-full rounded-2xl object-cover"
               />
               <p className="mt-4 text-sm font-bold uppercase tracking-wide text-white">
                 {t('Complete solar systems')}
@@ -488,7 +489,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="glass rounded-3xl p-5">
+            <div className="glass rounded-3xl p-4">
               <span className="text-3xl">🔋</span>
               <p className="mt-3 text-sm font-bold uppercase tracking-wide text-white">
                 {t('SolarMax batteries')}
@@ -505,8 +506,10 @@ export default function Home() {
             </div>
           </div>
 
+          </div>
+
           {/* Brands we supply */}
-          <div className="mt-14">
+          <div className="mt-8">
             <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-white/80">
               {t('Brands we work with')}
             </p>
