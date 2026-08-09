@@ -107,7 +107,7 @@ export default function Home() {
               <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
             </div>
 
-            <div className={`relative grid items-center gap-8 ${settings.heroImage ? 'lg:grid-cols-2' : ''}`}>
+            <div className={`relative grid items-center gap-8 ${settings.heroImage ? 'lg:grid-cols-[1fr_1.15fr]' : ''}`}>
               {/* Left: the pitch */}
               <div className="max-w-sm">
                 <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white/90">
@@ -172,7 +172,7 @@ export default function Home() {
                 <img
                   src={settings.heroImage}
                   alt={t('Our products')}
-                  className="mx-auto w-full max-w-sm self-start object-contain drop-shadow-2xl sm:-mt-16 lg:-mt-32 lg:max-w-md"
+                  className="mx-auto w-full max-w-md self-start object-contain drop-shadow-2xl sm:-mt-20 sm:max-w-lg lg:-mt-40 lg:max-w-none"
                 />
               )}
 
