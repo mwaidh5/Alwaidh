@@ -172,7 +172,7 @@ export default function Home() {
                 <img
                   src={settings.heroImage}
                   alt={t('Our products')}
-                  className="mx-auto w-full max-w-md self-start object-contain drop-shadow-2xl sm:-mt-20 sm:max-w-lg lg:-mt-40 lg:max-w-none"
+                  className="mx-auto w-full max-w-md object-contain drop-shadow-2xl sm:-mt-10 sm:max-w-lg lg:-ml-24 lg:-mt-24 lg:w-[120%] lg:max-w-none"
                 />
               )}
 
