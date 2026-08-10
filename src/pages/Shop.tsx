@@ -6,7 +6,7 @@ import { useProducts } from '../lib/useProducts';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
-import { useAuth } from '../context/AuthContext';
+import { StaffProductEdit } from '../components/ProductEditor';
 
 type SortKey = 'featured' | 'price-asc' | 'price-desc' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -457,30 +457,13 @@ function PageButton({
   );
 }
 
-/** Staff-only shortcut: jump from the shop straight into the product editor. */
-function StaffEditButton({ product }: { product: Product }) {
-  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
-  const canEdit =
-    isAdmin ||
-    (isComputerStaff && (product.category === 'computers' || product.category === 'tiandy-cameras')) ||
-    (isSolarStaff && product.category === 'solar');
-  if (!canEdit) return null;
-  return (
-    <Link
-      to={`/admin/products?edit=${product.id}`}
-      onClick={(e) => e.stopPropagation()}
-      title="Edit this product"
-      className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
-    >
-      ✏️ Edit
-    </Link>
-  );
-}
-
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
   return (
     <div className="card group relative flex flex-col overflow-hidden text-center">
-      <StaffEditButton product={product} />
+      <StaffProductEdit
+        product={product}
+        className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
+      />
       <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-6">
         <img
           src={product.image}
@@ -516,7 +499,10 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
 function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
   return (
     <div className="card group relative flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
-      <StaffEditButton product={product} />
+      <StaffProductEdit
+        product={product}
+        className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
+      />
       <Link
         to={`/product/${product.id}`}
         className="block aspect-square w-full flex-none overflow-hidden rounded-lg bg-slate-50 p-4 sm:w-40"

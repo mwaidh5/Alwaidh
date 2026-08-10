@@ -5,6 +5,7 @@ import { getCategory } from '../data/categories';
 import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import { StaffProductEdit } from '../components/ProductEditor';
 
 export default function ProductDetail() {
   const { id = '' } = useParams();
@@ -85,7 +86,10 @@ export default function ProductDetail() {
           )}
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">{product.brand}</div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">{product.brand}</div>
+            <StaffProductEdit product={product} />
+          </div>
           <h1 className="mt-1 text-3xl font-extrabold text-slate-900">{product.name}</h1>
           <div className="mt-3 flex items-center gap-3">
             <div className="text-2xl font-bold text-brand-700">
