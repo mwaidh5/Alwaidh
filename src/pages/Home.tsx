@@ -133,31 +133,73 @@ export default function Home() {
 
                 <div className="mt-8 grid max-w-xs grid-cols-3 gap-3 text-center">
                   {[
-                    { icon: '\ud83d\udcbb', label: t('Computers') },
-                    { icon: '\u2600\ufe0f', label: t('Solar Energy') },
-                    { icon: '\ud83d\udcf7', label: t('Cameras') },
-                  ].map((f) => (
-                    <div key={f.label} className="rounded-2xl bg-white/10 px-2 py-3">
-                      <span className="text-2xl" aria-hidden>
-                        {f.icon}
-                      </span>
-                      <p className="mt-1 text-xs font-semibold leading-tight text-white/90">
-                        {f.label}
-                      </p>
-                    </div>
-                  ))}
+                    { slug: 'computers', icon: '\ud83d\udcbb', label: t('Computers') },
+                    {
+                      slug: 'solar',
+                      icon: '\u2600\ufe0f',
+                      label: t('Solar Energy'),
+                      spare: settings.solarLogo,
+                    },
+                    {
+                      slug: 'tiandy-cameras',
+                      icon: '\ud83d\udcf7',
+                      label: t('Cameras'),
+                      spare: settings.tiandyLogo,
+                    },
+                  ].map((f) => {
+                    // The logo uploaded for the category, falling back to the
+                    // brand logo, and to the icon before anything is uploaded.
+                    const logo = settings.categoryLogos?.[f.slug] || f.spare;
+                    return (
+                      <div key={f.label} className="rounded-2xl bg-white/10 px-2 py-3">
+                        {logo ? (
+                          <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-white p-1.5 shadow-sm">
+                            <img
+                              src={logo}
+                              alt=""
+                              loading="lazy"
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          </span>
+                        ) : (
+                          <span className="text-2xl" aria-hidden>
+                            {f.icon}
+                          </span>
+                        )}
+                        <p className="mt-1.5 text-xs font-semibold leading-tight text-white/90">
+                          {f.label}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
                   <span className="flex -space-x-2" aria-hidden>
-                    {['\ud83d\udcbb', '\u2600\ufe0f', '\ud83d\udcf7'].map((icon) => (
-                      <span
-                        key={icon}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-white text-sm ring-2 ring-brand-600"
-                      >
-                        {icon}
-                      </span>
-                    ))}
+                    {[
+                      { slug: 'computers', icon: '\ud83d\udcbb' },
+                      { slug: 'solar', icon: '\u2600\ufe0f', spare: settings.solarLogo },
+                      { slug: 'tiandy-cameras', icon: '\ud83d\udcf7', spare: settings.tiandyLogo },
+                    ].map((f) => {
+                      const logo = settings.categoryLogos?.[f.slug] || f.spare;
+                      return (
+                        <span
+                          key={f.slug}
+                          className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-white text-sm ring-2 ring-brand-600"
+                        >
+                          {logo ? (
+                            <img
+                              src={logo}
+                              alt=""
+                              loading="lazy"
+                              className="h-6 w-6 object-contain"
+                            />
+                          ) : (
+                            f.icon
+                          )}
+                        </span>
+                      );
+                    })}
                   </span>
                   <p className="text-sm font-semibold leading-tight text-white">
                     {t('Trusted across Iraq')}
