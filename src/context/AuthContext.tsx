@@ -31,6 +31,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   isComputerStaff: boolean; // admin OR listed as computer staff
   isSolarStaff: boolean; // admin OR listed as solar staff
+  isInstaller: boolean; // field installer: only their assigned jobs
   hasAdminAccess: boolean; // any role that can open the dashboard
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -105,7 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isAdmin, email, settings],
   );
 
-  const hasAdminAccess = isAdmin || isComputerStaff || isSolarStaff;
+  const isInstaller = useMemo(
+    () => !!email && (settings?.installerEmails ?? []).includes(email),
+    [email, settings],
+  );
+
+  const hasAdminAccess = isAdmin || isComputerStaff || isSolarStaff || isInstaller;
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -114,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isComputerStaff,
       isSolarStaff,
+      isInstaller,
       hasAdminAccess,
       configured: firebaseReady && auth !== null,
       async signInWithGoogle() {
@@ -181,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fbSignOut(auth);
       },
     }),
-    [user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess],
+    [user, loading, isAdmin, isComputerStaff, isSolarStaff, isInstaller, hasAdminAccess],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

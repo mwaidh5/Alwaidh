@@ -27,6 +27,8 @@ import {
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
+import { useAuth } from '../../context/AuthContext';
+import { subscribeSettings } from '../../lib/settingsStore';
 import JobActivity from '../../components/JobActivity';
 
 type FormState = Job;
@@ -40,6 +42,7 @@ const EMPTY: FormState = {
   type: 'install',
   system: '',
   installer: '',
+  installerEmail: '',
   notes: '',
   invoiceUrl: '',
   invoiceName: '',
@@ -109,6 +112,13 @@ const STATUS_STYLES: Record<
 
 export default function AdminJobs() {
   const { t } = useLang();
+  const { user, isSolarStaff } = useAuth();
+  const [installerEmails, setInstallerEmails] = useState<string[] | null>(null);
+  // A field installer only follows the jobs assigned to them: same board,
+  // but nothing to add, edit, move or delete. Read the list here rather than
+  // from the auth context so the flag and the query are decided together.
+  const myEmail = user?.email?.toLowerCase() ?? '';
+  const readOnly = !isSolarStaff && !!myEmail && (installerEmails ?? []).includes(myEmail);
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
@@ -129,17 +139,26 @@ export default function AdminJobs() {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
 
-  useEffect(
-    () =>
-      subscribeJobs(setJobs, (message) =>
+  useEffect(() => subscribeSettings((s) => setInstallerEmails(s.installerEmails ?? [])), []);
+
+  const onlyMine = readOnly ? myEmail : '';
+  const rolesReady = installerEmails !== null;
+  useEffect(() => {
+    // Wait for the role lists: an unfiltered read would be rejected for an
+    // installer, and the failed attempt would flash an access error.
+    if (!rolesReady) return;
+    setError('');
+    return subscribeJobs(
+      setJobs,
+      (message) =>
         setError(
           message.includes('insufficient permissions')
             ? 'Access to jobs was denied. Make sure you are signed in with Google using an email listed under Solar staff (or Admin).'
             : `Could not load jobs: ${message}`,
         ),
-      ),
-    [],
-  );
+      onlyMine || undefined,
+    );
+  }, [onlyMine, rolesReady]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -157,7 +176,9 @@ export default function AdminJobs() {
         ),
       );
     }
-    return list;
+    // The installer's query filters by assignee, which rules out an
+    // "order by" on the server — so keep the columns tidy here.
+    return [...list].sort((a, b) => a.order - b.order);
   }, [jobs, typeFilter, query]);
 
   const byStatus = useMemo(() => {
@@ -189,6 +210,7 @@ export default function AdminJobs() {
 
   function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
+    if (readOnly) return;
     const { active, over } = e;
     if (!over) return;
     const overStatus = over.id as JobStatus;
@@ -212,6 +234,7 @@ export default function AdminJobs() {
         type: editing.type,
         system: editing.system.trim(),
         installer: editing.installer.trim(),
+        installerEmail: editing.installerEmail.trim().toLowerCase(),
         notes: editing.notes.trim(),
         invoiceUrl: editing.invoiceUrl,
         invoiceName: editing.invoiceName,
@@ -244,19 +267,23 @@ export default function AdminJobs() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">{t('Solar Jobs')}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {t('Track installs and repairs. Drag a card between columns to update its status.')}
+            {readOnly
+              ? t('The installations assigned to you.')
+              : t('Track installs and repairs. Drag a card between columns to update its status.')}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setError('');
-            setEditing({ ...EMPTY, order: Date.now() });
-          }}
-          className="btn-primary"
-        >
-          {t('+ New job')}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setEditing({ ...EMPTY, order: Date.now() });
+            }}
+            className="btn-primary"
+          >
+            {t('+ New job')}
+          </button>
+        )}
       </header>
 
       {error && (
@@ -348,6 +375,7 @@ export default function AdminJobs() {
                   status={col.key}
                   label={col.label}
                   jobs={byStatus[col.key]}
+                  readOnly={readOnly}
                   onEdit={(j) => {
                     setError('');
                     setEditing({ ...j });
@@ -366,6 +394,7 @@ export default function AdminJobs() {
         <JobDialog
           state={editing}
           setState={setEditing}
+          installerEmails={installerEmails ?? []}
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
@@ -376,6 +405,7 @@ export default function AdminJobs() {
       {viewing && (
         <JobDetailsModal
           job={viewing}
+          readOnly={readOnly}
           onClose={() => setViewing(null)}
           onEdit={() => {
             setError('');
@@ -397,6 +427,7 @@ function Column({
   status,
   label,
   jobs,
+  readOnly,
   onEdit,
   onView,
   onDelete,
@@ -404,6 +435,7 @@ function Column({
   status: JobStatus;
   label: string;
   jobs: Job[];
+  readOnly: boolean;
   onEdit: (j: Job) => void;
   onView: (j: Job) => void;
   onDelete: (j: Job) => void;
@@ -436,6 +468,7 @@ function Column({
           <JobCard
             key={j.id}
             job={j}
+            readOnly={readOnly}
             onEdit={() => onEdit(j)}
             onView={() => onView(j)}
             onDelete={() => onDelete(j)}
@@ -444,7 +477,7 @@ function Column({
         {jobs.length === 0 && (
           <div className="flex h-24 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
             <span className="text-lg">🛠️</span>
-            <p className="mt-1 text-xs font-medium">Drag jobs here</p>
+            <p className="mt-1 text-xs font-medium">{readOnly ? 'Nothing here' : 'Drag jobs here'}</p>
           </div>
         )}
       </div>
@@ -454,16 +487,21 @@ function Column({
 
 function JobCard({
   job,
+  readOnly,
   onEdit,
   onView,
   onDelete,
 }: {
   job: Job;
+  readOnly: boolean;
   onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: job.id,
+    disabled: readOnly,
+  });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
@@ -471,6 +509,7 @@ function JobCard({
     <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-40' : ''}>
       <JobCardView
         job={job}
+        readOnly={readOnly}
         dragListeners={listeners}
         dragAttributes={attributes}
         onEdit={onEdit}
@@ -483,6 +522,7 @@ function JobCard({
 
 function JobCardView({
   job,
+  readOnly,
   dragListeners,
   dragAttributes,
   onEdit,
@@ -491,6 +531,7 @@ function JobCardView({
   overlay,
 }: {
   job: Job;
+  readOnly?: boolean;
   dragListeners?: DraggableSyntheticListeners;
   dragAttributes?: DraggableAttributes;
   onEdit?: () => void;
@@ -532,15 +573,17 @@ function JobCardView({
               {fmtShort(job.createdAtMs)}
             </span>
           )}
-          <button
-            type="button"
-            aria-label="Drag"
-            className="-m-1 cursor-grab touch-none rounded p-1 text-[11px] leading-none text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
-            {...dragListeners}
-            {...dragAttributes}
-          >
-            ⠿
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              aria-label="Drag"
+              className="-m-1 cursor-grab touch-none rounded p-1 text-[11px] leading-none text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
+              {...dragListeners}
+              {...dragAttributes}
+            >
+              ⠿
+            </button>
+          )}
         </div>
 
         <p className="mt-1 truncate text-sm font-bold leading-snug text-slate-900">
@@ -563,22 +606,26 @@ function JobCardView({
               >
                 👁 {t('Details')}
               </button>
-              <button
-                type="button"
-                onClick={onEdit}
-                title="Edit job"
-                className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                ✏️
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                title="Delete job"
-                className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-red-50 hover:text-red-600"
-              >
-                🗑️
-              </button>
+              {!readOnly && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    title="Edit job"
+                    className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    title="Delete job"
+                    className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    🗑️
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -589,11 +636,13 @@ function JobCardView({
 
 function JobDetailsModal({
   job,
+  readOnly,
   onClose,
   onEdit,
   onPreviewInvoice,
 }: {
   job: Job;
+  readOnly: boolean;
   onClose: () => void;
   onEdit: () => void;
   onPreviewInvoice: (url: string) => void;
@@ -648,7 +697,12 @@ function JobDetailsModal({
               )}
             </DetailRow>
             <DetailRow label="Address">{job.address || '—'}</DetailRow>
-            <DetailRow label="Installer">{job.installer || 'Unassigned'}</DetailRow>
+            <DetailRow label="Installer">
+              {job.installer || 'Unassigned'}
+              {job.installerEmail && (
+                <span className="block text-xs text-slate-500">{job.installerEmail}</span>
+              )}
+            </DetailRow>
             <DetailRow label="Notes">
               {job.notes ? <span className="whitespace-pre-wrap">{job.notes}</span> : '—'}
             </DetailRow>
@@ -697,9 +751,11 @@ function JobDetailsModal({
           <button type="button" onClick={onClose} className="btn-secondary">
             {t('Close')}
           </button>
-          <button type="button" onClick={onEdit} className="btn-primary">
-            {t('Edit job')}
-          </button>
+          {!readOnly && (
+            <button type="button" onClick={onEdit} className="btn-primary">
+              {t('Edit job')}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -718,6 +774,7 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
 function JobDialog({
   state,
   setState,
+  installerEmails,
   busy,
   onCancel,
   onSave,
@@ -725,6 +782,7 @@ function JobDialog({
 }: {
   state: FormState;
   setState: (s: FormState) => void;
+  installerEmails: string[];
   busy: boolean;
   onCancel: () => void;
   onSave: () => void;
@@ -826,6 +884,32 @@ function JobDialog({
               />
             </Field>
           </div>
+          <Field label="Assign to installer account">
+            <select
+              className="input"
+              value={state.installerEmail}
+              onChange={(e) => setState({ ...state, installerEmail: e.target.value })}
+            >
+              <option value="">Nobody — hidden from installers</option>
+              {/* Keep whoever is on the job listed even if their role was
+                  changed later, so saving doesn't quietly unassign them. */}
+              {[
+                ...installerEmails,
+                ...(state.installerEmail && !installerEmails.includes(state.installerEmail)
+                  ? [state.installerEmail]
+                  : []),
+              ].map((e) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              {installerEmails.length
+                ? 'This installer signs in and sees only the jobs assigned to them.'
+                : 'No installer accounts yet — add one under Users, with the role “Installer”.'}
+            </p>
+          </Field>
           <Field label="Status">
             <select
               className="input"

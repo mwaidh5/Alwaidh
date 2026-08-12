@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
   type Firestore,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -29,7 +30,8 @@ export interface Job {
   mapUrl: string; // Google Maps link pasted by staff; Waze link is derived
   type: JobType;
   system: string; // e.g. "6 kW rooftop system"
-  installer: string; // technician assigned to the job
+  installer: string; // technician's name, shown on the card
+  installerEmail: string; // the installer account this job belongs to
   notes: string;
   invoiceUrl: string; // attached PDF invoice (Storage URL)
   invoiceName: string; // original filename of the invoice
@@ -97,6 +99,7 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     type: (data.type as JobType) === 'repair' ? 'repair' : 'install',
     system: String(data.system ?? ''),
     installer: String(data.installer ?? ''),
+    installerEmail: String(data.installerEmail ?? '').toLowerCase(),
     notes: String(data.notes ?? ''),
     invoiceUrl: String(data.invoiceUrl ?? ''),
     invoiceName: String(data.invoiceName ?? ''),
@@ -153,11 +156,17 @@ function toMillis(v: unknown): number | null {
 export function subscribeJobs(
   cb: (list: Job[]) => void,
   onError?: (message: string) => void,
+  /** Installers may only read their own jobs, so the filter has to be part
+   *  of the query — the security rules reject an unfiltered read. */
+  onlyForInstaller?: string,
 ): () => void {
   const database = db;
   if (database) {
+    const base = collection(database, COLLECTION);
     return onSnapshot(
-      query(collection(database, COLLECTION), orderBy('order', 'asc')),
+      onlyForInstaller
+        ? query(base, where('installerEmail', '==', onlyForInstaller.toLowerCase()))
+        : query(base, orderBy('order', 'asc')),
       (snap) => cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id))),
       (err) => {
         cb([]);

@@ -26,6 +26,11 @@ service cloud.firestore {
       return emailVerified()
         && request.auth.token.email in settingsData().get('solarStaffEmails', []);
     }
+    // Field installer: sees nothing except the jobs assigned to them.
+    function isInstaller() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('installerEmails', []);
+    }
 
     // Product catalogue: public read. Admins write anything; computer staff may
     // write computer/camera products; solar staff may write solar products.
@@ -88,13 +93,24 @@ service cloud.firestore {
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
       allow read, write: if isAdmin() || isSolarStaff();
+      // An installer may read only the jobs assigned to them. Firestore
+      // applies this per document, so their query must carry the matching
+      // installerEmail filter (see subscribeJobs).
+      allow read: if isInstaller()
+        && resource.data.installerEmail == request.auth.token.email;
 
       // History and comments for a job. Entries are a record of what
       // happened, so they can be added and read but never rewritten;
-      // an admin can still delete one.
+      // an admin can still delete one. Installers can follow and comment on
+      // their own job.
+      function ownJob() {
+        return isInstaller()
+          && get(/databases/$(database)/documents/jobs/$(id)).data.get('installerEmail', '')
+             == request.auth.token.email;
+      }
       match /activity/{entryId} {
-        allow read: if isAdmin() || isSolarStaff();
-        allow create: if (isAdmin() || isSolarStaff())
+        allow read: if isAdmin() || isSolarStaff() || ownJob();
+        allow create: if (isAdmin() || isSolarStaff() || ownJob())
                       && request.resource.data.by == request.auth.token.email;
         allow update: if false;
         allow delete: if isAdmin();

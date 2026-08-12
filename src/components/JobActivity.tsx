@@ -47,12 +47,13 @@ export default function JobActivity({ job }: { job: Job }) {
 
   useEffect(() => subscribeJobActivity(job.id, setEvents), [job.id]);
 
-  /** Everyone who can be tagged: admins and solar staff. */
+  /** Everyone who can be tagged: admins, solar staff and installers. */
   const staff = useMemo(() => {
     const all = [
       ...ADMIN_EMAILS,
       ...(settings.extraAdminEmails ?? []),
       ...(settings.solarStaffEmails ?? []),
+      ...(settings.installerEmails ?? []),
     ];
     return [...new Set(all.map((e) => e.toLowerCase()).filter(Boolean))].sort();
   }, [settings]);

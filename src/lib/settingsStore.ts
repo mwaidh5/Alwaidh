@@ -21,6 +21,8 @@ export interface SiteSettings {
   extraAdminEmails: string[];
   computerStaffEmails: string[];
   solarStaffEmails: string[];
+  /** Field installers: they only see the jobs assigned to them. */
+  installerEmails: string[];
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -50,6 +52,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   extraAdminEmails: [],
   computerStaffEmails: [],
   solarStaffEmails: [],
+  installerEmails: [],
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
@@ -117,6 +120,9 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     solarStaffEmails: Array.isArray(data.solarStaffEmails)
       ? (data.solarStaffEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.solarStaffEmails,
+    installerEmails: Array.isArray(data.installerEmails)
+      ? (data.installerEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.installerEmails,
     categoryLogos:
       data.categoryLogos && typeof data.categoryLogos === 'object'
         ? (data.categoryLogos as Record<string, string>)
@@ -189,6 +195,7 @@ export async function saveSettings(s: SiteSettings): Promise<void> {
     extraAdminEmails: cleanEmails(s.extraAdminEmails),
     computerStaffEmails: cleanEmails(s.computerStaffEmails),
     solarStaffEmails: cleanEmails(s.solarStaffEmails),
+    installerEmails: cleanEmails(s.installerEmails),
   };
   if (database) {
     await setDoc(doc(database, SINGLETON_PATH[0], SINGLETON_PATH[1]), normalized, { merge: true });
