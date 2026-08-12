@@ -9,8 +9,9 @@ import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlert
 import { enablePush, handlePushTaps, pushState, topicsFor, type PushState } from '../../lib/push';
 
 // access: which role may see each page. 'admin' = admins only,
-// 'products' = product editors (computer or solar staff), 'solar' = solar staff.
-type Access = 'admin' | 'products' | 'solar';
+// 'products' = product editors (computer or solar staff), 'solar' = solar
+// staff, 'jobs' = solar staff plus installers (who see only their own jobs).
+type Access = 'admin' | 'products' | 'solar' | 'jobs';
 /** Routes that carry a "what's new" badge. */
 const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/jobs': 'jobs',
@@ -22,7 +23,7 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
   { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin' },
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products' },
   { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar' },
-  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'solar' },
+  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs' },
   { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
@@ -32,7 +33,8 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
 ];
 
 export default function AdminLayout() {
-  const { user, loading, isAdmin, isComputerStaff, isSolarStaff, hasAdminAccess, signOut } = useAuth();
+  const { user, loading, isAdmin, isComputerStaff, isSolarStaff, isInstaller, hasAdminAccess, signOut } =
+    useAuth();
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const alerts = useStaffAlerts();
@@ -84,6 +86,7 @@ export default function AdminLayout() {
     if (isAdmin) return true;
     if (access === 'products') return isComputerStaff || isSolarStaff;
     if (access === 'solar') return isSolarStaff;
+    if (access === 'jobs') return isSolarStaff || isInstaller;
     return false;
   };
   const visibleItems = navItems.filter((i) => canSee(i.access));

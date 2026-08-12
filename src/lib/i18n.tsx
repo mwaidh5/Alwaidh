@@ -261,6 +261,7 @@ const AR: Record<string, string> = {
   'View all details': 'عرض كل التفاصيل',
   'Track installs and repairs. Drag a card between columns to update its status.':
     'تابع التركيبات والصيانة. اسحب البطاقة بين الأعمدة لتغيير الحالة.',
+  'The installations assigned to you.': 'الأعمال المسندة إليك.',
   'New Requests': 'طلبات جديدة',
   Scheduled: 'مجدول',
   'In Progress': 'قيد التنفيذ',
