@@ -29,6 +29,7 @@ import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
 import { useAuth } from '../../context/AuthContext';
 import { subscribeSettings } from '../../lib/settingsStore';
+import { listUsers } from '../../lib/userStore';
 import JobActivity from '../../components/JobActivity';
 
 type FormState = Job;
@@ -53,6 +54,16 @@ const EMPTY: FormState = {
   updatedBy: '',
   updatedAtMs: null,
 };
+
+/** Marks the "keep the name typed in before installers had accounts" option. */
+const KEEP = '__keep__';
+
+/** "ahmed.ali@gmail.com" → "Ahmed Ali", for accounts with no name on file. */
+function prettyHandle(email: string): string {
+  const handle = (email.split('@')[0] ?? '').replace(/[._-]+/g, ' ').trim();
+  if (!handle) return email;
+  return handle.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function fmtShort(ms: number | null): string {
   if (!ms) return '';
@@ -140,6 +151,30 @@ export default function AdminJobs() {
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
 
   useEffect(() => subscribeSettings((s) => setInstallerEmails(s.installerEmails ?? [])), []);
+
+  // Real names for the installer picker. Only admins may list the user
+  // accounts, so this is best-effort: without it the picker falls back to
+  // the name built from the email address.
+  const [installerNames, setInstallerNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    listUsers()
+      .then((list) => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const u of list) {
+          const name = (u.displayName ?? '').trim();
+          if (u.email && name) map[u.email.toLowerCase()] = name;
+        }
+        setInstallerNames(map);
+      })
+      .catch(() => {
+        /* not allowed to read the user list — email-based names it is */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const onlyMine = readOnly ? myEmail : '';
   const rolesReady = installerEmails !== null;
@@ -395,6 +430,7 @@ export default function AdminJobs() {
           state={editing}
           setState={setEditing}
           installerEmails={installerEmails ?? []}
+          installerNames={installerNames}
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
@@ -775,6 +811,7 @@ function JobDialog({
   state,
   setState,
   installerEmails,
+  installerNames,
   busy,
   onCancel,
   onSave,
@@ -783,12 +820,21 @@ function JobDialog({
   state: FormState;
   setState: (s: FormState) => void;
   installerEmails: string[];
+  installerNames: Record<string, string>;
   busy: boolean;
   onCancel: () => void;
   onSave: () => void;
   onPreview: (url: string) => void;
 }) {
   const { t } = useLang();
+  const installerName = (email: string) => installerNames[email] || prettyHandle(email);
+  // Keep whoever is on the job listed even if their role was changed later,
+  // so saving doesn't quietly unassign them.
+  const options =
+    state.installerEmail && !installerEmails.includes(state.installerEmail)
+      ? [...installerEmails, state.installerEmail]
+      : installerEmails;
+  const keepsOldName = !state.installerEmail && !!state.installer.trim();
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
@@ -876,40 +922,36 @@ function JobDialog({
               />
             </Field>
             <Field label="Installer">
-              <input
+              <select
                 className="input"
-                value={state.installer}
-                onChange={(e) => setState({ ...state, installer: e.target.value })}
-                placeholder="Technician name"
-              />
+                value={state.installerEmail || (keepsOldName ? KEEP : '')}
+                onChange={(e) => {
+                  const email = e.target.value;
+                  if (email === KEEP) return;
+                  setState({
+                    ...state,
+                    installerEmail: email,
+                    installer: email ? installerName(email) : '',
+                  });
+                }}
+              >
+                <option value="">Unassigned</option>
+                {/* A name typed in before installers had accounts, so saving
+                    doesn't quietly wipe it. */}
+                {keepsOldName && <option value={KEEP}>{state.installer}</option>}
+                {options.map((e) => (
+                  <option key={e} value={e}>
+                    {installerName(e)}
+                  </option>
+                ))}
+              </select>
+              {!installerEmails.length && (
+                <p className="mt-1 text-xs text-slate-500">
+                  No installers yet — add one under Users, with the role “Installer”.
+                </p>
+              )}
             </Field>
           </div>
-          <Field label="Assign to installer account">
-            <select
-              className="input"
-              value={state.installerEmail}
-              onChange={(e) => setState({ ...state, installerEmail: e.target.value })}
-            >
-              <option value="">Nobody — hidden from installers</option>
-              {/* Keep whoever is on the job listed even if their role was
-                  changed later, so saving doesn't quietly unassign them. */}
-              {[
-                ...installerEmails,
-                ...(state.installerEmail && !installerEmails.includes(state.installerEmail)
-                  ? [state.installerEmail]
-                  : []),
-              ].map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-slate-500">
-              {installerEmails.length
-                ? 'This installer signs in and sees only the jobs assigned to them.'
-                : 'No installer accounts yet — add one under Users, with the role “Installer”.'}
-            </p>
-          </Field>
           <Field label="Status">
             <select
               className="input"
