@@ -48,6 +48,17 @@ service firebase.storage {
       allow write: if isAdmin() || isSolarStaff();
     }
 
+    // Photos and PDFs posted in a job's comments. An installer may attach
+    // to their own job — the same jobs they are allowed to read.
+    match /jobs/{jobId}/comments/{allPaths=**} {
+      allow write: if isAdmin() || isSolarStaff()
+        || (emailVerified()
+            && request.auth.token.email in settingsData().get('installerEmails', [])
+            && request.auth.token.email in
+               firestore.get(/databases/(default)/documents/jobs/$(jobId))
+                 .data.get('installerEmails', []));
+    }
+
     // Per-user uploads: any signed-in user can write under their own uid.
     match /uploads/{userId}/{allPaths=**} {
       allow write: if request.auth != null && request.auth.uid == userId;

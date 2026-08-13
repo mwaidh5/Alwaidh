@@ -17,7 +17,10 @@ import {
   JOB_STATUSES,
   createJob,
   deleteJob,
+  destroyJob,
+  restoreJob,
   setJobStatus,
+  subscribeDeletedJobs,
   subscribeJobs,
   upsertJob,
   wazeFromGoogleMaps,
@@ -53,6 +56,8 @@ const EMPTY: FormState = {
   createdAtMs: null,
   updatedBy: '',
   updatedAtMs: null,
+  deletedAtMs: null,
+  deletedBy: '',
 };
 
 /** "ahmed.ali@gmail.com" → "Ahmed Ali", for accounts with no name on file. */
@@ -146,6 +151,7 @@ export default function AdminJobs() {
   }
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
+  const [trashOpen, setTrashOpen] = useState(false);
 
   useEffect(() => subscribeSettings((s) => setInstallerEmails(s.installerEmails ?? [])), []);
 
@@ -285,7 +291,7 @@ export default function AdminJobs() {
   }
 
   async function handleDelete(job: Job) {
-    if (!confirm(`Delete the job for ${job.customer || 'this customer'}?`)) return;
+    if (!confirm(`Move the job for ${job.customer || 'this customer'} to the Trash?`)) return;
     try {
       await deleteJob(job.id);
     } catch (e) {
@@ -305,16 +311,26 @@ export default function AdminJobs() {
           </p>
         </div>
         {!readOnly && (
-          <button
-            type="button"
-            onClick={() => {
-              setError('');
-              setEditing({ ...EMPTY, order: Date.now() });
-            }}
-            className="btn-primary"
-          >
-            {t('+ New job')}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTrashOpen(true)}
+              className="btn-secondary"
+              title={t('Deleted jobs')}
+            >
+              🗑️ {t('Trash')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setEditing({ ...EMPTY, order: Date.now() });
+              }}
+              className="btn-primary"
+            >
+              {t('+ New job')}
+            </button>
+          </div>
         )}
       </header>
 
@@ -452,6 +468,106 @@ export default function AdminJobs() {
       {invoicePreview && (
         <PdfPreviewModal url={invoicePreview} onClose={() => setInvoicePreview(null)} />
       )}
+
+      {trashOpen && <JobsTrashModal onClose={() => setTrashOpen(false)} />}
+    </div>
+  );
+}
+
+/** Deleted jobs: put one back on the board, or let it go for good. */
+function JobsTrashModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLang();
+  const [deleted, setDeleted] = useState<Job[] | null>(null);
+  const [busyId, setBusyId] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => subscribeDeletedJobs(setDeleted), []);
+
+  async function act(job: Job, fn: (id: string) => Promise<void>) {
+    setError('');
+    setBusyId(job.id);
+    try {
+      await fn(job.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <div
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
+          <h2 className="font-bold text-slate-900">🗑️ {t('Trash')}</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </div>
+        <div className="space-y-3 p-5">
+          {error && (
+            <p className="rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-800">
+              {error}
+            </p>
+          )}
+          {deleted === null ? (
+            <p className="text-center text-sm text-slate-500">{t('Loading…')}</p>
+          ) : deleted.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500">
+              {t('The trash is empty.')}
+            </p>
+          ) : (
+            deleted.map((job) => (
+              <div
+                key={job.id}
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    {job.customer || 'Unnamed'}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {[job.system, job.installer].filter(Boolean).join(' — ') || t('No details')}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {t('Deleted')}
+                    {job.deletedBy ? ` ${t('by')} ${job.deletedBy}` : ''}
+                    {job.deletedAtMs ? ` — ${fmtWhen(job.deletedAtMs)}` : ''}
+                  </p>
+                </div>
+                <div className="flex flex-none gap-2">
+                  <button
+                    type="button"
+                    disabled={busyId === job.id}
+                    onClick={() => act(job, restoreJob)}
+                    className="rounded-md border border-green-300 bg-green-50 px-2.5 py-1.5 text-xs font-bold text-green-800 hover:bg-green-100 disabled:opacity-50"
+                  >
+                    ♻️ {t('Restore')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === job.id}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `${t('Delete forever?')} ${job.customer || ''}\n${t('This cannot be undone.')}`,
+                        )
+                      )
+                        act(job, destroyJob);
+                    }}
+                    className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {t('Delete forever')}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -930,25 +1046,12 @@ function JobDialog({
             </Field>
             <Field label="Installers">
               {options.length > 0 ? (
-                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-300 p-2">
-                  {options.map((email) => {
-                    const on = state.installerEmails.includes(email);
-                    return (
-                      <label
-                        key={email}
-                        className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm hover:bg-slate-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          onChange={() => toggleInstaller(email)}
-                          className="h-4 w-4 rounded border-slate-300 text-brand-600"
-                        />
-                        <span className="truncate">{installerName(email)}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <InstallerPicker
+                  options={options}
+                  selected={state.installerEmails}
+                  nameOf={installerName}
+                  onToggle={toggleInstaller}
+                />
               ) : (
                 <p className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-500">
                   No installers yet — add one under Users, with the role “Installer”.
@@ -994,6 +1097,56 @@ function JobDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Dropdown that picks any number of installers. It expands in place rather
+ * than floating, so it can't get clipped by the dialog's own scrolling.
+ */
+function InstallerPicker({
+  options,
+  selected,
+  nameOf,
+  onToggle,
+}: {
+  options: string[];
+  selected: string[];
+  nameOf: (email: string) => string;
+  onToggle: (email: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = selected.length ? selected.map(nameOf).join(', ') : 'Unassigned';
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="input flex items-center justify-between gap-2 text-left"
+      >
+        <span className={`truncate ${selected.length ? '' : 'text-slate-400'}`}>{label}</span>
+        <span className="flex-none text-slate-400">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <div className="mt-1 max-h-44 space-y-0.5 overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-sm">
+          {options.map((email) => (
+            <label
+              key={email}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(email)}
+                onChange={() => onToggle(email)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-600"
+              />
+              <span className="truncate">{nameOf(email)}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

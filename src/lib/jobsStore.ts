@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
@@ -41,6 +42,8 @@ export interface Job {
   createdAtMs: number | null; // when it was added (ms epoch)
   updatedBy: string; // email of the last person who changed it
   updatedAtMs: number | null; // when it was last changed (ms epoch)
+  deletedAtMs: number | null; // set = the job is in the Trash
+  deletedBy: string; // who moved it to the Trash
 }
 
 /**
@@ -49,6 +52,13 @@ export interface Job {
  */
 export type JobEventKind = 'created' | 'edited' | 'status' | 'comment';
 
+/** A photo or PDF attached to a comment. */
+export interface JobAttachment {
+  url: string;
+  name: string;
+  kind: 'image' | 'pdf';
+}
+
 export interface JobEvent {
   id: string;
   kind: JobEventKind;
@@ -56,6 +66,7 @@ export interface JobEvent {
   atMs: number | null;
   text: string;        // comment body, or a short description of the change
   mentions: string[];  // emails tagged in a comment
+  attachments: JobAttachment[]; // photos and PDFs posted with the comment
 }
 
 export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
@@ -111,6 +122,8 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     createdAtMs: toMillis(data.createdAt),
     updatedBy: String(data.updatedBy ?? ''),
     updatedAtMs: toMillis(data.updatedAt),
+    deletedAtMs: toMillis(data.deletedAt),
+    deletedBy: String(data.deletedBy ?? ''),
   };
 }
 
@@ -198,11 +211,14 @@ export function subscribeJobs(
         : query(base, orderBy('order', 'asc')),
       (snap) =>
         cb(
-          snap.docs.map((d) => {
-            const data = d.data() as Record<string, unknown>;
-            if (!onlyForInstaller) backfillInstallers(database, d.id, data);
-            return normalize(data, d.id);
-          }),
+          snap.docs
+            .map((d) => {
+              const data = d.data() as Record<string, unknown>;
+              if (!onlyForInstaller) backfillInstallers(database, d.id, data);
+              return normalize(data, d.id);
+            })
+            // Deleted jobs live on in the Trash, not on the board.
+            .filter((j) => !j.deletedAtMs),
         ),
       (err) => {
         cb([]);
@@ -210,16 +226,45 @@ export function subscribeJobs(
       },
     );
   }
-  cb(readLocal());
+  const live = () => readLocal().filter((j) => !j.deletedAtMs);
+  cb(live());
   const handler = (e: StorageEvent) => {
-    if (e.key === LS_KEY) cb(readLocal());
+    if (e.key === LS_KEY) cb(live());
+  };
+  window.addEventListener('storage', handler);
+  return () => window.removeEventListener('storage', handler);
+}
+
+/** The Trash: jobs someone deleted, newest first. */
+export function subscribeDeletedJobs(cb: (list: Job[]) => void): () => void {
+  const database = db;
+  if (database) {
+    return onSnapshot(
+      collection(database, COLLECTION),
+      (snap) =>
+        cb(
+          snap.docs
+            .map((d) => normalize(d.data() as Record<string, unknown>, d.id))
+            .filter((j) => Boolean(j.deletedAtMs))
+            .sort((a, b) => (b.deletedAtMs ?? 0) - (a.deletedAtMs ?? 0)),
+        ),
+      () => cb([]),
+    );
+  }
+  const emit = () => cb(readLocal().filter((j) => Boolean(j.deletedAtMs)));
+  emit();
+  const handler = (e: StorageEvent) => {
+    if (e.key === LS_KEY) emit();
   };
   window.addEventListener('storage', handler);
   return () => window.removeEventListener('storage', handler);
 }
 
 /** Fields the store stamps itself — callers never provide them. */
-type JobInput = Omit<Job, 'id' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'>;
+type JobInput = Omit<
+  Job,
+  'id' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs' | 'deletedAtMs' | 'deletedBy'
+>;
 
 export async function createJob(input: JobInput): Promise<void> {
   const database = db;
@@ -240,6 +285,8 @@ export async function createJob(input: JobInput): Promise<void> {
     createdAtMs: Date.now(),
     updatedBy: '',
     updatedAtMs: null,
+    deletedAtMs: null,
+    deletedBy: '',
   });
   writeLocal(list);
 }
@@ -249,7 +296,8 @@ export async function upsertJob(job: Job): Promise<void> {
   if (database) {
     // Never write the audit fields from the client copy: merge keeps the
     // original createdAt/createdBy intact and we re-stamp the "updated" pair.
-    const { id, createdBy, createdAtMs, updatedBy, updatedAtMs, ...rest } = job;
+    const { id, createdBy, createdAtMs, updatedBy, updatedAtMs, deletedAtMs, deletedBy, ...rest } =
+      job;
     await setDoc(
       doc(database, COLLECTION, id),
       { ...rest, updatedAt: serverTimestamp(), updatedBy: currentEmail() },
@@ -288,7 +336,42 @@ export async function setJobStatus(id: string, status: JobStatus, order: number)
   }
 }
 
+/** Move a job to the Trash — recoverable, see restoreJob. */
 export async function deleteJob(id: string): Promise<void> {
+  const database = db;
+  if (database) {
+    await setDoc(
+      doc(database, COLLECTION, id),
+      { deletedAt: serverTimestamp(), deletedBy: currentEmail() },
+      { merge: true },
+    );
+    return;
+  }
+  writeLocal(
+    readLocal().map((j) =>
+      j.id === id ? { ...j, deletedAtMs: Date.now(), deletedBy: currentEmail() } : j,
+    ),
+  );
+}
+
+/** Put a job back on the board. */
+export async function restoreJob(id: string): Promise<void> {
+  const database = db;
+  if (database) {
+    await setDoc(
+      doc(database, COLLECTION, id),
+      { deletedAt: deleteField(), deletedBy: deleteField() },
+      { merge: true },
+    );
+    return;
+  }
+  writeLocal(
+    readLocal().map((j) => (j.id === id ? { ...j, deletedAtMs: null, deletedBy: '' } : j)),
+  );
+}
+
+/** Delete a job for good. Cannot be undone. */
+export async function destroyJob(id: string): Promise<void> {
   const database = db;
   if (database) {
     await deleteDoc(doc(database, COLLECTION, id));
@@ -329,20 +412,23 @@ export async function logJobEvent(
   }
 }
 
-/** Post a comment, optionally tagging colleagues by email. */
+/** Post a comment, optionally tagging colleagues and attaching photos/PDFs. */
 export async function addJobComment(
   jobId: string,
   text: string,
   mentions: string[] = [],
+  attachments: JobAttachment[] = [],
 ): Promise<void> {
   const database = db;
   if (!database) throw new Error('Comments need a database connection.');
   const body = text.trim();
-  if (!body) return;
+  // A photo on its own is a perfectly good comment.
+  if (!body && !attachments.length) return;
   await addDoc(activityRef(database, jobId), {
     kind: 'comment',
     text: body,
     mentions,
+    attachments,
     by: currentEmail(),
     at: serverTimestamp(),
   });
@@ -373,6 +459,13 @@ export function subscribeJobActivity(
             atMs: toMillis(data.at),
             text: String(data.text ?? ''),
             mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
+            attachments: Array.isArray(data.attachments)
+              ? (data.attachments as Record<string, unknown>[]).map((a) => ({
+                  url: String(a.url ?? ''),
+                  name: String(a.name ?? 'file'),
+                  kind: a.kind === 'pdf' ? ('pdf' as const) : ('image' as const),
+                }))
+              : [],
           };
         }),
       ),

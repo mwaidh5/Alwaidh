@@ -80,6 +80,9 @@ export default function AdminUsers() {
   const [pendingRoles, setPendingRoles] = useState<Record<string, AppUser['role']>>({});
   const [savingUid, setSavingUid] = useState<string | null>(null);
 
+  // Split the long list into the people who work here and everyone else.
+  const [audience, setAudience] = useState<'all' | 'team' | 'customers'>('all');
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([listUsers(), loadSettings()])
@@ -315,6 +318,35 @@ export default function AdminUsers() {
         </div>
       </div>
 
+      {users !== null && users.length > 0 && (
+        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold self-start w-fit">
+          {(
+            [
+              { key: 'all', label: `All (${users.length})` },
+              {
+                key: 'team',
+                label: `Team & access (${users.filter((u) => effectiveRole(u.email, settings) !== 'customer').length})`,
+              },
+              {
+                key: 'customers',
+                label: `Customers (${users.filter((u) => effectiveRole(u.email, settings) === 'customer').length})`,
+              },
+            ] as { key: typeof audience; label: string }[]
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setAudience(tab.key)}
+              className={`rounded-md px-3 py-1.5 transition ${
+                audience === tab.key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {users === null ? (
         <p className="text-center text-sm text-slate-500">Loading…</p>
       ) : users.length === 0 ? (
@@ -334,7 +366,13 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {users.map((u) => (
+              {users
+                .filter((u) => {
+                  if (audience === 'all') return true;
+                  const customer = effectiveRole(u.email, settings) === 'customer';
+                  return audience === 'customers' ? customer : !customer;
+                })
+                .map((u) => (
                 <tr key={u.uid}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

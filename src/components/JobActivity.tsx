@@ -3,11 +3,43 @@ import {
   addJobComment,
   subscribeJobActivity,
   type Job,
+  type JobAttachment,
   type JobEvent,
 } from '../lib/jobsStore';
+import { uploadJobCommentFile } from '../lib/imageUpload';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { ADMIN_EMAILS } from '../firebase';
+
+/** Photos posted with a comment, shown as thumbnails; PDFs as a chip. */
+function AttachmentList({ items }: { items: JobAttachment[] }) {
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-2">
+      {items.map((a, i) =>
+        a.kind === 'image' ? (
+          <a key={`${a.url}-${i}`} href={a.url} target="_blank" rel="noreferrer" title={a.name}>
+            <img
+              src={a.url}
+              alt={a.name}
+              loading="lazy"
+              className="h-20 w-20 rounded-lg border border-slate-200 object-cover transition hover:opacity-90"
+            />
+          </a>
+        ) : (
+          <a
+            key={`${a.url}-${i}`}
+            href={a.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex max-w-[12rem] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+          >
+            📄 <span className="truncate">{a.name}</span>
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
 
 /** "mahmood" from "mahmood@gmail.com" — how people are shown and tagged. */
 function handleOf(email: string): string {
@@ -43,7 +75,11 @@ export default function JobActivity({ job }: { job: Job }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mentionOpen, setMentionOpen] = useState(false);
+  const [files, setFiles] = useState<JobAttachment[]>([]);
+  const [uploading, setUploading] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
   const boxRef = useRef<HTMLTextAreaElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribeJobActivity(job.id, setEvents), [job.id]);
 
@@ -73,9 +109,27 @@ export default function JobActivity({ job }: { job: Job }) {
     boxRef.current?.focus();
   }
 
+  /** Upload dropped or chosen files and hold them until the comment is posted. */
+  async function attach(list: FileList | File[]) {
+    const chosen = [...list];
+    if (!chosen.length) return;
+    setError('');
+    setUploading((n) => n + chosen.length);
+    for (const file of chosen) {
+      try {
+        const up = await uploadJobCommentFile(file, job.id);
+        setFiles((f) => [...f, { url: up.url, name: file.name, kind: up.kind }]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : `Could not upload ${file.name}.`);
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  }
+
   async function post() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text && !files.length) return;
     setBusy(true);
     setError('');
     try {
@@ -83,8 +137,9 @@ export default function JobActivity({ job }: { job: Job }) {
       const mentions = staff.filter((e) =>
         new RegExp(`@${handleOf(e)}\\b`, 'i').test(text),
       );
-      await addJobComment(job.id, text, mentions);
+      await addJobComment(job.id, text, mentions, files);
       setDraft('');
+      setFiles([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not post the comment.');
     } finally {
@@ -146,6 +201,7 @@ export default function JobActivity({ job }: { job: Job }) {
                       <span className="text-slate-600">{t(e.text)}</span>
                     )}
                   </p>
+                  {e.attachments.length > 0 && <AttachmentList items={e.attachments} />}
                   <p className="text-xs text-slate-400">{whenText(e.atMs)}</p>
                 </div>
               </li>
@@ -153,7 +209,19 @@ export default function JobActivity({ job }: { job: Job }) {
         )}
       </ol>
 
-      <div className="relative mt-4">
+      <div
+        className="relative mt-4"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files?.length) attach(e.dataTransfer.files);
+        }}
+      >
         <textarea
           ref={boxRef}
           value={draft}
@@ -161,9 +229,22 @@ export default function JobActivity({ job }: { job: Job }) {
             setDraft(e.target.value);
             setMentionOpen(/@([\w.-]*)$/.test(e.target.value));
           }}
+          onPaste={(e) => {
+            // Screenshots pasted straight from the clipboard.
+            const pasted = [...e.clipboardData.files];
+            if (pasted.length) {
+              e.preventDefault();
+              attach(pasted);
+            }
+          }}
           placeholder={t('Write a comment… use @ to tag someone')}
-          className="input min-h-[70px]"
+          className={`input min-h-[70px] ${dragOver ? 'border-brand-500 bg-brand-50' : ''}`}
         />
+        {dragOver && (
+          <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm font-semibold text-brand-700">
+            {t('Drop photos or PDFs here')}
+          </p>
+        )}
         {mentionOpen && suggestions.length > 0 && (
           <ul className="absolute bottom-full z-10 mb-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             {suggestions.map((email) => (
@@ -180,12 +261,58 @@ export default function JobActivity({ job }: { job: Job }) {
             ))}
           </ul>
         )}
+        {(files.length > 0 || uploading > 0) && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {files.map((f, i) => (
+              <div
+                key={`${f.url}-${i}`}
+                className="relative flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white p-1 pr-6 text-xs"
+              >
+                {f.kind === 'image' ? (
+                  <img src={f.url} alt="" className="h-10 w-10 rounded object-cover" />
+                ) : (
+                  <span className="grid h-10 w-10 place-items-center rounded bg-slate-100">📄</span>
+                )}
+                <span className="max-w-[9rem] truncate text-slate-600">{f.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setFiles((list) => list.filter((_, n) => n !== i))}
+                  title={t('Remove')}
+                  className="absolute right-1 top-1 text-slate-400 hover:text-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {uploading > 0 && (
+              <span className="self-center text-xs text-slate-500">{t('Uploading…')}</span>
+            )}
+          </div>
+        )}
         {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            📎 {t('Attach')}
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) attach(e.target.files);
+              e.target.value = '';
+            }}
+          />
           <button
             type="button"
             onClick={post}
-            disabled={busy || !draft.trim()}
+            disabled={busy || uploading > 0 || (!draft.trim() && !files.length)}
             className="btn-primary py-1.5 text-sm disabled:opacity-50"
           >
             {busy ? t('Posting…') : t('Post comment')}
