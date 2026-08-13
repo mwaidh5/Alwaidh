@@ -139,9 +139,11 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="hpanel">
-      <div className="container-page py-6">
-        <div className="grid gap-6 lg:grid-cols-[240px,1fr]">
+    <div className="hpanel min-h-screen">
+      {/* Full-bleed like hPanel: the dashboard uses the whole window width
+          instead of the shop's centred column. */}
+      <div className="w-full px-4 py-6 sm:px-6">
+        <div className="grid gap-6 lg:grid-cols-[240px,minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <div className="card overflow-hidden">
               <div className="border-b border-slate-100 px-4 py-3">
