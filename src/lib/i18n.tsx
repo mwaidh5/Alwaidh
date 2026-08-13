@@ -286,6 +286,8 @@ const AR: Record<string, string> = {
   'This cannot be undone.': 'لا يمكن التراجع عن هذا.',
   'Drop photos or PDFs here': 'أفلت الصور أو ملفات PDF هنا',
   Attach: 'إرفاق',
+  'Previous photo': 'الصورة السابقة',
+  'Next photo': 'الصورة التالية',
   'New Requests': 'طلبات جديدة',
   Scheduled: 'مجدول',
   'In Progress': 'قيد التنفيذ',
