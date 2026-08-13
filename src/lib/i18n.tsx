@@ -361,6 +361,27 @@ const AR: Record<string, string> = {
   English: 'English',
   Arabic: 'العربية',
   Storefront: 'الواجهة',
+  'Site-wide configuration. Some settings affect the public site immediately.':
+    'إعدادات عامة للموقع. بعضها يؤثر على الموقع فوراً.',
+  'When off, customers can still browse but not complete an order.':
+    'عند الإيقاف، يمكن للزبائن التصفح لكن لا يمكنهم إكمال الطلب.',
+  'Show the Solar Prices page link in the site navigation.':
+    'إظهار رابط صفحة أسعار الطاقة الشمسية في قائمة الموقع.',
+  'Show a maintenance banner; checkout will be disabled.':
+    'إظهار شريط الصيانة؛ سيتم تعطيل الشراء.',
+  'Group products inside a category — for example Laptops, Desktops and Printers under Computers. One per line; staff pick from these when editing a product, and shoppers can filter by them.':
+    'قسّم المنتجات داخل الفئة — مثل اللابتوبات والحواسيب المكتبية والطابعات ضمن الحواسيب. واحدة في كل سطر؛ يختار منها الموظفون عند تعديل المنتج، ويستطيع الزبائن التصفية بها.',
+  'Replace the main images used across the website. Changes go live as soon as you save.':
+    'استبدل الصور الرئيسية المستخدمة في الموقع. تظهر التغييرات فور الحفظ.',
+  'Reset all settings to defaults?': 'إعادة كل الإعدادات إلى الوضع الافتراضي؟',
+  'sub-categories': 'الفئات الفرعية',
+  'category tile logo': 'شعار بطاقة الفئة',
+  'brand strip logo': 'شعار شريط الماركات',
+  'Choose an image': 'اختر صورة',
+  '…or paste an image URL': '…أو الصق رابط صورة',
+  'in this list': 'في هذه القائمة',
+  Installers: 'الفنيون',
+  Unnamed: 'بدون اسم',
   'Site behaviour': 'سلوك الموقع',
   'Team & roles': 'الفريق والصلاحيات',
   'Site images': 'صور الموقع',
