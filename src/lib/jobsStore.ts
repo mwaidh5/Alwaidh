@@ -30,8 +30,8 @@ export interface Job {
   mapUrl: string; // Google Maps link pasted by staff; Waze link is derived
   type: JobType;
   system: string; // e.g. "6 kW rooftop system"
-  installer: string; // technician's name, shown on the card
-  installerEmail: string; // the installer account this job belongs to
+  installer: string; // technician names, shown on the card
+  installerEmails: string[]; // the installer accounts this job belongs to
   notes: string;
   invoiceUrl: string; // attached PDF invoice (Storage URL)
   invoiceName: string; // original filename of the invoice
@@ -99,7 +99,7 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     type: (data.type as JobType) === 'repair' ? 'repair' : 'install',
     system: String(data.system ?? ''),
     installer: String(data.installer ?? ''),
-    installerEmail: String(data.installerEmail ?? '').toLowerCase(),
+    installerEmails: readInstallerEmails(data),
     notes: String(data.notes ?? ''),
     invoiceUrl: String(data.invoiceUrl ?? ''),
     invoiceName: String(data.invoiceName ?? ''),
@@ -112,6 +112,35 @@ function normalize(data: Record<string, unknown>, id: string): Job {
     updatedBy: String(data.updatedBy ?? ''),
     updatedAtMs: toMillis(data.updatedAt),
   };
+}
+
+/**
+ * Assigned installers, reading the single-installer field that jobs used
+ * before a job could have a whole crew on it.
+ */
+function readInstallerEmails(data: Record<string, unknown>): string[] {
+  const list = Array.isArray(data.installerEmails)
+    ? data.installerEmails
+    : data.installerEmail
+      ? [data.installerEmail]
+      : [];
+  return [...new Set(list.map((e) => String(e).trim().toLowerCase()).filter(Boolean))];
+}
+
+/**
+ * Bring an old single-installer job up to date, so its installer keeps
+ * seeing it: their query matches on the list, not the old field. Runs once
+ * per job per session, best-effort — only staff ever read jobs unfiltered.
+ */
+const backfilled = new Set<string>();
+function backfillInstallers(database: Firestore, id: string, data: Record<string, unknown>): void {
+  if (backfilled.has(id) || Array.isArray(data.installerEmails)) return;
+  const legacy = readInstallerEmails(data);
+  if (!legacy.length) return;
+  backfilled.add(id);
+  updateDoc(doc(database, COLLECTION, id), { installerEmails: legacy }).catch(() => {
+    /* not allowed to write, or gone — the board still shows it correctly */
+  });
 }
 
 /**
@@ -165,9 +194,16 @@ export function subscribeJobs(
     const base = collection(database, COLLECTION);
     return onSnapshot(
       onlyForInstaller
-        ? query(base, where('installerEmail', '==', onlyForInstaller.toLowerCase()))
+        ? query(base, where('installerEmails', 'array-contains', onlyForInstaller.toLowerCase()))
         : query(base, orderBy('order', 'asc')),
-      (snap) => cb(snap.docs.map((d) => normalize(d.data() as Record<string, unknown>, d.id))),
+      (snap) =>
+        cb(
+          snap.docs.map((d) => {
+            const data = d.data() as Record<string, unknown>;
+            if (!onlyForInstaller) backfillInstallers(database, d.id, data);
+            return normalize(data, d.id);
+          }),
+        ),
       (err) => {
         cb([]);
         onError?.(err.message);

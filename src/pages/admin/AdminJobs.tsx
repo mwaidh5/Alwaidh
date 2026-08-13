@@ -43,7 +43,7 @@ const EMPTY: FormState = {
   type: 'install',
   system: '',
   installer: '',
-  installerEmail: '',
+  installerEmails: [],
   notes: '',
   invoiceUrl: '',
   invoiceName: '',
@@ -54,9 +54,6 @@ const EMPTY: FormState = {
   updatedBy: '',
   updatedAtMs: null,
 };
-
-/** Marks the "keep the name typed in before installers had accounts" option. */
-const KEEP = '__keep__';
 
 /** "ahmed.ali@gmail.com" → "Ahmed Ali", for accounts with no name on file. */
 function prettyHandle(email: string): string {
@@ -269,7 +266,7 @@ export default function AdminJobs() {
         type: editing.type,
         system: editing.system.trim(),
         installer: editing.installer.trim(),
-        installerEmail: editing.installerEmail.trim().toLowerCase(),
+        installerEmails: editing.installerEmails.map((e) => e.trim().toLowerCase()).filter(Boolean),
         notes: editing.notes.trim(),
         invoiceUrl: editing.invoiceUrl,
         invoiceName: editing.invoiceName,
@@ -733,10 +730,12 @@ function JobDetailsModal({
               )}
             </DetailRow>
             <DetailRow label="Address">{job.address || '—'}</DetailRow>
-            <DetailRow label="Installer">
+            <DetailRow label={job.installerEmails.length > 1 ? 'Installers' : 'Installer'}>
               {job.installer || 'Unassigned'}
-              {job.installerEmail && (
-                <span className="block text-xs text-slate-500">{job.installerEmail}</span>
+              {job.installerEmails.length > 0 && (
+                <span className="block text-xs text-slate-500">
+                  {job.installerEmails.join(', ')}
+                </span>
               )}
             </DetailRow>
             <DetailRow label="Notes">
@@ -830,11 +829,19 @@ function JobDialog({
   const installerName = (email: string) => installerNames[email] || prettyHandle(email);
   // Keep whoever is on the job listed even if their role was changed later,
   // so saving doesn't quietly unassign them.
-  const options =
-    state.installerEmail && !installerEmails.includes(state.installerEmail)
-      ? [...installerEmails, state.installerEmail]
-      : installerEmails;
-  const keepsOldName = !state.installerEmail && !!state.installer.trim();
+  const options = [
+    ...installerEmails,
+    ...state.installerEmails.filter((e) => !installerEmails.includes(e)),
+  ];
+  const keepsOldName = !state.installerEmails.length && !!state.installer.trim();
+
+  /** Tick or untick one installer; the card's name line follows along. */
+  function toggleInstaller(email: string) {
+    const next = state.installerEmails.includes(email)
+      ? state.installerEmails.filter((e) => e !== email)
+      : [...state.installerEmails, email];
+    setState({ ...state, installerEmails: next, installer: next.map(installerName).join(', ') });
+  }
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
@@ -921,33 +928,37 @@ function JobDialog({
                 placeholder="e.g. 6 kW rooftop system"
               />
             </Field>
-            <Field label="Installer">
-              <select
-                className="input"
-                value={state.installerEmail || (keepsOldName ? KEEP : '')}
-                onChange={(e) => {
-                  const email = e.target.value;
-                  if (email === KEEP) return;
-                  setState({
-                    ...state,
-                    installerEmail: email,
-                    installer: email ? installerName(email) : '',
-                  });
-                }}
-              >
-                <option value="">Unassigned</option>
-                {/* A name typed in before installers had accounts, so saving
-                    doesn't quietly wipe it. */}
-                {keepsOldName && <option value={KEEP}>{state.installer}</option>}
-                {options.map((e) => (
-                  <option key={e} value={e}>
-                    {installerName(e)}
-                  </option>
-                ))}
-              </select>
-              {!installerEmails.length && (
-                <p className="mt-1 text-xs text-slate-500">
+            <Field label="Installers">
+              {options.length > 0 ? (
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-300 p-2">
+                  {options.map((email) => {
+                    const on = state.installerEmails.includes(email);
+                    return (
+                      <label
+                        key={email}
+                        className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggleInstaller(email)}
+                          className="h-4 w-4 rounded border-slate-300 text-brand-600"
+                        />
+                        <span className="truncate">{installerName(email)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-500">
                   No installers yet — add one under Users, with the role “Installer”.
+                </p>
+              )}
+              {/* A name typed in before installers had accounts: keep showing
+                  it until someone is ticked, so saving doesn't wipe it. */}
+              {keepsOldName && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Currently written down as <span className="font-semibold">{state.installer}</span>
                 </p>
               )}
             </Field>

@@ -95,9 +95,10 @@ service cloud.firestore {
       allow read, write: if isAdmin() || isSolarStaff();
       // An installer may read only the jobs assigned to them. Firestore
       // applies this per document, so their query must carry the matching
-      // installerEmail filter (see subscribeJobs).
+      // installerEmails filter (see subscribeJobs). A job can have several
+      // installers on it.
       allow read: if isInstaller()
-        && resource.data.installerEmail == request.auth.token.email;
+        && request.auth.token.email in resource.data.installerEmails;
 
       // History and comments for a job. Entries are a record of what
       // happened, so they can be added and read but never rewritten;
@@ -105,8 +106,8 @@ service cloud.firestore {
       // their own job.
       function ownJob() {
         return isInstaller()
-          && get(/databases/$(database)/documents/jobs/$(id)).data.get('installerEmail', '')
-             == request.auth.token.email;
+          && request.auth.token.email in
+             get(/databases/$(database)/documents/jobs/$(id)).data.get('installerEmails', []);
       }
       match /activity/{entryId} {
         allow read: if isAdmin() || isSolarStaff() || ownJob();
