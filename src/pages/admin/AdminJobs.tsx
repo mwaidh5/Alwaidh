@@ -127,11 +127,12 @@ export default function AdminJobs() {
   const { t } = useLang();
   const { user, isSolarStaff } = useAuth();
   const [installerEmails, setInstallerEmails] = useState<string[] | null>(null);
-  // A field installer only follows the jobs assigned to them: same board,
-  // but nothing to add, edit, move or delete. Read the list here rather than
-  // from the auth context so the flag and the query are decided together.
+  // A field installer sees only the jobs assigned to them. They can work
+  // those jobs fully — edit, move, comment — but adding, reassigning and
+  // deleting stay with the office. Read the list here rather than from the
+  // auth context so the flag and the query are decided together.
   const myEmail = user?.email?.toLowerCase() ?? '';
-  const readOnly = !isSolarStaff && !!myEmail && (installerEmails ?? []).includes(myEmail);
+  const installerOnly = !isSolarStaff && !!myEmail && (installerEmails ?? []).includes(myEmail);
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
@@ -179,7 +180,7 @@ export default function AdminJobs() {
     };
   }, []);
 
-  const onlyMine = readOnly ? myEmail : '';
+  const onlyMine = installerOnly ? myEmail : '';
   const rolesReady = installerEmails !== null;
   useEffect(() => {
     // Wait for the role lists: an unfiltered read would be rejected for an
@@ -248,7 +249,6 @@ export default function AdminJobs() {
 
   function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
-    if (readOnly) return;
     const { active, over } = e;
     if (!over) return;
     const overStatus = over.id as JobStatus;
@@ -305,12 +305,12 @@ export default function AdminJobs() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">{t('Solar Jobs')}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {readOnly
+            {installerOnly
               ? t('The installations assigned to you.')
               : t('Track installs and repairs. Drag a card between columns to update its status.')}
           </p>
         </div>
-        {!readOnly && (
+        {!installerOnly && (
           <div className="flex gap-2">
             <button
               type="button"
@@ -423,7 +423,7 @@ export default function AdminJobs() {
                   status={col.key}
                   label={col.label}
                   jobs={byStatus[col.key]}
-                  readOnly={readOnly}
+                  installerOnly={installerOnly}
                   onEdit={(j) => {
                     setError('');
                     setEditing({ ...j });
@@ -444,6 +444,7 @@ export default function AdminJobs() {
           setState={setEditing}
           installerEmails={installerEmails ?? []}
           installerNames={installerNames}
+          canAssign={!installerOnly}
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
@@ -454,7 +455,6 @@ export default function AdminJobs() {
       {viewing && (
         <JobDetailsModal
           job={viewing}
-          readOnly={readOnly}
           onClose={() => setViewing(null)}
           onEdit={() => {
             setError('');
@@ -576,7 +576,7 @@ function Column({
   status,
   label,
   jobs,
-  readOnly,
+  installerOnly,
   onEdit,
   onView,
   onDelete,
@@ -584,7 +584,7 @@ function Column({
   status: JobStatus;
   label: string;
   jobs: Job[];
-  readOnly: boolean;
+  installerOnly: boolean;
   onEdit: (j: Job) => void;
   onView: (j: Job) => void;
   onDelete: (j: Job) => void;
@@ -617,7 +617,7 @@ function Column({
           <JobCard
             key={j.id}
             job={j}
-            readOnly={readOnly}
+            installerOnly={installerOnly}
             onEdit={() => onEdit(j)}
             onView={() => onView(j)}
             onDelete={() => onDelete(j)}
@@ -626,7 +626,7 @@ function Column({
         {jobs.length === 0 && (
           <div className="flex h-24 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
             <span className="text-lg">🛠️</span>
-            <p className="mt-1 text-xs font-medium">{readOnly ? 'Nothing here' : 'Drag jobs here'}</p>
+            <p className="mt-1 text-xs font-medium">Drag jobs here</p>
           </div>
         )}
       </div>
@@ -636,21 +636,18 @@ function Column({
 
 function JobCard({
   job,
-  readOnly,
+  installerOnly,
   onEdit,
   onView,
   onDelete,
 }: {
   job: Job;
-  readOnly: boolean;
+  installerOnly: boolean;
   onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: job.id,
-    disabled: readOnly,
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
@@ -658,7 +655,7 @@ function JobCard({
     <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-40' : ''}>
       <JobCardView
         job={job}
-        readOnly={readOnly}
+        installerOnly={installerOnly}
         dragListeners={listeners}
         dragAttributes={attributes}
         onEdit={onEdit}
@@ -671,7 +668,7 @@ function JobCard({
 
 function JobCardView({
   job,
-  readOnly,
+  installerOnly,
   dragListeners,
   dragAttributes,
   onEdit,
@@ -680,7 +677,7 @@ function JobCardView({
   overlay,
 }: {
   job: Job;
-  readOnly?: boolean;
+  installerOnly?: boolean;
   dragListeners?: DraggableSyntheticListeners;
   dragAttributes?: DraggableAttributes;
   onEdit?: () => void;
@@ -722,17 +719,15 @@ function JobCardView({
               {fmtShort(job.createdAtMs)}
             </span>
           )}
-          {!readOnly && (
-            <button
-              type="button"
-              aria-label="Drag"
-              className="-m-1 cursor-grab touch-none rounded p-1 text-[11px] leading-none text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
-              {...dragListeners}
-              {...dragAttributes}
-            >
-              ⠿
-            </button>
-          )}
+          <button
+            type="button"
+            aria-label="Drag"
+            className="-m-1 cursor-grab touch-none rounded p-1 text-[11px] leading-none text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
+            {...dragListeners}
+            {...dragAttributes}
+          >
+            ⠿
+          </button>
         </div>
 
         <p className="mt-1 truncate text-sm font-bold leading-snug text-slate-900">
@@ -755,25 +750,24 @@ function JobCardView({
               >
                 👁 {t('Details')}
               </button>
-              {!readOnly && (
-                <>
-                  <button
-                    type="button"
-                    onClick={onEdit}
-                    title="Edit job"
-                    className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    title="Delete job"
-                    className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    🗑️
-                  </button>
-                </>
+              <button
+                type="button"
+                onClick={onEdit}
+                title="Edit job"
+                className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                ✏️
+              </button>
+              {/* Deleting stays with the office. */}
+              {!installerOnly && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  title="Delete job"
+                  className="rounded p-1 text-[11px] leading-none text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  🗑️
+                </button>
               )}
             </div>
           )}
@@ -785,13 +779,11 @@ function JobCardView({
 
 function JobDetailsModal({
   job,
-  readOnly,
   onClose,
   onEdit,
   onPreviewInvoice,
 }: {
   job: Job;
-  readOnly: boolean;
   onClose: () => void;
   onEdit: () => void;
   onPreviewInvoice: (url: string) => void;
@@ -902,11 +894,9 @@ function JobDetailsModal({
           <button type="button" onClick={onClose} className="btn-secondary">
             {t('Close')}
           </button>
-          {!readOnly && (
-            <button type="button" onClick={onEdit} className="btn-primary">
-              {t('Edit job')}
-            </button>
-          )}
+          <button type="button" onClick={onEdit} className="btn-primary">
+            {t('Edit job')}
+          </button>
         </div>
       </div>
     </div>
@@ -927,6 +917,7 @@ function JobDialog({
   setState,
   installerEmails,
   installerNames,
+  canAssign,
   busy,
   onCancel,
   onSave,
@@ -936,6 +927,8 @@ function JobDialog({
   setState: (s: FormState) => void;
   installerEmails: string[];
   installerNames: Record<string, string>;
+  /** Installers may edit their job but not hand it to someone else. */
+  canAssign: boolean;
   busy: boolean;
   onCancel: () => void;
   onSave: () => void;
@@ -1045,7 +1038,11 @@ function JobDialog({
               />
             </Field>
             <Field label="Installers">
-              {options.length > 0 ? (
+              {!canAssign ? (
+                <p className="input bg-slate-50 text-slate-600">
+                  {state.installer || 'Unassigned'}
+                </p>
+              ) : options.length > 0 ? (
                 <InstallerPicker
                   options={options}
                   selected={state.installerEmails}
