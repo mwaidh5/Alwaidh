@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
@@ -6,7 +6,14 @@ import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
 import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
-import { enablePush, handlePushTaps, pushState, topicsFor, type PushState } from '../../lib/push';
+import {
+  enablePush,
+  handlePushTaps,
+  isNativeApp,
+  pushState,
+  topicsFor,
+  type PushState,
+} from '../../lib/push';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar
@@ -55,6 +62,33 @@ export default function AdminLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+
+  // Website notifications: while a dashboard tab is open (even in the
+  // background), a rise in chat unread fires a browser notification. The
+  // native app skips this — FCM already pings it.
+  const prevChatUnread = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevChatUnread.current;
+    prevChatUnread.current = alerts.chat;
+    if (prev === null || alerts.chat <= prev) return; // first load or nothing new
+    if (isNativeApp() || typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    // Reading the thread right now — no need to interrupt.
+    if (location.pathname === '/admin/chat' && !document.hidden) return;
+    try {
+      const n = new Notification(t('New chat message'), {
+        body: t('A visitor wrote in the website chat. Tap to reply.'),
+        tag: 'alwaidh-chat', // newer messages replace the old bubble, no pile-up
+      });
+      n.onclick = () => {
+        window.focus();
+        navigate('/admin/chat');
+        n.close();
+      };
+    } catch {
+      /* some browsers only allow notifications from a service worker */
+    }
+  }, [alerts.chat, location.pathname, navigate, t]);
 
   useEffect(() => subscribeSettings(setSettings), []);
   useEffect(() => setOpen(false), [location.pathname]);

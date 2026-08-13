@@ -300,6 +300,9 @@ const AR: Record<string, string> = {
   'Could not send — check your connection and try again.':
     'تعذر الإرسال — تحقق من الاتصال وحاول مجدداً.',
   Messages: 'الرسائل',
+  'New chat message': 'رسالة دردشة جديدة',
+  'A visitor wrote in the website chat. Tap to reply.':
+    'كتب زائر في دردشة الموقع. اضغط للرد.',
   'Conversations from the chat bubble on the website appear here.':
     'محادثات فقاعة الدردشة في الموقع تظهر هنا.',
   conversations: 'محادثة',
