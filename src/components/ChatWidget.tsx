@@ -25,7 +25,7 @@ function timeText(ms: number | null): string {
 export default function ChatWidget() {
   const { t } = useLang();
   const location = useLocation();
-  const { hasAdminAccess, user } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [chatId, setChatId] = useState(existingChatId());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -53,9 +53,9 @@ export default function ChatWidget() {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
   }, [messages, open]);
 
-  // Staff answer from the dashboard; the widget would be them talking to
-  // themselves. Also stay out of the dashboard itself.
-  if (!chatReady() || hasAdminAccess || location.pathname.startsWith('/admin')) return null;
+  // Everyone gets the bubble on the public site (staff too — handy for
+  // checking what customers see); it only stays out of the dashboard.
+  if (!chatReady() || location.pathname.startsWith('/admin')) return null;
 
   async function send() {
     const text = draft.trim();

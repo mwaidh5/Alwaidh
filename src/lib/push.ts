@@ -1,12 +1,15 @@
 /**
  * Push notifications for staff.
  *
- * Devices subscribe to FCM topics matching the person's role; the Cloud
- * Functions in /functions publish to those topics when a job, order or
- * message is created. Topics mean no device tokens to store or expire.
+ * In the native app, devices subscribe to FCM topics matching the person's
+ * role; the Cloud Functions in /functions publish to those topics when a
+ * job, order or message is created. Topics mean no device tokens to store
+ * or expire.
  *
- * Only runs inside the native app — browsers would need a service worker
- * and a VAPID key, which isn't set up.
+ * In a browser there is no FCM setup, so the same permission flow enables
+ * plain browser notifications instead — the dashboard fires them itself
+ * while a tab is open (see AdminLayout), which covers "website
+ * notifications" without a service worker or VAPID key.
  */
 export const PUSH_TOPICS = {
   jobs: 'staff-jobs',
@@ -18,7 +21,7 @@ export type PushTopic = (typeof PUSH_TOPICS)[keyof typeof PUSH_TOPICS];
 
 export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
 
-function isNativeApp(): boolean {
+export function isNativeApp(): boolean {
   const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
   return Boolean(cap?.isNativePlatform?.());
 }
@@ -31,13 +34,23 @@ export function topicsFor(opts: {
 }): PushTopic[] {
   const topics: PushTopic[] = [];
   if (opts.isAdmin || opts.isSolarStaff) topics.push(PUSH_TOPICS.jobs);
-  if (opts.isAdmin) topics.push(PUSH_TOPICS.orders, PUSH_TOPICS.messages);
+  if (opts.isAdmin) topics.push(PUSH_TOPICS.orders);
+  // Chat and contact messages go to everyone who can answer them.
+  if (opts.isAdmin || opts.isComputerStaff || opts.isSolarStaff)
+    topics.push(PUSH_TOPICS.messages);
   return topics;
 }
 
 /** Current permission, without prompting. */
 export async function pushState(): Promise<PushState> {
-  if (!isNativeApp()) return 'unsupported';
+  if (!isNativeApp()) {
+    if (typeof Notification === 'undefined') return 'unsupported';
+    return Notification.permission === 'granted'
+      ? 'granted'
+      : Notification.permission === 'denied'
+        ? 'denied'
+        : 'prompt';
+  }
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
     const { receive } = await FirebaseMessaging.checkPermissions();
@@ -52,7 +65,17 @@ export async function pushState(): Promise<PushState> {
  * the given topics. Returns the resulting state so the UI can explain it.
  */
 export async function enablePush(topics: PushTopic[]): Promise<PushState> {
-  if (!isNativeApp()) return 'unsupported';
+  if (!isNativeApp()) {
+    // Browser: ask for plain notification permission; the dashboard fires
+    // the notifications itself while a tab is open.
+    if (typeof Notification === 'undefined') return 'unsupported';
+    try {
+      const perm = await Notification.requestPermission();
+      return perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : 'prompt';
+    } catch {
+      return 'unsupported';
+    }
+  }
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
     const { receive } = await FirebaseMessaging.requestPermissions();
