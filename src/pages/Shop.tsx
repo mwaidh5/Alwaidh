@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { Product } from '../types/product';
 import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
@@ -17,7 +17,24 @@ export default function Shop() {
   const { products, loading } = useProducts();
   const { add } = useCart();
 
-  const [activeCategory, setActiveCategory] = useState<'all' | string>('all');
+  // /shop?category=tiandy-cameras opens straight into that category, so
+  // links from the homepage tiles and product breadcrumbs land filtered.
+  const [params, setParams] = useSearchParams();
+  const paramCategory = params.get('category') ?? '';
+  const [activeCategory, setActiveCategory] = useState<'all' | string>(
+    categories.some((c) => c.slug === paramCategory) ? paramCategory : 'all',
+  );
+
+  // Follow later navigations to a different category link.
+  useEffect(() => {
+    if (categories.some((c) => c.slug === paramCategory)) setActiveCategory(paramCategory);
+  }, [paramCategory]);
+
+  /** Switching category from the sidebar keeps the address bar honest. */
+  function chooseCategory(slug: 'all' | string) {
+    setActiveCategory(slug);
+    setParams(slug === 'all' ? {} : { category: slug }, { replace: true });
+  }
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [query, setQuery] = useState('');
@@ -39,8 +56,14 @@ export default function Shop() {
     return [...counts.entries()].map(([name, count]) => ({ name, count }));
   }, [products]);
 
+  // Only products someone has actually rated — otherwise this panel just
+  // lists whatever happened to come first.
   const topRated = useMemo(
-    () => products.slice().sort((a, b) => b.rating - a.rating).slice(0, 3),
+    () =>
+      products
+        .filter((p) => p.rating > 0)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 3),
     [products],
   );
 
@@ -103,7 +126,7 @@ export default function Shop() {
 
   const clearFilters = () => {
     setSelectedSubs([]);
-    setActiveCategory('all');
+    chooseCategory('all');
     setSelectedBrands([]);
     setInStockOnly(false);
     setQuery('');
@@ -141,6 +164,7 @@ export default function Shop() {
             </div>
           </SidebarSection>
 
+          {topRated.length > 0 && (
           <SidebarSection title="Top Rated Products">
             <ul className="space-y-4">
               {topRated.map((p) => (
@@ -166,6 +190,7 @@ export default function Shop() {
               ))}
             </ul>
           </SidebarSection>
+          )}
 
           <SidebarSection title="Categories">
             <ul className="space-y-2 text-sm">
@@ -173,7 +198,7 @@ export default function Shop() {
                 label="All products"
                 count={products.length}
                 active={activeCategory === 'all'}
-                onClick={() => setActiveCategory('all')}
+                onClick={() => chooseCategory('all')}
               />
               {categories.map((c) => (
                 <FilterRow
@@ -181,7 +206,7 @@ export default function Shop() {
                   label={c.name}
                   count={products.filter((p) => p.category === c.slug).length}
                   active={activeCategory === c.slug}
-                  onClick={() => setActiveCategory(c.slug)}
+                  onClick={() => chooseCategory(c.slug)}
                 />
               ))}
             </ul>

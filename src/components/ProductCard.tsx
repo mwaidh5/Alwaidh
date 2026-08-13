@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import type { Product } from '../types/product';
 import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../lib/i18n';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
+  const { t } = useLang();
 
   return (
     <div className="card group flex flex-col overflow-hidden">
@@ -35,7 +37,7 @@ export default function ProductCard({ product }: { product: Product }) {
             disabled={!product.inStock}
             className="btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {product.inStock ? 'Add to cart' : 'Out of stock'}
+            {t(product.inStock ? 'Add to cart' : 'Out of stock')}
           </button>
         </div>
       </div>
