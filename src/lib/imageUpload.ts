@@ -192,6 +192,36 @@ export async function uploadProductDoc(
   }
 }
 
+/**
+ * Attach a photo or a PDF to a job comment. Photos go through the usual
+ * resize/HEIC conversion so a phone snap doesn't cost 8 MB.
+ */
+export async function uploadJobCommentFile(
+  file: File,
+  jobId: string,
+): Promise<UploadResult & { kind: 'image' | 'pdf' }> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not configured. Add VITE_FIREBASE_* values to your .env.');
+  }
+  const folder = `jobs/${jobId}/comments`;
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (isPdf) {
+    if (file.size > MAX_PDF_BYTES) {
+      throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+    }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80);
+    const path = `${folder}/${Date.now()}-${safe}`;
+    const objectRef = ref(storage, path);
+    try {
+      await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+      return { url: await getDownloadURL(objectRef), path, kind: 'pdf' };
+    } catch (e) {
+      throw friendlyUploadError(e);
+    }
+  }
+  return { ...(await uploadImage(file, folder)), kind: 'image' };
+}
+
 /** Upload a PDF invoice for a job. */
 export async function uploadInvoice(file: File, jobId?: string): Promise<UploadResult> {
   if (!storage) {
