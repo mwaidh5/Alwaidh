@@ -815,15 +815,15 @@ function JobDetailsModal({
                 isRepair ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
               }`}
             >
-              {isRepair ? '🔧 Repair' : '⚡ Install'}
+              {isRepair ? `🔧 ${t('Repair')}` : `⚡ ${t('Install')}`}
             </span>
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style.badge}`}>
-              {statusMeta?.label ?? job.status}
+              {t(statusMeta?.label ?? job.status)}
             </span>
           </div>
 
           <div>
-            <p className="text-lg font-extrabold text-slate-900">{job.customer || 'Unnamed'}</p>
+            <p className="text-lg font-extrabold text-slate-900">{job.customer || t('Unnamed')}</p>
             {job.system && <p className="text-sm text-slate-600">{job.system}</p>}
           </div>
 
@@ -839,7 +839,7 @@ function JobDetailsModal({
             </DetailRow>
             <DetailRow label="Address">{job.address || '—'}</DetailRow>
             <DetailRow label={job.installerEmails.length > 1 ? 'Installers' : 'Installer'}>
-              {job.installer || 'Unassigned'}
+              {job.installer || t('Unassigned')}
               {job.installerEmails.length > 0 && (
                 <span className="block text-xs text-slate-500">
                   {job.installerEmails.join(', ')}
@@ -861,7 +861,7 @@ function JobDetailsModal({
                   rel="noreferrer"
                   className="btn-secondary inline-flex items-center gap-1.5"
                 >
-                  🗺️ Google Maps
+                  🗺️ {t('Google Maps')}
                 </a>
               )}
               {waze && (
@@ -871,7 +871,7 @@ function JobDetailsModal({
                   rel="noreferrer"
                   className="btn-secondary inline-flex items-center gap-1.5"
                 >
-                  🚗 Waze
+                  🚗 {t('Waze')}
                 </a>
               )}
               {job.invoiceUrl && (
@@ -880,7 +880,7 @@ function JobDetailsModal({
                   onClick={() => onPreviewInvoice(job.invoiceUrl)}
                   className="btn-secondary inline-flex items-center gap-1.5"
                 >
-                  📄 Invoice
+                  📄 {t('Invoice')}
                 </button>
               )}
             </div>
@@ -904,9 +904,10 @@ function JobDetailsModal({
 }
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  const { t } = useLang();
   return (
     <div className="grid grid-cols-3 gap-3 px-4 py-2.5">
-      <dt className="text-slate-500">{label}</dt>
+      <dt className="text-slate-500">{t(label)}</dt>
       <dd className="col-span-2 text-slate-900">{children}</dd>
     </div>
   );

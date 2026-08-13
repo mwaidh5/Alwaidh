@@ -63,12 +63,12 @@ export default function AdminSettings() {
   }
 
   function resetDefaults() {
-    if (!confirm('Reset all settings to defaults?')) return;
+    if (!confirm(t('Reset all settings to defaults?'))) return;
     setSettings({ ...DEFAULT_SETTINGS });
   }
 
   if (!settings) {
-    return <p className="text-center text-sm text-slate-500">Loading…</p>;
+    return <p className="text-center text-sm text-slate-500">{t('Loading…')}</p>;
   }
 
   return (
@@ -76,7 +76,7 @@ export default function AdminSettings() {
       <header>
         <h1 className="text-2xl font-extrabold text-slate-900">{t('Settings')}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Site-wide configuration. Some settings affect the public site immediately.
+          {t('Site-wide configuration. Some settings affect the public site immediately.')}
         </p>
       </header>
 
@@ -88,7 +88,7 @@ export default function AdminSettings() {
 
       {saved && (
         <p className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          Settings saved.
+          {t('Settings saved.')}
         </p>
       )}
 
@@ -184,14 +184,14 @@ export default function AdminSettings() {
 
         <Section title="Product sub-categories">
           <p className="text-sm text-slate-600">
-            Group products inside a category — for example Laptops, Desktops and Printers under
-            Computers. One per line; staff pick from these when editing a product, and shoppers can
-            filter by them.
+            {t(
+              'Group products inside a category — for example Laptops, Desktops and Printers under Computers. One per line; staff pick from these when editing a product, and shoppers can filter by them.',
+            )}
           </p>
           {categories.map((c) => (
             <ListField
               key={c.slug}
-              label={`${c.name} sub-categories`}
+              label={`${t(c.name)} — ${t('sub-categories')}`}
               value={settings.subcategories?.[c.slug] ?? []}
               onChange={(v) =>
                 update('subcategories', { ...(settings.subcategories ?? {}), [c.slug]: v })
@@ -202,7 +202,7 @@ export default function AdminSettings() {
 
         <Section title="Site images">
           <p className="text-sm text-slate-600">
-            Replace the main images used across the website. Changes go live as soon as you save.
+            {t('Replace the main images used across the website. Changes go live as soon as you save.')}
           </p>
           <ImageField
             label="Homepage hero image (shown large on the blue panel)"
@@ -237,7 +237,7 @@ export default function AdminSettings() {
           {categories.map((c) => (
             <ImageField
               key={c.slug}
-              label={`${c.name} logo (homepage category tile)`}
+              label={`${t(c.name)} — ${t('category tile logo')}`}
               value={settings.categoryLogos?.[c.slug] ?? ''}
               folder="site"
               onChange={(url) =>
@@ -248,7 +248,7 @@ export default function AdminSettings() {
           {solarBrands.map((b) => (
             <ImageField
               key={b.slug}
-              label={`${b.name} logo (brands strip)`}
+              label={`${b.name} — ${t('brand strip logo')}`}
               value={settings.brandLogos?.[b.slug] ?? ''}
               folder="site"
               onChange={(url) =>
@@ -337,7 +337,7 @@ function ImageField({
             <img src={value} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="grid h-full w-full place-items-center text-xs text-slate-400">
-              Default
+              {t('Default')}
             </div>
           )}
         </div>
@@ -383,14 +383,14 @@ function ImageField({
             className="input"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="…or paste an image URL"
+            placeholder={t('…or paste an image URL')}
           />
           {err && <p className="text-xs text-red-700">{err}</p>}
         </div>
       </div>
       <MediaPicker
         open={pickerOpen}
-        title={`Choose an image — ${label}`}
+        title={`${t('Choose an image')} — ${label}`}
         onClose={() => setPickerOpen(false)}
         onSelect={(urls) => urls[0] && onChange(urls[0])}
       />
@@ -441,7 +441,9 @@ function ListField({
           onChange(parse(e.target.value));
         }}
       />
-      <p className="mt-1 text-xs text-slate-500">{parse(text).length} in this list</p>
+      <p className="mt-1 text-xs text-slate-500">
+        {parse(text).length} {t('in this list')}
+      </p>
     </div>
   );
 }
@@ -457,6 +459,7 @@ function Toggle({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const { t } = useLang();
   return (
     <label className="flex cursor-pointer items-start gap-3">
       <input
@@ -466,8 +469,8 @@ function Toggle({
         className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
       />
       <span>
-        <span className="text-sm font-semibold text-slate-900">{label}</span>
-        <span className="block text-xs text-slate-500">{description}</span>
+        <span className="text-sm font-semibold text-slate-900">{t(label)}</span>
+        <span className="block text-xs text-slate-500">{t(description)}</span>
       </span>
     </label>
   );
