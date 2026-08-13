@@ -79,6 +79,21 @@ export const notifyNewOrder = onDocumentCreated('orders/{orderId}', async (event
   );
 });
 
+export const notifyNewChatMessage = onDocumentCreated(
+  'chats/{chatId}/messages/{msgId}',
+  async (event) => {
+    const msg = event.data?.data();
+    // Staff replies shouldn't ping the staff.
+    if (!msg || msg.from !== 'guest') return;
+    await push(
+      TOPICS.messages,
+      '💬 New chat message',
+      preview(msg.text) || 'A visitor wrote in the website chat',
+      '/admin/chat',
+    );
+  },
+);
+
 export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', async (event) => {
   const msg = event.data?.data();
   if (!msg) return;

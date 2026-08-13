@@ -10,13 +10,15 @@ import { enablePush, handlePushTaps, pushState, topicsFor, type PushState } from
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar
-// staff, 'jobs' = solar staff plus installers (who see only their own jobs).
-type Access = 'admin' | 'products' | 'solar' | 'jobs';
+// staff, 'jobs' = solar staff plus installers (who see only their own jobs),
+// 'staff' = every staff role except installers.
+type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff';
 /** Routes that carry a "what's new" badge. */
 const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/jobs': 'jobs',
   '/admin/orders': 'orders',
   '/admin/submissions': 'submissions',
+  '/admin/chat': 'chat',
 };
 
 const navItems: { to: string; label: string; icon: string; end?: boolean; access: Access }[] = [
@@ -26,6 +28,7 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
   { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs' },
   { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
+  { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
   { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin' },
   { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin' },
@@ -87,6 +90,7 @@ export default function AdminLayout() {
     if (access === 'products') return isComputerStaff || isSolarStaff;
     if (access === 'solar') return isSolarStaff;
     if (access === 'jobs') return isSolarStaff || isInstaller;
+    if (access === 'staff') return isComputerStaff || isSolarStaff;
     return false;
   };
   const visibleItems = navItems.filter((i) => canSee(i.access));

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { subscribeJobs } from './jobsStore';
 import { subscribeOrders } from './orderStore';
 import { subscribeContactSubmissions } from './contactSubmissions';
+import { subscribeChats } from './chatStore';
 
-export type AlertKey = 'jobs' | 'orders' | 'submissions';
+export type AlertKey = 'jobs' | 'orders' | 'submissions' | 'chat';
 
 /** Counts of items that arrived since this device last opened each page. */
 export type StaffAlerts = Record<AlertKey, number>;
@@ -41,7 +42,12 @@ export function markSeen(key: AlertKey): void {
  * rather than announcing the entire history as new.
  */
 export function useStaffAlerts(): StaffAlerts {
-  const [alerts, setAlerts] = useState<StaffAlerts>({ jobs: 0, orders: 0, submissions: 0 });
+  const [alerts, setAlerts] = useState<StaffAlerts>({
+    jobs: 0,
+    orders: 0,
+    submissions: 0,
+    chat: 0,
+  });
   const [seenTick, setSeenTick] = useState(0);
 
   useEffect(() => {
@@ -87,6 +93,14 @@ export function useStaffAlerts(): StaffAlerts {
         setAlerts((a) => ({
           ...a,
           submissions: list.filter((m) => m.createdAt > since.submissions).length,
+        })),
+      ),
+      // Chat unread lives on the server (per conversation), not behind a
+      // per-device timestamp — replying anywhere clears it for everyone.
+      subscribeChats((list) =>
+        setAlerts((a) => ({
+          ...a,
+          chat: list.reduce((sum, c) => sum + c.unreadForStaff, 0),
         })),
       ),
     ];

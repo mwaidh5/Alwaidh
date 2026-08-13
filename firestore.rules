@@ -90,6 +90,22 @@ service cloud.firestore {
       allow write: if isAdmin() || isSolarStaff();
     }
 
+    // Live chat with site visitors. A conversation's id is a random UUID
+    // minted in the visitor's browser — knowing it is what grants access,
+    // like an order confirmation link — so single-document reads and writes
+    // are open, but only staff can LIST the conversations.
+    match /chats/{chatId} {
+      allow get, create, update: if true;
+      allow list: if isAdmin() || isComputerStaff() || isSolarStaff();
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        allow get, list, create: if true;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
       allow read, write: if isAdmin() || isSolarStaff();
