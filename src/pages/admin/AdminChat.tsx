@@ -7,9 +7,13 @@ import {
   subscribeChats,
   type ChatMessage,
   type ChatMeta,
+  type ChatProductCard as ProductCard,
 } from '../../lib/chatStore';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
+import { useProducts } from '../../lib/useProducts';
+import { formatPrice } from '../../lib/format';
+import ChatProductCard from '../../components/ChatProductCard';
 
 function whenText(ms: number | null): string {
   if (!ms) return '';
@@ -41,6 +45,9 @@ export default function AdminChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  // A product staged to go with the next reply, and the picker itself.
+  const [attached, setAttached] = useState<ProductCard | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(
@@ -73,12 +80,13 @@ export default function AdminChat() {
 
   async function reply() {
     const text = draft.trim();
-    if (!text || !activeId || busy) return;
+    if ((!text && !attached) || !activeId || busy) return;
     setBusy(true);
     setError('');
     try {
-      await sendStaffReply(activeId, text);
+      await sendStaffReply(activeId, text, attached);
       setDraft('');
+      setAttached(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not send the reply.');
     } finally {
@@ -215,7 +223,8 @@ export default function AdminChat() {
                           : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                      {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
+                      {m.product && <ChatProductCard product={m.product} newTab />}
                       <p
                         className={`mt-0.5 text-[10px] ${
                           m.from === 'staff' ? 'text-brand-100' : 'text-slate-400'
@@ -229,30 +238,164 @@ export default function AdminChat() {
                 ))}
               </div>
 
-              <div className="flex items-end gap-2 border-t border-slate-200 p-3">
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      reply();
-                    }
-                  }}
-                  rows={1}
-                  placeholder={t('Write a reply…')}
-                  className="input max-h-28 min-h-[2.5rem] flex-1 resize-none py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={reply}
-                  disabled={busy || !draft.trim()}
-                  className="btn-primary flex-none px-4 py-2 text-sm disabled:opacity-50"
-                >
-                  {busy ? '…' : t('Send')}
-                </button>
+              <div className="border-t border-slate-200 p-3">
+                {attached && (
+                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 p-2">
+                    {attached.image && (
+                      <img src={attached.image} alt="" className="h-10 w-10 rounded object-cover" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-bold text-slate-900">{attached.name}</p>
+                      <p className="text-xs text-brand-700">
+                        {formatPrice(attached.price, attached.currency)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttached(null)}
+                      title={t('Remove')}
+                      className="flex-none px-1 text-slate-400 hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(true)}
+                    title={t('Send a product')}
+                    className="btn-secondary flex-none px-3 py-2 text-sm"
+                  >
+                    📦
+                  </button>
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        reply();
+                      }
+                    }}
+                    rows={1}
+                    placeholder={t('Write a reply…')}
+                    className="input max-h-28 min-h-[2.5rem] flex-1 resize-none py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={reply}
+                    disabled={busy || (!draft.trim() && !attached)}
+                    className="btn-primary flex-none px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    {busy ? '…' : t('Send')}
+                  </button>
+                </div>
               </div>
             </>
+          )}
+        </div>
+      </div>
+
+      {pickerOpen && (
+        <ProductPicker
+          onClose={() => setPickerOpen(false)}
+          onPick={(p) => {
+            setAttached(p);
+            setPickerOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Search the catalogue and pick one product to send into the chat. */
+function ProductPicker({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (p: ProductCard) => void;
+}) {
+  const { t } = useLang();
+  const { products, loading } = useProducts();
+  const [query, setQuery] = useState('');
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? products.filter((p) =>
+          [p.name, p.brand, p.category, ...(p.subcategories ?? [])].some((v) =>
+            String(v).toLowerCase().includes(q),
+          ),
+        )
+      : products;
+    return list.slice(0, 40);
+  }, [products, query]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <h2 className="font-bold text-slate-900">📦 {t('Send a product')}</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </div>
+        <div className="border-b border-slate-100 p-3">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('Search by name, brand, or category')}
+            className="input"
+          />
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {loading ? (
+            <p className="p-6 text-center text-sm text-slate-500">{t('Loading…')}</p>
+          ) : results.length === 0 ? (
+            <p className="p-6 text-center text-sm text-slate-500">{t('No products found.')}</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {results.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onPick({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        currency: p.currency,
+                        image: p.image,
+                      })
+                    }
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
+                  >
+                    <img
+                      src={p.image}
+                      alt=""
+                      loading="lazy"
+                      className="h-11 w-11 flex-none rounded-md border border-slate-200 object-cover"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-900">
+                        {p.name}
+                      </span>
+                      <span className="block truncate text-xs text-slate-500">{p.brand}</span>
+                    </span>
+                    <span className="flex-none text-sm font-bold text-brand-700">
+                      {formatPrice(p.price, p.currency)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>

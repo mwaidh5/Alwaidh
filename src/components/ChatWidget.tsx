@@ -11,6 +11,7 @@ import {
 } from '../lib/chatStore';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
+import ChatProductCard from './ChatProductCard';
 
 function timeText(ms: number | null): string {
   if (!ms) return '';
@@ -110,7 +111,10 @@ export default function ChatWidget() {
                       : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                  {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
+                  {m.product && (
+                    <ChatProductCard product={m.product} onOpen={() => setOpen(false)} />
+                  )}
                   <p
                     className={`mt-0.5 text-[10px] ${
                       m.from === 'guest' ? 'text-brand-100' : 'text-slate-400'
