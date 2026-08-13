@@ -7,8 +7,12 @@ type Props = {
 /**
  * Five stars with accurate fractional fill, drawn by overlaying a gold star
  * row clipped to the rating percentage on top of a grey star row.
+ *
+ * An unrated product shows nothing at all: a row of empty stars reads as
+ * "everyone hated this" rather than "nobody has rated it yet".
  */
 export default function StarRating({ rating, showValue = false, className = '' }: Props) {
+  if (!(rating > 0)) return null;
   const pct = (Math.max(0, Math.min(5, rating)) / 5) * 100;
   const stars = '★★★★★';
 

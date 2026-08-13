@@ -6,6 +6,8 @@ import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { StaffProductEdit } from '../components/ProductEditor';
+import ProductCard from '../components/ProductCard';
+import type { Product } from '../types/product';
 
 export default function ProductDetail() {
   const { id = '' } = useParams();
@@ -34,6 +36,7 @@ export default function ProductDetail() {
 
   const category = getCategory(product.category);
   const gallery = product.images?.length ? product.images : product.image ? [product.image] : [];
+  const related = relatedProducts(product, products);
 
   function handleAdd() {
     if (!product) return;
@@ -49,7 +52,7 @@ export default function ProductDetail() {
         <span className="mx-2">/</span>
         {category && (
           <>
-            <Link to={`/category/${category.slug}`} className="hover:text-brand-700">
+            <Link to={`/shop?category=${category.slug}`} className="hover:text-brand-700">
               {t(category.name)}
             </Link>
             <span className="mx-2">/</span>
@@ -95,7 +98,9 @@ export default function ProductDetail() {
             <div className="text-2xl font-bold text-brand-700">
               {formatPrice(product.price, product.currency)}
             </div>
-            <div className="text-sm text-slate-500">★ {product.rating.toFixed(1)}</div>
+            {product.rating > 0 && (
+              <div className="text-sm text-slate-500">★ {product.rating.toFixed(1)}</div>
+            )}
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                 product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -165,8 +170,40 @@ export default function ProductDetail() {
       </div>
 
       {product.datasheet && <DatasheetSection url={product.datasheet} />}
+
+      {related.length > 0 && (
+        <section className="mt-14 border-t border-slate-200 pt-10">
+          <h2 className="text-xl font-bold text-slate-900">{t('You may also like')}</h2>
+          <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
+}
+
+/**
+ * Up to four products worth suggesting, closest match first: same
+ * sub-category beats same category, and the same brand breaks ties. A
+ * product with nothing in common with anything is left alone rather than
+ * padded out with unrelated stock.
+ */
+function relatedProducts(current: Product, all: Product[]): Product[] {
+  const subs = new Set(current.subcategories ?? []);
+  const score = (p: Product) =>
+    (p.category === current.category ? 4 : 0) +
+    ((p.subcategories ?? []).some((s) => subs.has(s)) ? 2 : 0) +
+    (p.brand === current.brand ? 1 : 0);
+  return all
+    .filter((p) => p.id !== current.id)
+    .map((p) => ({ p, s: score(p) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 4)
+    .map((x) => x.p);
 }
 
 function DatasheetSection({ url }: { url: string }) {

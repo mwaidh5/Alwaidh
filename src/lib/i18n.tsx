@@ -105,6 +105,7 @@ const AR: Record<string, string> = {
   Datasheet: 'ورقة البيانات',
   'Open in new tab ↗': 'فتح في تبويب جديد ↗',
   'Download manual (PDF)': 'تحميل الدليل (PDF)',
+  'You may also like': 'قد يعجبك أيضاً',
   'Loading datasheet…': 'جاري تحميل ورقة البيانات…',
   'Product not found': 'المنتج غير موجود',
   'Back to home': 'العودة للرئيسية',
