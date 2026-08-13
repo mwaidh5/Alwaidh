@@ -201,6 +201,20 @@ const AR: Record<string, string> = {
   'Specs (one per line, key: value)': 'المواصفات (سطر لكل مواصفة، المفتاح: القيمة)',
   'Remove background (main)': 'إزالة الخلفية (الرئيسية)',
   'Removing…': 'جاري الإزالة…',
+  'Edit image': 'تعديل الصورة',
+  'Rotate left': 'تدوير لليسار',
+  'Rotate right': 'تدوير لليمين',
+  'Apply crop': 'تطبيق القص',
+  'Reset crop': 'إلغاء القص',
+  'Remove background': 'إزالة الخلفية',
+  'Save image': 'حفظ الصورة',
+  'Drag the corners to crop. The rest is dimmed and will be cut away.':
+    'اسحب الزوايا للقص. الجزء المعتم سيُقتطع.',
+  'Could not open the image.': 'تعذر فتح الصورة.',
+  'Background removal could not load its AI model. Check your internet connection and try again.':
+    'تعذر تحميل نموذج الذكاء الاصطناعي لإزالة الخلفية. تحقق من اتصال الإنترنت وحاول مجدداً.',
+  'This device ran out of memory running the AI. Try on a computer instead.':
+    'نفدت ذاكرة هذا الجهاز أثناء تشغيل الذكاء الاصطناعي. جرّب على حاسوب.',
   Main: 'رئيسية',
   Trash: 'المحذوفات',
   'The Trash is empty.': 'سلة المحذوفات فارغة.',

@@ -3,6 +3,7 @@ import { createProduct, upsertProduct } from '../lib/productStore';
 import { uploadProductDoc, uploadProductImage } from '../lib/imageUpload';
 import { categories } from '../data/categories';
 import MediaPicker from './MediaPicker';
+import ImageEditor from './ImageEditor';
 import { useLang } from '../lib/i18n';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../lib/useSettings';
@@ -208,6 +209,8 @@ export function ProductDialog({
   const [bgFallback, setBgFallback] = useState(false);
   const bgFileInput = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Index of the image open in the crop/rotate editor, or null.
+  const [editingImage, setEditingImage] = useState<number | null>(null);
   const [docBusy, setDocBusy] = useState<'datasheet' | 'manual' | null>(null);
   const [docError, setDocError] = useState('');
   // Bytes of images uploaded in this dialog, keyed by their URL — lets
@@ -539,7 +542,8 @@ export function ProductDialog({
                           Main
                         </span>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 flex justify-between bg-slate-900/60 px-1 py-0.5 opacity-0 transition group-hover:opacity-100">
+                      {/* Always visible on phones (no hover there). */}
+                      <div className="absolute inset-x-0 bottom-0 flex justify-between bg-slate-900/60 px-1 py-0.5 transition sm:opacity-0 sm:group-hover:opacity-100">
                         {i !== 0 ? (
                           <button
                             type="button"
@@ -552,6 +556,14 @@ export function ProductDialog({
                         ) : (
                           <span />
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setEditingImage(i)}
+                          className="text-[10px] font-semibold text-white hover:underline"
+                          title="Crop, rotate, or remove the background"
+                        >
+                          ✎
+                        </button>
                         <button
                           type="button"
                           onClick={() => removeImageAt(i)}
@@ -650,8 +662,8 @@ export function ProductDialog({
               )}
               <p className="text-xs text-slate-500">
                 JPG, PNG, WEBP, AVIF, or GIF · max 5 MB each. The first image is the main one shown
-                in listings — hover a thumbnail to reorder or remove. “Remove background” runs an
-                in-browser AI on the main image.
+                in listings — tap a thumbnail's ✎ to crop, rotate, or remove its background, ★ to
+                make it the main image, ✕ to delete it.
               </p>
             </div>
           </Field>
@@ -723,6 +735,23 @@ export function ProductDialog({
         onClose={() => setPickerOpen(false)}
         onSelect={(urls) => setState({ ...state, images: [...state.images, ...urls] })}
       />
+      {editingImage !== null && state.images[editingImage] && (
+        <ImageEditor
+          getSource={() => readSourceImage(state.images[editingImage])}
+          onCancel={() => setEditingImage(null)}
+          onSave={async (file) => {
+            // Upload the edited copy and swap it into the same slot; the
+            // original stays in Storage untouched in case it's needed again.
+            const { url, file: stored } = await uploadProductImage(file, state.id || undefined);
+            if (stored) uploadedFiles.current.set(url, stored);
+            setState({
+              ...state,
+              images: state.images.map((img, idx) => (idx === editingImage ? url : img)),
+            });
+            setEditingImage(null);
+          }}
+        />
+      )}
     </div>
   );
 }
