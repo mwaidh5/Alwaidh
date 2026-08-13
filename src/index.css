@@ -56,6 +56,87 @@
   .input {
     @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
   }
+  /* ------------------------------------------------------------------ */
+  /* hPanel: the admin dashboard's look — white cards on a cool grey     */
+  /* canvas with a purple accent, in the style of Hostinger's panel.     */
+  /* Scoped under .hpanel so the public shop keeps its own blue brand.   */
+  /* ------------------------------------------------------------------ */
+  .hpanel {
+    --hp: #673de6; /* primary purple */
+    --hp-dark: #5025d1;
+    --hp-darker: #4423ac;
+    --hp-50: #f2efff;
+    --hp-100: #ebe4ff;
+    --hp-200: #d5c6ff;
+    --hp-ink: #2f1c6a; /* deep indigo for headings */
+    background: #f4f5fa;
+    color: #36344d;
+  }
+  .hpanel .card {
+    @apply hover:shadow-md;
+    border-color: #e7eaf3;
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgb(47 28 106 / 0.06);
+  }
+  .hpanel .btn-primary {
+    background: var(--hp);
+    border-radius: 0.5rem;
+  }
+  .hpanel .btn-primary:hover {
+    background: var(--hp-dark);
+  }
+  .hpanel .btn-primary:active {
+    background: var(--hp-darker);
+  }
+  .hpanel .btn-primary:focus {
+    --tw-ring-color: var(--hp);
+  }
+  .hpanel .btn-secondary {
+    border-color: #d5d7de;
+    border-radius: 0.5rem;
+    color: #36344d;
+  }
+  .hpanel .btn-secondary:hover {
+    background: #f4f5fa;
+  }
+  .hpanel .input {
+    border-color: #d5d7de;
+    border-radius: 0.5rem;
+  }
+  .hpanel .input:focus,
+  .hpanel .focus\:border-brand-500:focus {
+    border-color: var(--hp);
+    --tw-ring-color: var(--hp);
+  }
+  .hpanel h1,
+  .hpanel h2 {
+    color: var(--hp-ink);
+  }
+  /* Re-point the blue brand utilities at the panel's purple. */
+  .hpanel .bg-brand-50 { background-color: var(--hp-50); }
+  .hpanel .bg-brand-100 { background-color: var(--hp-100); }
+  .hpanel .bg-brand-500,
+  .hpanel .bg-brand-600 { background-color: var(--hp); }
+  .hpanel .bg-brand-700 { background-color: var(--hp-dark); }
+  .hpanel .hover\:bg-brand-50:hover { background-color: var(--hp-50); }
+  .hpanel .hover\:bg-brand-100:hover { background-color: var(--hp-100); }
+  .hpanel .text-brand-100 { color: var(--hp-100); }
+  .hpanel .text-brand-600,
+  .hpanel .text-brand-700 { color: var(--hp); }
+  .hpanel .text-brand-800 { color: var(--hp-ink); }
+  .hpanel .hover\:text-brand-900:hover { color: var(--hp-ink); }
+  .hpanel .border-brand-200 { border-color: var(--hp-200); }
+  .hpanel .border-brand-500,
+  .hpanel .border-brand-600 { border-color: var(--hp); }
+  .hpanel .hover\:border-brand-300:hover { border-color: var(--hp-200); }
+  .hpanel .ring-brand-200,
+  .hpanel .ring-brand-300,
+  .hpanel .ring-brand-400,
+  .hpanel .ring-brand-500 { --tw-ring-color: var(--hp-200); }
+  .hpanel .focus\:ring-brand-500:focus { --tw-ring-color: var(--hp); }
+  .hpanel .from-brand-700 { --tw-gradient-from: var(--hp-dark); }
+  .hpanel .to-brand-500 { --tw-gradient-to: var(--hp); }
+
   /* Pushes the sticky header below the status bar / notch in the native app.
      env() is 0 in normal browsers, so this is a no-op on the web. */
   .safe-top {
