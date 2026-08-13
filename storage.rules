@@ -48,9 +48,9 @@ service firebase.storage {
       allow write: if isAdmin() || isSolarStaff();
     }
 
-    // Photos and PDFs posted in a job's comments. An installer may attach
-    // to their own job — the same jobs they are allowed to read.
-    match /jobs/{jobId}/comments/{allPaths=**} {
+    // Files belonging to one job — comment photos/PDFs and its invoice.
+    // An installer may upload to their own job, the same jobs they read.
+    match /jobs/{jobId}/{allPaths=**} {
       allow write: if isAdmin() || isSolarStaff()
         || (emailVerified()
             && request.auth.token.email in settingsData().get('installerEmails', [])

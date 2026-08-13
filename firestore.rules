@@ -115,6 +115,14 @@ service cloud.firestore {
       // installers on it.
       allow read: if isInstaller()
         && request.auth.token.email in resource.data.installerEmails;
+      // They can also work the job: edit its details and move it between
+      // columns. They must stay on it — so they can neither hand it to
+      // someone else nor take one that isn't theirs — and deleting stays
+      // with the office (no 'deletedAt' may appear).
+      allow update: if isInstaller()
+        && request.auth.token.email in resource.data.installerEmails
+        && request.auth.token.email in request.resource.data.installerEmails
+        && !('deletedAt' in request.resource.data);
 
       // History and comments for a job. Entries are a record of what
       // happened, so they can be added and read but never rewritten;
