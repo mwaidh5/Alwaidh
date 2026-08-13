@@ -216,6 +216,24 @@ export async function upsertProduct(product: Product): Promise<void> {
   triggerLocalChange();
 }
 
+/**
+ * Point a product's image/document fields at new URLs without touching
+ * anything else (merge write) — used by the media editor, and safe on
+ * trashed products since it can't clear their deleted flag.
+ */
+export async function updateProductMedia(
+  id: string,
+  updates: Partial<Pick<Product, 'image' | 'images' | 'datasheet' | 'manual'>>,
+): Promise<void> {
+  const database = db;
+  if (database) {
+    await setDoc(doc(database, COLLECTION, id), updates, { merge: true });
+    return;
+  }
+  writeLocal(readLocal().map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  triggerLocalChange();
+}
+
 export async function createProduct(input: Omit<Product, 'id'>): Promise<string> {
   const database = db;
   const id = slugify(input.name) || crypto.randomUUID();

@@ -4,7 +4,11 @@ import {
   productStorageMode,
   subscribeDeletedProducts,
   subscribeProducts,
+  updateProductMedia,
 } from '../../lib/productStore';
+import { updateSettingsField, type SiteSettings } from '../../lib/settingsStore';
+import { uploadImage } from '../../lib/imageUpload';
+import ImageEditor from '../../components/ImageEditor';
 import { useSettings } from '../../lib/useSettings';
 import type { Product } from '../../types/product';
 
@@ -19,6 +23,8 @@ export default function AdminMedia() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<Filter>('all');
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState<MediaItem | null>(null);
+  const [notice, setNotice] = useState('');
 
   // Everything that can reference an image, so we can show what's in use.
   const settings = useSettings();
@@ -72,6 +78,11 @@ export default function AdminMedia() {
     add(settings.heroImage, 'Homepage hero');
     add(settings.solarBannerImage, 'Solar banner');
     add(settings.tiandyLogo, 'Tiandy logo');
+    add(settings.solarLogo, 'Solar logo');
+    Object.entries(settings.categoryLogos ?? {}).forEach(([slug, u]) =>
+      add(u, `Category tile — ${slug}`),
+    );
+    Object.entries(settings.brandLogos ?? {}).forEach(([slug, u]) => add(u, `Brand logo — ${slug}`));
     return map;
   }, [products, trashed, settings]);
 
@@ -160,6 +171,73 @@ export default function AdminMedia() {
     setDeleting(false);
   }
 
+  /** Bytes of the image being edited (the bucket allows CORS reads). */
+  async function fetchOriginal(item: MediaItem): Promise<Blob> {
+    const resp = await fetch(item.url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`Could not open this image (error ${resp.status}).`);
+    return resp.blob();
+  }
+
+  /**
+   * Upload the edited copy next to the original, then re-point every product
+   * and site setting that used the old file — so the edit shows up wherever
+   * the image appears, not just in the library.
+   */
+  async function saveEdited(item: MediaItem, file: File) {
+    const folder = item.path.split('/').slice(0, -1).join('/') || 'site';
+    const { url } = await uploadImage(file, folder);
+    const matches = (u?: string) => Boolean(u) && storagePathFromUrl(u as string) === item.path;
+    let updated = 0;
+
+    for (const p of [...products, ...trashed]) {
+      const images = p.images.map((u) => (matches(u) ? url : u));
+      const updates: Partial<Pick<Product, 'image' | 'images' | 'datasheet' | 'manual'>> = {};
+      if (images.some((u, i) => u !== p.images[i])) {
+        updates.images = images;
+        updates.image = images[0] ?? '';
+      }
+      if (matches(p.datasheet)) updates.datasheet = url;
+      if (matches(p.manual)) updates.manual = url;
+      if (Object.keys(updates).length) {
+        await updateProductMedia(p.id, updates);
+        updated++;
+      }
+    }
+
+    for (const key of [
+      'logoImage',
+      'heroImage',
+      'solarBannerImage',
+      'tiandyLogo',
+      'solarLogo',
+    ] as const) {
+      if (matches(settings[key])) {
+        await updateSettingsField(key, url);
+        updated++;
+      }
+    }
+    for (const key of ['categoryLogos', 'brandLogos'] as const) {
+      const rec: SiteSettings[typeof key] = settings[key] ?? {};
+      if (Object.values(rec).some((u) => matches(u))) {
+        await updateSettingsField(
+          key,
+          Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, matches(v) ? url : v])),
+        );
+        updated++;
+      }
+    }
+
+    setEditing(null);
+    setPreview(null);
+    setNotice(
+      updated
+        ? `✅ Image edited — ${updated} place${updated === 1 ? '' : 's'} now show the new version.`
+        : '✅ Edited copy saved to the library.',
+    );
+    window.setTimeout(() => setNotice(''), 5000);
+    await load();
+  }
+
   const local = productStorageMode() === 'local';
 
   return (
@@ -185,6 +263,11 @@ export default function AdminMedia() {
       )}
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
+      )}
+      {notice && (
+        <p className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {notice}
+        </p>
       )}
 
       {!loading && items && items.length > 0 && (
@@ -319,6 +402,14 @@ export default function AdminMedia() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setEditing(item)}
+                      title="Crop, rotate, or remove the background"
+                      className="text-xs font-semibold text-slate-700 hover:underline"
+                    >
+                      ✎ Edit
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => remove(item)}
                       className="text-xs font-semibold text-red-700 hover:underline"
                     >
@@ -363,6 +454,13 @@ export default function AdminMedia() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setEditing(preview)}
+                  className="font-semibold text-slate-700 hover:underline"
+                >
+                  ✎ Edit
+                </button>
+                <button
+                  type="button"
                   onClick={() => setPreview(null)}
                   className="font-semibold text-slate-600 hover:underline"
                 >
@@ -372,6 +470,14 @@ export default function AdminMedia() {
             </div>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <ImageEditor
+          getSource={() => fetchOriginal(editing)}
+          onCancel={() => setEditing(null)}
+          onSave={(file) => saveEdited(editing, file)}
+        />
       )}
     </div>
   );
