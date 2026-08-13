@@ -11,20 +11,41 @@ import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { ADMIN_EMAILS } from '../firebase';
 
-/** Photos posted with a comment, shown as thumbnails; PDFs as a chip. */
+/**
+ * Photos posted with a comment, shown as thumbnails; PDFs as a chip.
+ * Tapping a photo pops it up right here — no leaving the page — with
+ * ‹ › arrows when the comment holds several.
+ */
 function AttachmentList({ items }: { items: JobAttachment[] }) {
+  const { t } = useLang();
+  // Index of the photo open in the pop-up, or null.
+  const [open, setOpen] = useState<number | null>(null);
+  const photos = items.filter((a) => a.kind === 'image');
+
+  function step(dir: 1 | -1) {
+    setOpen((cur) => {
+      if (cur === null || photos.length < 2) return cur;
+      return (cur + dir + photos.length) % photos.length;
+    });
+  }
+
   return (
     <div className="mt-1.5 flex flex-wrap gap-2">
       {items.map((a, i) =>
         a.kind === 'image' ? (
-          <a key={`${a.url}-${i}`} href={a.url} target="_blank" rel="noreferrer" title={a.name}>
+          <button
+            key={`${a.url}-${i}`}
+            type="button"
+            onClick={() => setOpen(photos.findIndex((p) => p.url === a.url))}
+            title={a.name}
+          >
             <img
               src={a.url}
               alt={a.name}
               loading="lazy"
               className="h-20 w-20 rounded-lg border border-slate-200 object-cover transition hover:opacity-90"
             />
-          </a>
+          </button>
         ) : (
           <a
             key={`${a.url}-${i}`}
@@ -36,6 +57,57 @@ function AttachmentList({ items }: { items: JobAttachment[] }) {
             📄 <span className="truncate">{a.name}</span>
           </a>
         ),
+      )}
+
+      {open !== null && photos[open] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4"
+          onClick={() => setOpen(null)}
+        >
+          <img
+            src={photos[open].url}
+            alt={photos[open].name}
+            className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setOpen(null)}
+            aria-label={t('Close')}
+            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-slate-900/70 text-lg text-white hover:bg-slate-900"
+          >
+            ✕
+          </button>
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(-1);
+                }}
+                aria-label={t('Previous photo')}
+                className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-slate-900/70 text-xl text-white hover:bg-slate-900"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(1);
+                }}
+                aria-label={t('Next photo')}
+                className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-slate-900/70 text-xl text-white hover:bg-slate-900"
+              >
+                ›
+              </button>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/70 px-3 py-1 text-xs font-semibold text-white">
+                {open + 1} / {photos.length}
+              </span>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
