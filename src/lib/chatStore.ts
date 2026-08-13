@@ -33,12 +33,26 @@ export interface ChatMeta {
   unreadForGuest: number;
 }
 
+/**
+ * A product shared in the chat. The details are copied in rather than
+ * looked up later, so an old conversation still reads correctly after the
+ * product is renamed, repriced or removed.
+ */
+export interface ChatProductCard {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  image: string;
+}
+
 export interface ChatMessage {
   id: string;
   text: string;
   from: 'guest' | 'staff';
   by: string; // staff email; '' for the visitor
   atMs: number | null;
+  product: ChatProductCard | null; // product card attached to the message
 }
 
 const COLLECTION = 'chats';
@@ -123,22 +137,28 @@ export async function sendGuestMessage(text: string, name = ''): Promise<string>
   return id;
 }
 
-/** Staff replies in a conversation. */
-export async function sendStaffReply(chatId: string, text: string): Promise<void> {
+/** Staff replies in a conversation, optionally sharing a product. */
+export async function sendStaffReply(
+  chatId: string,
+  text: string,
+  product: ChatProductCard | null = null,
+): Promise<void> {
   const database = db;
   if (!database) throw new Error('Chat needs a database connection.');
   const body = text.trim();
-  if (!body) return;
+  // A product card on its own is a complete reply.
+  if (!body && !product) return;
   await addDoc(messagesRef(database, chatId), {
     text: body,
     from: 'staff',
     by: auth?.currentUser?.email ?? '',
     at: serverTimestamp(),
+    ...(product ? { product } : {}),
   });
   await setDoc(
     doc(database, COLLECTION, chatId),
     {
-      lastText: body,
+      lastText: body || `📦 ${product?.name ?? ''}`,
       lastFrom: 'staff',
       lastAt: serverTimestamp(),
       unreadForGuest: increment(1),
@@ -164,12 +184,22 @@ export function subscribeChatMessages(
       cb(
         snap.docs.map((d) => {
           const data = d.data() as Record<string, unknown>;
+          const p = data.product as Record<string, unknown> | undefined;
           return {
             id: d.id,
             text: String(data.text ?? ''),
             from: data.from === 'staff' ? ('staff' as const) : ('guest' as const),
             by: String(data.by ?? ''),
             atMs: toMillis(data.at),
+            product: p?.id
+              ? {
+                  id: String(p.id),
+                  name: String(p.name ?? ''),
+                  price: Number(p.price ?? 0),
+                  currency: String(p.currency ?? 'IQD'),
+                  image: String(p.image ?? ''),
+                }
+              : null,
           };
         }),
       ),
