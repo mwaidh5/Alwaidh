@@ -106,6 +106,35 @@ service cloud.firestore {
       }
     }
 
+    // Internal staff messaging: one-to-one chats and groups. Membership is
+    // the access model — you only ever see a conversation your email is a
+    // member of, so the app's query filters on it.
+    match /teamChats/{chatId} {
+      function member() {
+        return emailVerified() && request.auth.token.email in resource.data.members;
+      }
+      allow read: if member();
+      allow create: if emailVerified()
+        && request.auth.token.email in request.resource.data.members;
+      // Members keep the conversation up to date (last message, read marks,
+      // adding people). They can't remove themselves from it.
+      allow update: if member()
+        && request.auth.token.email in request.resource.data.members;
+      allow delete: if isAdmin() || (member() && resource.data.createdBy == request.auth.token.email);
+
+      match /messages/{msgId} {
+        function inChat() {
+          return emailVerified()
+            && request.auth.token.email in
+               get(/databases/$(database)/documents/teamChats/$(chatId)).data.members;
+        }
+        allow read: if inChat();
+        allow create: if inChat() && request.resource.data.by == request.auth.token.email;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
       allow read, write: if isAdmin() || isSolarStaff();

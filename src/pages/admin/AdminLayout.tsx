@@ -18,14 +18,16 @@ import {
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar
 // staff, 'jobs' = solar staff plus installers (who see only their own jobs),
-// 'staff' = every staff role except installers.
-type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff';
+// 'staff' = every staff role except installers, 'team' = anyone who works
+// here, installers included.
+type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff' | 'team';
 /** Routes that carry a "what's new" badge. */
 const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/jobs': 'jobs',
   '/admin/orders': 'orders',
   '/admin/submissions': 'submissions',
   '/admin/chat': 'chat',
+  '/admin/team': 'team',
 };
 
 const navItems: { to: string; label: string; icon: string; end?: boolean; access: Access }[] = [
@@ -36,6 +38,7 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
   { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
   { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff' },
+  { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
   { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin' },
   { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin' },
@@ -125,6 +128,7 @@ export default function AdminLayout() {
     if (access === 'solar') return isSolarStaff;
     if (access === 'jobs') return isSolarStaff || isInstaller;
     if (access === 'staff') return isComputerStaff || isSolarStaff;
+    if (access === 'team') return true; // any signed-in staff role
     return false;
   };
   const visibleItems = navItems.filter((i) => canSee(i.access));
@@ -207,7 +211,12 @@ export default function AdminLayout() {
                       onClick={async () =>
                         setPush(
                           await enablePush(
-                            topicsFor({ isAdmin, isSolarStaff, isComputerStaff }),
+                            topicsFor({
+                              isAdmin,
+                              isSolarStaff,
+                              isComputerStaff,
+                              email: user.email,
+                            }),
                           ),
                         )
                       }

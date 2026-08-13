@@ -311,6 +311,26 @@ const AR: Record<string, string> = {
   'Pick a conversation to read and reply.': 'اختر محادثة للقراءة والرد.',
   'Write a reply…': 'اكتب رداً…',
   'Send a product': 'إرسال منتج',
+
+  // ---- Team chat ----
+  'Team chat': 'دردشة الفريق',
+  'Message colleagues, start a group, and point at a job or a product.':
+    'راسل زملاءك، أنشئ مجموعة، وأشر إلى عمل أو منتج.',
+  '+ New chat': '+ محادثة جديدة',
+  'New chat': 'محادثة جديدة',
+  'No conversations yet. Start one with “+ New chat”.':
+    'لا توجد محادثات بعد. ابدأ واحدة عبر «+ محادثة جديدة».',
+  'Pick a conversation, or start a new one.': 'اختر محادثة أو ابدأ واحدة جديدة.',
+  'No messages yet': 'لا توجد رسائل بعد',
+  'Message… use @ to tag someone': 'رسالة… استخدم @ للإشارة إلى شخص',
+  'Send a job': 'إرسال عمل',
+  'Open in Solar Jobs': 'فتح في أعمال الطاقة الشمسية',
+  'No jobs found.': 'لا توجد أعمال مطابقة.',
+  'Group name (optional)': 'اسم المجموعة (اختياري)',
+  'Create group': 'إنشاء مجموعة',
+  'Start chat': 'بدء المحادثة',
+  'No colleagues yet — add staff under Users.': 'لا يوجد زملاء بعد — أضف موظفين من صفحة المستخدمين.',
+  people: 'أشخاص',
   'View product': 'عرض المنتج',
   'No products found.': 'لا توجد منتجات مطابقة.',
   'Search by name, brand, or category': 'ابحث بالاسم أو الماركة أو الفئة',
