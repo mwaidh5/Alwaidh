@@ -288,6 +288,27 @@ const AR: Record<string, string> = {
   Attach: 'إرفاق',
   'Previous photo': 'الصورة السابقة',
   'Next photo': 'الصورة التالية',
+
+  // ---- Live chat ----
+  'Chat with us': 'تحدث معنا',
+  'We reply as soon as we can.': 'نرد في أقرب وقت ممكن.',
+  'Ask us anything about products, prices, or an order — we read every message.':
+    'اسألنا عن المنتجات أو الأسعار أو طلبك — نقرأ كل رسالة.',
+  'Type a message…': 'اكتب رسالة…',
+  'Your name (optional)': 'اسمك (اختياري)',
+  Send: 'إرسال',
+  'Could not send — check your connection and try again.':
+    'تعذر الإرسال — تحقق من الاتصال وحاول مجدداً.',
+  Messages: 'الرسائل',
+  'Conversations from the chat bubble on the website appear here.':
+    'محادثات فقاعة الدردشة في الموقع تظهر هنا.',
+  conversations: 'محادثة',
+  unread: 'غير مقروءة',
+  'No conversations yet.': 'لا توجد محادثات بعد.',
+  'Pick a conversation to read and reply.': 'اختر محادثة للقراءة والرد.',
+  'Write a reply…': 'اكتب رداً…',
+  You: 'أنت',
+  'Delete conversation': 'حذف المحادثة',
   'New Requests': 'طلبات جديدة',
   Scheduled: 'مجدول',
   'In Progress': 'قيد التنفيذ',
