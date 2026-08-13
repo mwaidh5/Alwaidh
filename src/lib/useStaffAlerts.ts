@@ -3,8 +3,9 @@ import { subscribeJobs } from './jobsStore';
 import { subscribeOrders } from './orderStore';
 import { subscribeContactSubmissions } from './contactSubmissions';
 import { subscribeChats } from './chatStore';
+import { hasUnread, subscribeTeamChats } from './teamChatStore';
 
-export type AlertKey = 'jobs' | 'orders' | 'submissions' | 'chat';
+export type AlertKey = 'jobs' | 'orders' | 'submissions' | 'chat' | 'team';
 
 /** Counts of items that arrived since this device last opened each page. */
 export type StaffAlerts = Record<AlertKey, number>;
@@ -47,6 +48,7 @@ export function useStaffAlerts(): StaffAlerts {
     orders: 0,
     submissions: 0,
     chat: 0,
+    team: 0,
   });
   const [seenTick, setSeenTick] = useState(0);
 
@@ -102,6 +104,11 @@ export function useStaffAlerts(): StaffAlerts {
           ...a,
           chat: list.reduce((sum, c) => sum + c.unreadForStaff, 0),
         })),
+      ),
+      // Team chat counts conversations with something new, not messages —
+      // read marks live on the conversation, not per message.
+      subscribeTeamChats((list) =>
+        setAlerts((a) => ({ ...a, team: list.filter((c) => hasUnread(c)).length })),
       ),
     ];
     return () => unsubs.forEach((u) => u());

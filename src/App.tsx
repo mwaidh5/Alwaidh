@@ -23,6 +23,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminSolarPrices from './pages/admin/AdminSolarPrices';
 import AdminMedia from './pages/admin/AdminMedia';
 import AdminChat from './pages/admin/AdminChat';
+import AdminTeam from './pages/admin/AdminTeam';
 import AdminJobs from './pages/admin/AdminJobs';
 import NotFound from './pages/NotFound';
 
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="jobs" element={<AdminJobs />} />
           <Route path="media" element={<AdminMedia />} />
           <Route path="chat" element={<AdminChat />} />
+          <Route path="team" element={<AdminTeam />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

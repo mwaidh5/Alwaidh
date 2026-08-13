@@ -17,7 +17,16 @@ export const PUSH_TOPICS = {
   messages: 'staff-messages',
 } as const;
 
-export type PushTopic = (typeof PUSH_TOPICS)[keyof typeof PUSH_TOPICS];
+export type PushTopic = (typeof PUSH_TOPICS)[keyof typeof PUSH_TOPICS] | string;
+
+/**
+ * A person's own topic, so team messages and @mentions can reach exactly
+ * them. FCM topic names allow only [a-zA-Z0-9-_.~%], so the email is
+ * folded into that set — the same way in the app and in the functions.
+ */
+export function userTopic(email: string): string {
+  return `user_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+}
 
 export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
 
@@ -31,8 +40,11 @@ export function topicsFor(opts: {
   isAdmin: boolean;
   isSolarStaff: boolean;
   isComputerStaff: boolean;
+  /** Signed-in email — subscribes them to their own topic for team chat. */
+  email?: string | null;
 }): PushTopic[] {
   const topics: PushTopic[] = [];
+  if (opts.email) topics.push(userTopic(opts.email));
   if (opts.isAdmin || opts.isSolarStaff) topics.push(PUSH_TOPICS.jobs);
   if (opts.isAdmin) topics.push(PUSH_TOPICS.orders);
   // Chat and contact messages go to everyone who can answer them.
