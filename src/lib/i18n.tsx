@@ -403,8 +403,15 @@ const AR: Record<string, string> = {
 
   // ---- Homepage banners (settings) ----
   'Homepage banners': 'بانرات الصفحة الرئيسية',
-  'The big banners at the top of the homepage. Each one is a full-width photo with wording and a button over it — change the words, the colours and where the button goes.':
-    'البانرات الكبيرة أعلى الصفحة الرئيسية. كل واحد صورة بعرض الصفحة مع نص وزر فوقها — غيّر الكلمات والألوان ووجهة الزر.',
+  'Each banner is a photo with wording and a button over it. Tap one to change its words, colours and where the button goes.':
+    'كل بانر عبارة عن صورة مع نص وزر فوقها. اضغط على أي واحد لتغيير كلماته وألوانه ووجهة الزر.',
+  'The big banners at the top of the homepage.': 'البانرات الكبيرة أعلى الصفحة الرئيسية.',
+  'Shop name, contact details and currency.': 'اسم المتجر وبيانات التواصل والعملة.',
+  'Tax, delivery fee and whether customers can order.':
+    'الضريبة وأجور التوصيل وإمكانية الطلب للزبائن.',
+  'Maintenance mode and the announcement bar.': 'وضع الصيانة وشريط الإعلانات.',
+  'The groups staff can file products under.': 'المجموعات التي يصنّف الموظفون المنتجات ضمنها.',
+  'Logo, category tiles and brand logos.': 'الشعار وبطاقات الفئات وشعارات الماركات.',
   Banner: 'بانر',
   'Move up': 'تحريك للأعلى',
   'Move down': 'تحريك للأسفل',
