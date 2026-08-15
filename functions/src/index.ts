@@ -33,11 +33,22 @@ async function push(topic: string, title: string, body: string, link: string): P
       // The app reads this to open the right screen when tapped.
       data: { link },
       apns: {
+        // iOS: a sound also makes the phone buzz when it's on silent.
         payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+        headers: { 'apns-priority': '10' },
       },
       android: {
         priority: 'high',
-        notification: { sound: 'default', channelId: 'alwaidh-staff' },
+        notification: {
+          channelId: 'alwaidh-staff',
+          sound: 'default',
+          // Ask for the phone's usual notification sound and buzz. The
+          // channel governs this from Android 8 on, but these matter on
+          // older phones and when the channel was created elsewhere.
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          priority: 'max',
+        },
       },
     });
     logger.info(`sent to ${topic}: ${title}`);

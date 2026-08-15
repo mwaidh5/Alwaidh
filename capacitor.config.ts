@@ -27,6 +27,11 @@ const config: CapacitorConfig = {
       skipNativeAuth: false,
       providers: ['google.com'],
     },
+    FirebaseMessaging: {
+      // Without this, iOS silently swallows a notification that arrives
+      // while the app is open — no banner, no sound.
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 
