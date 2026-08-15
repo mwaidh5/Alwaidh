@@ -314,8 +314,12 @@ const AR: Record<string, string> = {
   'Notifications are on for this device.': 'الإشعارات مفعّلة على هذا الجهاز.',
   'Get a notification on this device when something needs you.':
     'احصل على إشعار على هذا الجهاز عندما يستجد شيء يخصك.',
-  'This device cannot show notifications. In the phone app, make sure you have the latest version installed.':
-    'هذا الجهاز لا يدعم الإشعارات. في تطبيق الهاتف، تأكد من تثبيت أحدث إصدار.',
+  'This version of the app was built before notifications existed. Install the newest build from TestFlight (or Play Store), then open this panel again.':
+    'هذه النسخة من التطبيق أُنشئت قبل إضافة الإشعارات. ثبّت أحدث إصدار من TestFlight (أو متجر Play) ثم افتح هذه النافذة مجدداً.',
+  'iPhone browsers only allow notifications for apps added to the Home Screen. Use the Alwaidh app, or tap Share → Add to Home Screen and open it from there.':
+    'متصفحات الآيفون تسمح بالإشعارات فقط للتطبيقات المضافة إلى الشاشة الرئيسية. استخدم تطبيق الوايذ، أو اضغط مشاركة ← إضافة إلى الشاشة الرئيسية وافتحه من هناك.',
+  'This browser cannot show notifications. Try Chrome, or use the phone app.':
+    'هذا المتصفح لا يدعم الإشعارات. جرّب Chrome أو استخدم تطبيق الهاتف.',
   'Notifications are blocked. Allow them for Alwaidh in your phone or browser settings, then come back.':
     'الإشعارات محظورة. اسمح بها لتطبيق الوايذ من إعدادات الهاتف أو المتصفح ثم عد إلى هنا.',
   'Tell me about': 'أبلغني عن',

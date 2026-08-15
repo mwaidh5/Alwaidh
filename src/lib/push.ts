@@ -79,9 +79,42 @@ export function channelsFor(roles: Roles): NotificationChannel[] {
 
 export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
 
+interface CapacitorGlobal {
+  isNativePlatform?: () => boolean;
+  isPluginAvailable?: (name: string) => boolean;
+  getPlatform?: () => string;
+}
+
+function capacitor(): CapacitorGlobal | undefined {
+  return (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
+}
+
 export function isNativeApp(): boolean {
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return Boolean(cap?.isNativePlatform?.());
+  return Boolean(capacitor()?.isNativePlatform?.());
+}
+
+/**
+ * Why notifications aren't available here — the difference between "this
+ * app build is too old" and "this browser can't do it" matters, because
+ * only one of them is fixable by the person reading the message.
+ */
+export type PushBlocker =
+  | 'none'
+  | 'old-app' // native app built before notifications shipped
+  | 'ios-browser' // Safari on iPhone: only home-screen apps may notify
+  | 'browser'; // some other browser without notification support
+
+export function pushBlocker(): PushBlocker {
+  if (isNativeApp()) {
+    // The bridge knows exactly which plugins this binary was built with.
+    const available = capacitor()?.isPluginAvailable?.('FirebaseMessaging');
+    return available === false ? 'old-app' : 'none';
+  }
+  if (typeof Notification !== 'undefined') return 'none';
+  const iOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return iOS ? 'ios-browser' : 'browser';
 }
 
 // ---------------------------------------------------------------------------
