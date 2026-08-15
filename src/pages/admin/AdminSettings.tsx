@@ -329,6 +329,111 @@ export default function AdminSettings() {
   );
 }
 
+/**
+ * The banner as visitors will see it, at the real proportions of each
+ * screen — 2.375:1 on a computer, taller than it is wide on a phone — so
+ * it's obvious how the photo will be cropped before anything is saved.
+ */
+function HeroPreview({ slide }: { slide: HeroSlide }) {
+  const { t } = useLang();
+  const [device, setDevice] = useState<'pc' | 'phone'>('pc');
+  const phone = device === 'phone';
+  const photo = (phone && slide.mobileImage) || slide.image;
+
+  return (
+    <div className="mb-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {t('Preview')}
+        </p>
+        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-semibold">
+          {(
+            [
+              { key: 'pc', label: '🖥️ Computer' },
+              { key: 'phone', label: '📱 Phone' },
+            ] as const
+          ).map((d) => (
+            <button
+              key={d.key}
+              type="button"
+              onClick={() => setDevice(d.key)}
+              className={`rounded-md px-2.5 py-1 transition ${
+                device === d.key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {t(d.label)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={`mx-auto ${phone ? 'w-[188px]' : 'w-full'}`}>
+        <div
+          className="relative overflow-hidden rounded-xl bg-slate-800"
+          // Same shapes the homepage uses: 1216×512 and 343×416.
+          style={{ aspectRatio: phone ? '343 / 416' : '1216 / 512' }}
+        >
+          {photo && (
+            <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, slide.overlay)) / 100})`,
+            }}
+          />
+          <div
+            className={`relative flex h-full flex-col justify-center ${
+              phone ? 'gap-1.5 px-4' : 'gap-2.5 px-8'
+            }`}
+          >
+            {slide.eyebrow && (
+              <span
+                className={`w-fit rounded-full border px-2 py-0.5 font-bold uppercase tracking-[0.15em] ${
+                  phone ? 'text-[6px]' : 'text-[9px]'
+                }`}
+                style={{ color: slide.textColor, borderColor: slide.textColor }}
+              >
+                {slide.eyebrow}
+              </span>
+            )}
+            <p
+              className={`font-extrabold leading-tight ${phone ? 'text-sm' : 'text-2xl'}`}
+              style={{ color: slide.textColor }}
+            >
+              {slide.title || t('Your headline here')}
+            </p>
+            {slide.subtitle && (
+              <p
+                className={`${phone ? 'line-clamp-3 text-[8px]' : 'max-w-md text-xs'} leading-snug`}
+                style={{ color: slide.textColor, opacity: 0.85 }}
+              >
+                {slide.subtitle}
+              </p>
+            )}
+            {slide.buttonLabel && (
+              <span
+                className={`w-fit rounded-full font-bold uppercase ${
+                  phone ? 'px-2.5 py-1 text-[7px]' : 'px-4 py-2 text-[10px]'
+                }`}
+                style={{ background: slide.buttonBg, color: slide.buttonText }}
+              >
+                {slide.buttonLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {phone && !slide.mobileImage && slide.image && (
+        <p className="mt-2 text-center text-xs text-amber-700">
+          {t('No phone photo yet — the wide one is being cropped to fit.')}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** One homepage banner: its photo, its wording, its button and its colours. */
 function HeroSlideEditor({
   index,
@@ -416,29 +521,7 @@ function HeroSlideEditor({
 
       {!open ? null : (
         <div className="border-t border-slate-100 p-4">
-      {/* Live preview — what the banner will look like. */}
-      <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-slate-800">
-        {slide.image && (
-          <img src={slide.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        )}
-        <div
-          className="absolute inset-0"
-          style={{ background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, slide.overlay)) / 100})` }}
-        />
-        <div className="relative flex h-full flex-col justify-center gap-1.5 px-4">
-          <p className="truncate text-sm font-extrabold" style={{ color: slide.textColor }}>
-            {slide.title || t('Your headline here')}
-          </p>
-          {slide.buttonLabel && (
-            <span
-              className="w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase"
-              style={{ background: slide.buttonBg, color: slide.buttonText }}
-            >
-              {slide.buttonLabel}
-            </span>
-          )}
-        </div>
-      </div>
+      <HeroPreview slide={slide} />
 
       <ImageField
         label="Banner photo (computer — wide)"
