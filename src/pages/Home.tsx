@@ -99,8 +99,11 @@ export default function Home() {
     setSlide((s) => (s + dir + slides.length) % slides.length);
   };
 
-  const newest = useMemo(() => products.filter((p) => p.inStock).slice(0, 4), [products]);
-  const countIn = (slug: CategorySlug) => products.filter((p) => p.category === slug).length;
+  const inStock = useMemo(() => products.filter((p) => p.inStock), [products]);
+  const newest = inStock.slice(0, 4);
+  // A second strip further down, so the page shows more of the shop
+  // without repeating what's already above it.
+  const more = inStock.slice(4, 12);
 
   return (
     <div className="bg-white">
@@ -209,44 +212,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---------------- Shop by category ---------------- */}
-      <section className="container-page pt-14">
-        <SectionHead eyebrow="Browse" title="Shop by category" linkTo="/shop" linkLabel="View all products" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              to={`/shop?category=${c.slug}`}
-              className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="relative h-40 bg-slate-100">
-                {/* A real product photo fills the card better than a logo,
-                    which is transparent and would crop badly. */}
-                <img
-                  src={imageFor(c.slug) || settings.categoryLogos?.[c.slug] || FALLBACK.computers}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3.5">
-                <div>
-                  <div className="font-bold text-slate-900">{t(c.name)}</div>
-                  <div className="mt-0.5 text-xs text-slate-500">
-                    {countIn(c.slug)} {t('products')}
-                  </div>
-                </div>
-                <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-brand-50 text-sm font-bold text-brand-700">
-                  →
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* ---------------- Promo banners ---------------- */}
-      <section className="container-page pt-10">
+      <section className="container-page pt-12">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {slides.map((s) => (
             <Link
@@ -292,7 +259,24 @@ export default function Home() {
       )}
 
       {/* ---------------- Solar quote ---------------- */}
-      <SolarQuote />
+      <SolarQuote logo={settings.solarLogo} />
+
+      {/* ---------------- More products ---------------- */}
+      {more.length > 0 && (
+        <section className="container-page pt-14">
+          <SectionHead
+            eyebrow="From the shop"
+            title="More to explore"
+            linkTo="/shop"
+            linkLabel="Browse everything"
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {more.slice(0, 8).map((p) => (
+              <ArrivalCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ---------------- Brands ---------------- */}
       <section className="container-page pt-14">
@@ -325,12 +309,31 @@ export default function Home() {
       <section className="container-page py-14">
         <div className="grid gap-6 border-t border-slate-200 pt-8 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { title: '12-month warranty', body: 'On every computer and camera we sell.' },
-            { title: 'Fast delivery', body: 'Same-day dispatch on in-stock items in Baghdad.' },
-            { title: 'Installed by our crew', body: 'Solar and CCTV, never subcontracted.' },
-            { title: 'Repairs in-house', body: 'Diagnostics within 48 hours.' },
+            {
+              icon: '🚚',
+              title: 'Fast delivery',
+              body: 'Same-day dispatch in Baghdad, and across Iraq within days.',
+            },
+            {
+              icon: '💵',
+              title: 'Cash on delivery',
+              body: 'Pay when the order reaches your door — nothing upfront.',
+            },
+            {
+              icon: '🔄',
+              title: 'Easy replacement',
+              body: 'Wrong item or changed your mind? Swap or return it.',
+            },
+            {
+              icon: '✅',
+              title: 'Genuine products',
+              body: 'Everything we sell comes from the authorised source.',
+            },
           ].map((v) => (
             <div key={v.title}>
+              <div className="mb-2 text-2xl" aria-hidden>
+                {v.icon}
+              </div>
               <div className="mb-1.5 font-bold text-slate-900">{t(v.title)}</div>
               <div className="text-sm leading-relaxed text-slate-500">{t(v.body)}</div>
             </div>
@@ -442,7 +445,7 @@ function ArrivalCard({ product }: { product: Product }) {
 }
 
 /** "Tell us your bill" — a real enquiry, landing in Admin → Submissions. */
-function SolarQuote() {
+function SolarQuote({ logo }: { logo?: string }) {
   const { t } = useLang();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -477,17 +480,30 @@ function SolarQuote() {
   }
 
   return (
-    <section id="quote" className="mt-14 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-700">
+    <section
+      id="quote"
+      className="mt-14 border-y border-sky-100 bg-gradient-to-br from-sky-50 via-white to-brand-50"
+    >
       <div className="container-page grid items-center gap-12 py-16 lg:grid-cols-[1.05fr_.95fr]">
         <div>
-          <span className="inline-block rounded-full bg-sun-400/15 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-sun-400 ring-1 ring-inset ring-sun-400/40">
+          {logo ? (
+            <img
+              src={logo}
+              alt="SolarMax"
+              className="mb-5 h-12 w-auto object-contain"
+              loading="lazy"
+            />
+          ) : (
+            <div className="mb-5 text-xl font-extrabold tracking-tight text-brand-700">SolarMax</div>
+          )}
+          <span className="inline-block rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-inset ring-brand-200">
             {t('Free site survey')}
           </span>
-          <h2 className="mb-3 mt-4 text-4xl font-extrabold leading-tight tracking-tight text-white">
+          <h2 className="mb-3 mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900">
             <span className="block">{t('Tell us your bill —')}</span>
-            <span className="block text-sun-400">{t('we’ll size the system')}</span>
+            <span className="block text-brand-600">{t('we’ll size the system')}</span>
           </h2>
-          <p className="mb-6 max-w-lg text-base leading-relaxed text-white/80">
+          <p className="mb-6 max-w-lg text-base leading-relaxed text-slate-600">
             {t(
               'Most homes we fit run their essentials through the night and pay back the system in under three years.',
             )}
@@ -498,8 +514,8 @@ function SolarQuote() {
               'Panels, inverter, batteries and install in one quote',
               'Two-year workmanship warranty',
             ].map((line) => (
-              <li key={line} className="flex items-center gap-3 text-sm font-medium text-white/90">
-                <span className="grid h-5 w-5 flex-none place-items-center rounded-full bg-green-500/20 text-xs font-extrabold text-green-400">
+              <li key={line} className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <span className="grid h-5 w-5 flex-none place-items-center rounded-full bg-brand-100 text-xs font-extrabold text-brand-700">
                   ✓
                 </span>
                 <span>{t(line)}</span>
@@ -508,7 +524,7 @@ function SolarQuote() {
           </ul>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="rounded-3xl border border-sky-100 bg-white p-6 shadow-xl shadow-sky-900/10">
           {done ? (
             <div className="flex flex-col items-center gap-3 px-2 py-10 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-green-100 text-xl font-extrabold text-green-700">
