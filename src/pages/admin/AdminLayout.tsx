@@ -107,7 +107,9 @@ export default function AdminLayout() {
         const n = new Notification(t(rule.title), {
           body: t('Open the dashboard to take a look.'),
           tag: `alwaidh-${rule.key}`, // newer ones replace the old bubble
-        });
+          // Buzzes on the phones whose browsers support it; ignored elsewhere.
+          vibrate: [180, 90, 180],
+        } as NotificationOptions & { vibrate: number[] });
         n.onclick = () => {
           window.focus();
           navigate(rule.path);

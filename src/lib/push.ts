@@ -79,6 +79,40 @@ export function channelsFor(roles: Roles): NotificationChannel[] {
 
 export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
 
+/** Must match the channelId the Cloud Functions send with. */
+const ANDROID_CHANNEL = 'alwaidh-staff';
+
+/**
+ * Android decides sound and vibration from the notification *channel*, not
+ * from the message, and a message naming a channel that doesn't exist can
+ * arrive silently. Create ours up front, at the importance that gets a
+ * heads-up banner with a sound and a buzz.
+ *
+ * A channel's settings are fixed once Android has seen it — the person owns
+ * them from then on, in Settings → Notifications, which is as it should be.
+ */
+async function ensureAndroidChannel(): Promise<void> {
+  const platform = capacitor()?.getPlatform?.();
+  if (platform !== 'android') return;
+  try {
+    const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+    const { channels } = await FirebaseMessaging.listChannels();
+    if (channels.some((c) => c.id === ANDROID_CHANNEL)) return;
+    await FirebaseMessaging.createChannel({
+      id: ANDROID_CHANNEL,
+      name: 'Alwaidh staff',
+      description: 'Jobs, orders, messages and team chat',
+      importance: 5, // heads-up banner
+      visibility: 1, // shown on the lock screen
+      sound: 'default',
+      vibration: true,
+      lights: true,
+    });
+  } catch {
+    /* older build without the plugin — nothing to set up */
+  }
+}
+
 interface CapacitorGlobal {
   isNativePlatform?: () => boolean;
   isPluginAvailable?: (name: string) => boolean;
@@ -224,6 +258,7 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
       return { state: receive === 'denied' ? 'denied' : 'prompt' };
     }
     await waitForToken(FirebaseMessaging);
+    await ensureAndroidChannel();
     await syncSubscriptions(roles, email);
     return { state: 'granted' };
   } catch (e) {
@@ -241,6 +276,7 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
  */
 export async function syncSubscriptions(roles: Roles, email: string | null): Promise<void> {
   if (!isNativeApp()) return;
+  await ensureAndroidChannel();
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
     const prefs = notificationPrefs();
