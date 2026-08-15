@@ -19,21 +19,6 @@ const FALLBACK = {
     'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
 };
 
-interface Slide {
-  key: CategorySlug;
-  eyebrow: string;
-  line1: string;
-  line2: string;
-  body: string;
-  primary: { label: string; to: string };
-  secondary: { label: string; to: string };
-  image: string;
-  /** Panel background and the colour of the second headline line. */
-  panel: string;
-  accent: string;
-  dark: boolean;
-}
-
 export default function Home() {
   const { t } = useLang();
   const { products } = useProducts();
@@ -42,47 +27,17 @@ export default function Home() {
   const imageFor = (slug: CategorySlug) =>
     products.find((p) => p.category === slug && p.image)?.image ?? '';
 
-  const slides: Slide[] = [
-    {
-      key: 'computers',
-      eyebrow: 'New arrivals',
-      line1: 'Laptops built for',
-      line2: 'real work',
-      body: 'Business machines, workstations and accessories — spec’d properly, warrantied locally, and in stock today.',
-      primary: { label: 'Shop computers', to: '/shop?category=computers' },
-      secondary: { label: 'Talk to us', to: '/about' },
-      image: settings.heroImage || imageFor('computers') || FALLBACK.computers,
-      panel: 'bg-gradient-to-br from-slate-50 via-white to-slate-200',
-      accent: 'text-brand-600',
-      dark: false,
-    },
-    {
-      key: 'solar',
-      eyebrow: 'Clean energy',
-      line1: 'Cut your power bill',
-      line2: 'for good',
-      body: 'Panels, inverters and batteries sized for your home or shop. Free site survey, installed by our own crew.',
-      primary: { label: 'Get a free solar quote', to: '#quote' },
-      secondary: { label: 'See the price sheet', to: '/solar-prices' },
-      image: settings.solarBannerImage || imageFor('solar') || FALLBACK.solar,
-      panel: 'bg-gradient-to-br from-slate-900 via-slate-900 to-slate-700',
-      accent: 'text-sun-400',
-      dark: true,
-    },
-    {
-      key: 'tiandy-cameras',
-      eyebrow: 'Surveillance',
-      line1: 'Tiandy cameras,',
-      line2: 'properly installed',
-      body: 'IP cameras, NVRs and full-site coverage from an authorised Tiandy reseller.',
-      primary: { label: 'Shop cameras', to: '/shop?category=tiandy-cameras' },
-      secondary: { label: 'Book an install', to: '/about' },
-      image: imageFor('tiandy-cameras') || FALLBACK.cameras,
-      panel: 'bg-slate-950',
-      accent: 'text-red-500',
-      dark: true,
-    },
-  ];
+  // Banners are written in Settings → Homepage banners. Where no picture
+  // has been uploaded yet, fall back to something sensible so the page is
+  // never blank.
+  const stockImage = [FALLBACK.computers, FALLBACK.solar, FALLBACK.cameras];
+  const slides = (settings.heroSlides ?? []).map((s, i) => ({
+    ...s,
+    image:
+      s.image ||
+      (i === 0 ? settings.heroImage : i === 1 ? settings.solarBannerImage : '') ||
+      stockImage[i % stockImage.length],
+  }));
 
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -107,74 +62,70 @@ export default function Home() {
 
   return (
     <div className="bg-white">
-      {/* ---------------- Hero carousel ---------------- */}
-      <section className="container-page pt-6">
-        <div
-          className="relative h-[30rem] overflow-hidden rounded-3xl bg-slate-100 sm:h-[32rem]"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-        >
-          {slides.map((s, i) => (
+      {/* ---------------- Hero banner ---------------- */}
+      <section
+        className="relative h-[26rem] w-full overflow-hidden bg-slate-900 sm:h-[32rem]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        {slides.map((s, i) => (
+          <div
+            key={i}
+            aria-hidden={i !== slide}
+            className={`absolute inset-0 transition-opacity duration-700 ${
+              i === slide ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+          >
+            {/* The photo fills the whole banner, edge to edge. */}
+            <img
+              src={s.image}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading={i === 0 ? 'eager' : 'lazy'}
+            />
+            {/* Darkened just enough that the words stay readable. */}
             <div
-              key={s.key}
-              aria-hidden={i !== slide}
-              className={`absolute inset-0 grid transition-opacity duration-700 md:grid-cols-[1.02fr_1fr] ${
-                s.panel
-              } ${i === slide ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-            >
-              <div className="z-[1] flex flex-col justify-center gap-4 p-8 sm:p-12">
+              className="absolute inset-0"
+              style={{ background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, s.overlay)) / 100})` }}
+            />
+            <div className="container-page relative flex h-full flex-col justify-center gap-4">
+              {s.eyebrow && (
                 <span
-                  className={`self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] ${
-                    s.dark
-                      ? 'bg-white/10 text-white ring-1 ring-inset ring-white/30'
-                      : 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-200'
-                  }`}
+                  className="self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] ring-1 ring-inset"
+                  style={{ color: s.textColor, borderColor: s.textColor, opacity: 0.95 }}
                 >
                   {t(s.eyebrow)}
                 </span>
-                <h1
-                  className={`text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl ${
-                    s.dark ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
-                  <span className="block">{t(s.line1)}</span>
-                  <span className={`block ${s.accent}`}>{t(s.line2)}</span>
-                </h1>
+              )}
+              <h1
+                className="max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl"
+                style={{ color: s.textColor }}
+              >
+                {t(s.title)}
+              </h1>
+              {s.subtitle && (
                 <p
-                  className={`max-w-md text-base leading-relaxed ${
-                    s.dark ? 'text-white/80' : 'text-slate-600'
-                  }`}
+                  className="max-w-xl text-base leading-relaxed sm:text-lg"
+                  style={{ color: s.textColor, opacity: 0.85 }}
                 >
-                  {t(s.body)}
+                  {t(s.subtitle)}
                 </p>
-                <div className="mt-1 flex flex-wrap gap-3">
-                  <HeroLink to={s.primary.to} className="bg-brand-600 text-white shadow-lg shadow-brand-600/30 hover:bg-brand-700">
-                    {t(s.primary.label)}
-                  </HeroLink>
-                  <HeroLink
-                    to={s.secondary.to}
-                    className={
-                      s.dark
-                        ? 'border border-white/30 text-white hover:bg-white/10'
-                        : 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50'
-                    }
-                  >
-                    {t(s.secondary.label)}
-                  </HeroLink>
-                </div>
-              </div>
-              <div className="relative hidden md:block">
-                <img
-                  src={s.image}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                />
-              </div>
+              )}
+              {s.buttonLabel && (
+                <HeroLink
+                  to={s.buttonLink}
+                  style={{ background: s.buttonBg, color: s.buttonText }}
+                  className="mt-2 self-start shadow-lg"
+                >
+                  {t(s.buttonLabel)}
+                </HeroLink>
+              )}
             </div>
-          ))}
+          </div>
+        ))}
 
-          {/* Slide controls */}
+        {/* Slide controls — only worth showing with more than one banner. */}
+        {slides.length > 1 && (
           <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/95 p-1.5 shadow-lg">
             <button
               type="button"
@@ -185,9 +136,9 @@ export default function Home() {
               ‹
             </button>
             <div className="flex items-center gap-1.5 px-1">
-              {slides.map((s, i) => (
+              {slides.map((_, i) => (
                 <button
-                  key={s.key}
+                  key={i}
                   type="button"
                   onClick={() => {
                     setPaused(true);
@@ -209,29 +160,28 @@ export default function Home() {
               ›
             </button>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ---------------- Promo banners ---------------- */}
       <section className="container-page pt-12">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {slides.map((s) => (
+          {/* One tile per category, straight into its filtered shop page. */}
+          {categories.map((c, i) => (
             <Link
-              key={s.key}
-              to={s.primary.to}
+              key={c.slug}
+              to={`/shop?category=${c.slug}`}
               className="group relative block h-60 overflow-hidden rounded-2xl bg-slate-900"
             >
               <img
-                src={s.image}
+                src={imageFor(c.slug) || stockImage[i % stockImage.length]}
                 alt=""
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end gap-2 p-6">
-                <p className="text-lg font-extrabold text-white">
-                  {t(categories.find((c) => c.slug === s.key)?.name ?? '')}
-                </p>
+                <p className="text-lg font-extrabold text-white">{t(c.name)}</p>
                 <span className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-600 py-2 pe-2 ps-4 text-sm font-bold text-white shadow-lg">
                   {t('Explore now')}
                   <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-extrabold text-brand-600">
@@ -347,23 +297,26 @@ export default function Home() {
 function HeroLink({
   to,
   className,
+  style,
   children,
 }: {
   to: string;
   className: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
-  const cls = `rounded-full px-7 py-3.5 text-xs font-bold uppercase tracking-wider transition ${className}`;
-  // In-page anchors (the quote form) aren't routes.
-  if (to.startsWith('#')) {
+  const cls = `inline-block rounded-full px-7 py-3.5 text-xs font-bold uppercase tracking-wider transition hover:brightness-110 ${className}`;
+  // In-page anchors (the quote form) aren't routes, and a link to another
+  // website has to leave the app rather than go through the router.
+  if (to.startsWith('#') || /^https?:\/\//i.test(to)) {
     return (
-      <a href={to} className={cls}>
+      <a href={to} className={cls} style={style}>
         {children}
       </a>
     );
   }
   return (
-    <Link to={to} className={cls}>
+    <Link to={to || '/shop'} className={cls} style={style}>
       {children}
     </Link>
   );

@@ -7,6 +7,62 @@ import {
 import { db } from '../firebase';
 import { DEFAULT_COLUMNS, type PriceColumn } from './solarPricesStore';
 
+/** One full-width banner at the top of the homepage. */
+export interface HeroSlide {
+  image: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  buttonLabel: string;
+  buttonLink: string;
+  /** Colour of the wording over the photo. */
+  textColor: string;
+  buttonBg: string;
+  buttonText: string;
+  /** 0–90: how much the photo is darkened so words stay readable. */
+  overlay: number;
+}
+
+/** Colours every banner starts with — white text, brand-blue button. */
+export const HERO_DEFAULT_COLORS = {
+  textColor: '#ffffff',
+  buttonBg: '#2563eb',
+  buttonText: '#ffffff',
+  overlay: 45,
+};
+
+export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
+  {
+    image: '',
+    eyebrow: 'New arrivals',
+    title: 'Laptops built for real work',
+    subtitle:
+      'Business machines, workstations and accessories — spec’d properly, warrantied locally, and in stock today.',
+    buttonLabel: 'Shop computers',
+    buttonLink: '/shop?category=computers',
+    ...HERO_DEFAULT_COLORS,
+  },
+  {
+    image: '',
+    eyebrow: 'Clean energy',
+    title: 'Cut your power bill for good',
+    subtitle:
+      'Panels, inverters and batteries sized for your home or shop. Free site survey, installed by our own crew.',
+    buttonLabel: 'Get a free solar quote',
+    buttonLink: '#quote',
+    ...HERO_DEFAULT_COLORS,
+  },
+  {
+    image: '',
+    eyebrow: 'Surveillance',
+    title: 'Tiandy cameras, properly installed',
+    subtitle: 'IP cameras, NVRs and full-site coverage from an authorised Tiandy reseller.',
+    buttonLabel: 'Shop cameras',
+    buttonLink: '/shop?category=tiandy-cameras',
+    ...HERO_DEFAULT_COLORS,
+  },
+];
+
 export interface SiteSettings {
   storeName: string;
   contactEmail: string;
@@ -33,6 +89,8 @@ export interface SiteSettings {
   solarLogo: string;
   /** Logos of the brands we deal with, keyed by brand slug. */
   brandLogos: Record<string, string>;
+  /** Full-width banners at the top of the homepage. */
+  heroSlides: HeroSlide[];
   /** Sub-categories staff can pick from, keyed by main category slug. */
   subcategories: Record<string, string[]>;
   solarPriceColumns: PriceColumn[];
@@ -61,6 +119,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   solarLogo: '',
   brandLogos: {},
   subcategories: {},
+  heroSlides: DEFAULT_HERO_SLIDES,
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
@@ -135,6 +194,22 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.subcategories && typeof data.subcategories === 'object'
         ? (data.subcategories as Record<string, string[]>)
         : DEFAULT_SETTINGS.subcategories,
+    heroSlides: Array.isArray(data.heroSlides)
+      ? (data.heroSlides as Record<string, unknown>[]).map((h) => ({
+          image: String(h.image ?? ''),
+          eyebrow: String(h.eyebrow ?? ''),
+          title: String(h.title ?? ''),
+          subtitle: String(h.subtitle ?? ''),
+          buttonLabel: String(h.buttonLabel ?? ''),
+          buttonLink: String(h.buttonLink ?? ''),
+          textColor: String(h.textColor ?? HERO_DEFAULT_COLORS.textColor),
+          buttonBg: String(h.buttonBg ?? HERO_DEFAULT_COLORS.buttonBg),
+          buttonText: String(h.buttonText ?? HERO_DEFAULT_COLORS.buttonText),
+          overlay: Number.isFinite(Number(h.overlay))
+            ? Number(h.overlay)
+            : HERO_DEFAULT_COLORS.overlay,
+        }))
+      : DEFAULT_SETTINGS.heroSlides,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_SETTINGS,
+  HERO_DEFAULT_COLORS,
   loadSettings,
   saveSettings,
+  type HeroSlide,
   type SiteSettings,
 } from '../../lib/settingsStore';
 import { uploadImage } from '../../lib/imageUpload';
@@ -200,6 +202,61 @@ export default function AdminSettings() {
           ))}
         </Section>
 
+        <Section title="Homepage banners">
+          <p className="text-sm text-slate-600">
+            {t(
+              'The big banners at the top of the homepage. Each one is a full-width photo with wording and a button over it — change the words, the colours and where the button goes.',
+            )}
+          </p>
+          {(settings.heroSlides ?? []).map((slide, i) => (
+            <HeroSlideEditor
+              key={i}
+              index={i}
+              slide={slide}
+              total={(settings.heroSlides ?? []).length}
+              onChange={(next) =>
+                update(
+                  'heroSlides',
+                  (settings.heroSlides ?? []).map((s, n) => (n === i ? next : s)),
+                )
+              }
+              onRemove={() =>
+                update(
+                  'heroSlides',
+                  (settings.heroSlides ?? []).filter((_, n) => n !== i),
+                )
+              }
+              onMove={(dir) => {
+                const list = [...(settings.heroSlides ?? [])];
+                const to = i + dir;
+                if (to < 0 || to >= list.length) return;
+                [list[i], list[to]] = [list[to], list[i]];
+                update('heroSlides', list);
+              }}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              update('heroSlides', [
+                ...(settings.heroSlides ?? []),
+                {
+                  image: '',
+                  eyebrow: '',
+                  title: 'New banner',
+                  subtitle: '',
+                  buttonLabel: 'Shop now',
+                  buttonLink: '/shop',
+                  ...HERO_DEFAULT_COLORS,
+                },
+              ])
+            }
+            className="btn-secondary"
+          >
+            {t('+ Add a banner')}
+          </button>
+        </Section>
+
         <Section title="Site images">
           <p className="text-sm text-slate-600">
             {t('Replace the main images used across the website. Changes go live as soon as you save.')}
@@ -268,6 +325,190 @@ export default function AdminSettings() {
         </div>
       </form>
     </div>
+  );
+}
+
+/** One homepage banner: its photo, its wording, its button and its colours. */
+function HeroSlideEditor({
+  index,
+  slide,
+  total,
+  onChange,
+  onRemove,
+  onMove,
+}: {
+  index: number;
+  slide: HeroSlide;
+  total: number;
+  onChange: (s: HeroSlide) => void;
+  onRemove: () => void;
+  onMove: (dir: 1 | -1) => void;
+}) {
+  const { t } = useLang();
+  const set = <K extends keyof HeroSlide>(key: K, value: HeroSlide[K]) =>
+    onChange({ ...slide, [key]: value });
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="text-sm font-bold text-slate-900">
+          {t('Banner')} {index + 1}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            title={t('Move up')}
+            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            title={t('Move down')}
+            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            title={t('Remove this banner')}
+            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      {/* Live preview — what the banner will look like. */}
+      <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-slate-800">
+        {slide.image && (
+          <img src={slide.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+        <div
+          className="absolute inset-0"
+          style={{ background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, slide.overlay)) / 100})` }}
+        />
+        <div className="relative flex h-full flex-col justify-center gap-1.5 px-4">
+          <p className="truncate text-sm font-extrabold" style={{ color: slide.textColor }}>
+            {slide.title || t('Your headline here')}
+          </p>
+          {slide.buttonLabel && (
+            <span
+              className="w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase"
+              style={{ background: slide.buttonBg, color: slide.buttonText }}
+            >
+              {slide.buttonLabel}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <ImageField
+        label="Banner photo"
+        value={slide.image}
+        folder="site"
+        onChange={(url) => set('image', url)}
+      />
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="Small label above the headline">
+          <input
+            className="input"
+            value={slide.eyebrow}
+            onChange={(e) => set('eyebrow', e.target.value)}
+            placeholder={t('e.g. New arrivals')}
+          />
+        </Field>
+        <Field label="Headline">
+          <input
+            className="input"
+            value={slide.title}
+            onChange={(e) => set('title', e.target.value)}
+          />
+        </Field>
+      </div>
+      <Field label="Sentence under the headline">
+        <input
+          className="input"
+          value={slide.subtitle}
+          onChange={(e) => set('subtitle', e.target.value)}
+        />
+      </Field>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="Button text">
+          <input
+            className="input"
+            value={slide.buttonLabel}
+            onChange={(e) => set('buttonLabel', e.target.value)}
+            placeholder={t('Leave empty to hide the button')}
+          />
+        </Field>
+        <Field label="Button goes to">
+          <input
+            className="input"
+            dir="ltr"
+            value={slide.buttonLink}
+            onChange={(e) => set('buttonLink', e.target.value)}
+            placeholder="/shop?category=solar"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-4">
+        <ColorField label="Text colour" value={slide.textColor} onChange={(v) => set('textColor', v)} />
+        <ColorField label="Button colour" value={slide.buttonBg} onChange={(v) => set('buttonBg', v)} />
+        <ColorField
+          label="Button text colour"
+          value={slide.buttonText}
+          onChange={(v) => set('buttonText', v)}
+        />
+        <Field label="Darken photo">
+          <input
+            type="range"
+            min={0}
+            max={90}
+            value={slide.overlay}
+            onChange={(e) => set('overlay', Number(e.target.value))}
+            className="mt-2 w-full"
+          />
+          <p className="text-xs text-slate-500">{slide.overlay}%</p>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#ffffff'}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-10 flex-none cursor-pointer rounded border border-slate-300 bg-white p-0.5"
+        />
+        <input
+          className="input"
+          dir="ltr"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    </Field>
   );
 }
 
