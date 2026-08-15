@@ -396,6 +396,29 @@ const AR: Record<string, string> = {
   'New enquiry': 'استفسار جديد',
   'Open the dashboard to take a look.': 'افتح لوحة التحكم للاطلاع.',
 
+  // ---- Analytics ----
+  'How visitors are using the site and where they came from.':
+    'كيف يستخدم الزوار الموقع ومن أين جاؤوا.',
+  'Open Google Analytics': 'فتح Google Analytics',
+  Today: 'اليوم',
+  'Last 7 days': 'آخر ٧ أيام',
+  'Last 30 days': 'آخر ٣٠ يوماً',
+  'All time': 'كل الفترات',
+  'views in this period': 'مشاهدة في هذه الفترة',
+  'Page views': 'مشاهدات الصفحات',
+  Visitors: 'الزوار',
+  'Busiest day': 'أكثر يوم ازدحاماً',
+  'Views by day': 'المشاهدات حسب اليوم',
+  'Where visitors came from': 'من أين جاء الزوار',
+  'Most viewed pages': 'الصفحات الأكثر مشاهدة',
+  'Recent activity': 'النشاط الأخير',
+  'No page views in this period.': 'لا توجد مشاهدات في هذه الفترة.',
+  'No traffic in this period.': 'لا توجد زيارات في هذه الفترة.',
+  'Nothing in this period.': 'لا شيء في هذه الفترة.',
+  When: 'الوقت',
+  Page: 'الصفحة',
+  Source: 'المصدر',
+
   // ---- Notification settings ----
   Notifications: 'الإشعارات',
   'Notifications blocked': 'الإشعارات محظورة',
