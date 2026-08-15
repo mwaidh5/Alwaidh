@@ -146,14 +146,14 @@ export default function About() {
 
           {status === 'success' ? (
             <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-              <p className="font-semibold">Thanks — we received your message.</p>
-              <p className="mt-1">We'll be in touch shortly.</p>
+              <p className="font-semibold">{t('Thanks — we received your message.')}</p>
+              <p className="mt-1">{t("We'll be in touch shortly.")}</p>
               <button
                 type="button"
                 onClick={() => setStatus('idle')}
                 className="mt-3 text-sm font-semibold text-green-900 underline"
               >
-                Send another message
+                {t('Send another message')}
               </button>
             </div>
           ) : (
@@ -295,7 +295,7 @@ function Block({ icon, title, body }: { icon: string; title: string; body: strin
         <span className="text-2xl">{icon}</span>
         <h3 className="text-lg font-extrabold text-slate-900">{t(title)}</h3>
       </div>
-      <p className="mt-2 text-slate-600">{body}</p>
+      <p className="mt-2 text-slate-600">{t(body)}</p>
     </div>
   );
 }
@@ -309,10 +309,11 @@ function Field({
   required?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useLang();
   return (
     <label className="block text-sm">
       <span className="font-medium text-slate-700">
-        {label}
+        {t(label)}
         {required && <span className="ml-0.5 text-red-600">*</span>}
       </span>
       <div className="mt-1">{children}</div>
