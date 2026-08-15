@@ -4,6 +4,7 @@ import {
   enablePush,
   isNativeApp,
   notificationPrefs,
+  pushBlocker,
   pushState,
   setNotificationChannel,
   type NotificationKey,
@@ -39,6 +40,7 @@ export default function NotificationSettings({
 
   const channels = channelsFor(roles);
   const granted = state === 'granted';
+  const blocker = pushBlocker();
 
   async function turnOn() {
     setBusy(true);
@@ -73,9 +75,15 @@ export default function NotificationSettings({
         <div className="space-y-4 p-5">
           {state === 'unsupported' ? (
             <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              {t(
-                'This device cannot show notifications. In the phone app, make sure you have the latest version installed.',
-              )}
+              {blocker === 'old-app'
+                ? t(
+                    'This version of the app was built before notifications existed. Install the newest build from TestFlight (or Play Store), then open this panel again.',
+                  )
+                : blocker === 'ios-browser'
+                  ? t(
+                      'iPhone browsers only allow notifications for apps added to the Home Screen. Use the Alwaidh app, or tap Share → Add to Home Screen and open it from there.',
+                    )
+                  : t('This browser cannot show notifications. Try Chrome, or use the phone app.')}
             </p>
           ) : state === 'denied' ? (
             <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
