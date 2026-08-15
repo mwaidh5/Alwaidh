@@ -70,6 +70,11 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
+    specsList: Array.isArray(data.specsList)
+      ? (data.specsList as Record<string, unknown>[])
+          .map((r) => ({ name: String(r.name ?? ''), value: String(r.value ?? '') }))
+          .filter((r) => r.name)
+      : undefined,
     deliveryFee: typeof data.deliveryFee === 'number' ? data.deliveryFee : null,
     separateDelivery: Boolean(data.separateDelivery ?? false),
     draft: Boolean(data.draft ?? false),

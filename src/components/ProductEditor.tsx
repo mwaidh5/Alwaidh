@@ -38,8 +38,8 @@ export const EMPTY_FORM: FormState = {
 export function toFormState(p: Product): FormState {
   return {
     ...p,
-    specsText: Object.entries(p.specs)
-      .map(([k, v]) => `${k}: ${v}`)
+    specsText: specRowsOf(p)
+      .map((r) => `${r.name}: ${r.value}`)
       .join('\n'),
   };
 }
@@ -96,6 +96,9 @@ export default function ProductEditor({
         inStock: state.inStock,
         shortDescription: state.shortDescription.trim(),
         specs: parseSpecs(state.specsText),
+        // Saved alongside the map so the order survives — Firestore hands
+        // a map's keys back alphabetically.
+        specsList: parseSpecRows(state.specsText),
         deliveryFee:
           state.deliveryFee === null || state.deliveryFee === undefined
             ? null
@@ -834,16 +837,32 @@ export function Field({
   );
 }
 
-export function parseSpecs(text: string): Record<string, string> {
-  const out: Record<string, string> = {};
+/** "Name: value" lines, in the order they were written. */
+export function parseSpecRows(text: string): { name: string; value: string }[] {
+  const rows: { name: string; value: string }[] = [];
   for (const raw of text.split('\n')) {
     const line = raw.trim();
     if (!line) continue;
     const idx = line.indexOf(':');
     if (idx < 0) continue;
-    const k = line.slice(0, idx).trim();
-    const v = line.slice(idx + 1).trim();
-    if (k && v) out[k] = v;
+    const name = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (name && value) rows.push({ name, value });
   }
+  return rows;
+}
+
+export function parseSpecs(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const { name, value } of parseSpecRows(text)) out[name] = value;
   return out;
+}
+
+/** Spec rows in their saved order, falling back to older map-only records. */
+export function specRowsOf(p: {
+  specs: Record<string, string>;
+  specsList?: { name: string; value: string }[];
+}): { name: string; value: string }[] {
+  if (p.specsList?.length) return p.specsList;
+  return Object.entries(p.specs ?? {}).map(([name, value]) => ({ name, value }));
 }

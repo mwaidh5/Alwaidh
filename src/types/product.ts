@@ -23,6 +23,12 @@ export interface Product {
   inStock: boolean;
   shortDescription: string;
   specs: Record<string, string>;
+  /**
+   * The same specs in the order they were typed. Firestore returns a map's
+   * keys sorted alphabetically, which scrambled hand-ordered spec sheets —
+   * so the order is kept here and `specs` is left for older records.
+   */
+  specsList?: { name: string; value: string }[];
   datasheet?: string;   // PDF or image URL — shown on the product page
   manual?: string;      // PDF URL — offered as a download only
   deliveryFee?: number | null; // overrides the store's default delivery fee
