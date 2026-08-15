@@ -367,7 +367,7 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
         </div>
       </div>
 
-      <div className={`mx-auto ${phone ? 'w-[188px]' : 'w-full'}`}>
+      <div className={`mx-auto ${phone ? 'w-[320px] max-w-full' : 'w-full'}`}>
         <div
           className="relative overflow-hidden rounded-xl bg-slate-800"
           // Same shapes the homepage uses: 1216×512 and 343×416.
@@ -384,13 +384,13 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
           />
           <div
             className={`relative flex h-full flex-col justify-center ${
-              phone ? 'gap-1.5 px-4' : 'gap-2.5 px-8'
+              phone ? 'gap-2 px-6' : 'gap-2.5 px-8'
             }`}
           >
             {slide.eyebrow && (
               <span
                 className={`w-fit rounded-full border px-2 py-0.5 font-bold uppercase tracking-[0.15em] ${
-                  phone ? 'text-[6px]' : 'text-[9px]'
+                  phone ? 'text-[8px]' : 'text-[9px]'
                 }`}
                 style={{ color: slide.textColor, borderColor: slide.textColor }}
               >
@@ -398,14 +398,14 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
               </span>
             )}
             <p
-              className={`font-extrabold leading-tight ${phone ? 'text-sm' : 'text-2xl'}`}
+              className={`font-extrabold leading-tight ${phone ? 'text-2xl' : 'text-2xl'}`}
               style={{ color: slide.textColor }}
             >
               {slide.title || t('Your headline here')}
             </p>
             {slide.subtitle && (
               <p
-                className={`${phone ? 'line-clamp-3 text-[8px]' : 'max-w-md text-xs'} leading-snug`}
+                className={`${phone ? 'line-clamp-3 text-[11px]' : 'max-w-md text-xs'} leading-snug`}
                 style={{ color: slide.textColor, opacity: 0.85 }}
               >
                 {slide.subtitle}
@@ -414,7 +414,7 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
             {slide.buttonLabel && (
               <span
                 className={`w-fit rounded-full font-bold uppercase ${
-                  phone ? 'px-2.5 py-1 text-[7px]' : 'px-4 py-2 text-[10px]'
+                  phone ? 'px-3.5 py-1.5 text-[9px]' : 'px-4 py-2 text-[10px]'
                 }`}
                 style={{ background: slide.buttonBg, color: slide.buttonText }}
               >
