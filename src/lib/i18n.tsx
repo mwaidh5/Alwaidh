@@ -122,6 +122,19 @@ const AR: Record<string, string> = {
   products: 'منتج',
   'Explore now': 'اكتشف الآن',
   'In stock now': 'متوفر الآن',
+  'From the shop': 'من المتجر',
+  'More to explore': 'المزيد لاكتشافه',
+  'Browse everything': 'تصفّح كل شيء',
+  'Same-day dispatch in Baghdad, and across Iraq within days.':
+    'شحن في نفس اليوم داخل بغداد، وخلال أيام إلى بقية المحافظات.',
+  'Cash on delivery': 'الدفع عند الاستلام',
+  'Pay when the order reaches your door — nothing upfront.':
+    'ادفع عند وصول الطلب إلى بابك — بدون أي مبلغ مقدماً.',
+  'Easy replacement': 'استبدال سهل',
+  'Wrong item or changed your mind? Swap or return it.':
+    'وصلك منتج خاطئ أو غيّرت رأيك؟ بدّله أو أرجعه.',
+  'Everything we sell comes from the authorised source.':
+    'كل ما نبيعه يأتي من المصدر المعتمد.',
   'Shop all': 'تسوّق الكل',
   Partners: 'شركاؤنا',
   'Brands we carry': 'الماركات التي نوفّرها',
