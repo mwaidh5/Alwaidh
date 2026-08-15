@@ -5,7 +5,7 @@ import { getCategory } from '../data/categories';
 import { formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
-import { StaffProductEdit } from '../components/ProductEditor';
+import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
 import type { Product } from '../types/product';
 
@@ -145,10 +145,11 @@ export default function ProductDetail() {
           <div className="mt-8">
             <h2 className="font-semibold text-slate-900">{t('Specifications')}</h2>
             <dl className="mt-3 divide-y divide-slate-200 rounded-lg border border-slate-200">
-              {Object.entries(product.specs).map(([k, v]) => (
-                <div key={k} className="grid grid-cols-3 gap-4 px-4 py-3 text-sm">
-                  <dt className="text-slate-500">{k}</dt>
-                  <dd className="col-span-2 text-slate-900">{v}</dd>
+              {/* In the order staff typed them — see specRowsOf. */}
+              {specRowsOf(product).map((row, i) => (
+                <div key={`${row.name}-${i}`} className="grid grid-cols-3 gap-4 px-4 py-3 text-sm">
+                  <dt className="text-slate-500">{row.name}</dt>
+                  <dd className="col-span-2 text-slate-900">{row.value}</dd>
                 </div>
               ))}
             </dl>
