@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   createInvitedUser,
   deleteUser,
@@ -64,6 +66,9 @@ function withRoleAssigned(s: SiteSettings, email: string, role: AppUser['role'])
 }
 
 export default function AdminUsers() {
+  const { user, setViewAsEmail } = useAuth();
+  const navigate = useNavigate();
+  const me = user?.email?.toLowerCase() ?? '';
   const [users, setUsers] = useState<AppUser[] | null>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [error, setError] = useState('');
@@ -394,6 +399,20 @@ export default function AdminUsers() {
                         </p>
                         <p className="text-xs text-slate-500">{u.email}</p>
                       </div>
+                      {/* See the dashboard as this person sees it. */}
+                      {u.email.toLowerCase() !== me && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setViewAsEmail(u.email);
+                            navigate('/admin');
+                          }}
+                          title={`See the dashboard as ${u.displayName || u.email}`}
+                          className="ms-auto flex-none rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          👁 View as
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
