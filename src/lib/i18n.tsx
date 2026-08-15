@@ -417,7 +417,10 @@ const AR: Record<string, string> = {
   'Move down': 'تحريك للأسفل',
   'Remove this banner': 'حذف هذا البانر',
   '+ Add a banner': '+ إضافة بانر',
-  'Banner photo': 'صورة البانر',
+  'Banner photo (computer — wide)': 'صورة البانر (للحاسوب — عريضة)',
+  'Banner photo for phones (tall — optional)': 'صورة البانر للهواتف (طولية — اختيارية)',
+  'On a phone the banner is taller than it is wide, so a wide photo loses its sides. Upload a tall version here — about 720 × 880 — or leave it empty to crop the wide one.':
+    'على الهاتف يكون البانر أطول من عرضه، لذا تفقد الصورة العريضة جوانبها. ارفع نسخة طولية هنا — بحدود ٧٢٠ × ٨٨٠ — أو اتركها فارغة ليتم قص الصورة العريضة.',
   'Your headline here': 'العنوان هنا',
   'Small label above the headline': 'نص صغير فوق العنوان',
   'e.g. New arrivals': 'مثال: وصل حديثاً',
