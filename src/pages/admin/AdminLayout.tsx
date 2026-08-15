@@ -48,8 +48,19 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
 ];
 
 export default function AdminLayout() {
-  const { user, loading, isAdmin, isComputerStaff, isSolarStaff, isInstaller, hasAdminAccess, signOut } =
-    useAuth();
+  const {
+    user,
+    loading,
+    isAdmin,
+    isComputerStaff,
+    isSolarStaff,
+    isInstaller,
+    hasAdminAccess,
+    viewAs,
+    realIsAdmin,
+    setViewAsEmail,
+    signOut,
+  } = useAuth();
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const alerts = useStaffAlerts();
@@ -108,12 +119,23 @@ export default function AdminLayout() {
     }
   }, [alerts, location.pathname, navigate, t]);
 
+  // Notifications follow the real account, never the previewed one —
+  // otherwise stepping into someone else's view would quietly unsubscribe
+  // this device from topics that person doesn't have.
+  const notifyRoles = {
+    isAdmin: realIsAdmin,
+    isComputerStaff: realIsAdmin || isComputerStaff,
+    isSolarStaff: realIsAdmin || isSolarStaff,
+    isInstaller: !viewAs && isInstaller,
+  };
+
   // Keep this device's topic subscriptions in step with its switches: they
   // are lost on reinstall or when the push token is refreshed.
   useEffect(() => {
     if (push !== 'granted') return;
-    syncSubscriptions({ isAdmin, isComputerStaff, isSolarStaff, isInstaller }, user?.email ?? null);
-  }, [push, isAdmin, isComputerStaff, isSolarStaff, isInstaller, user]);
+    syncSubscriptions(notifyRoles, user?.email ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [push, realIsAdmin, isComputerStaff, isSolarStaff, isInstaller, viewAs, user]);
 
   useEffect(() => subscribeSettings(setSettings), []);
   useEffect(() => setOpen(false), [location.pathname]);
@@ -262,7 +284,7 @@ export default function AdminLayout() {
 
           {notifOpen && (
             <NotificationSettings
-              roles={{ isAdmin, isComputerStaff, isSolarStaff, isInstaller }}
+              roles={notifyRoles}
               email={user.email}
               onClose={() => {
                 setNotifOpen(false);
@@ -272,6 +294,27 @@ export default function AdminLayout() {
           )}
 
           <section className="min-w-0">
+            {viewAs && (
+              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <span>
+                  👁 {t('Viewing the dashboard as')}{' '}
+                  <span className="font-bold">{viewAs}</span>.{' '}
+                  <span className="text-amber-800">
+                    {t('Anything you do is still recorded as you.')}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewAsEmail(null);
+                    navigate('/admin/users');
+                  }}
+                  className="ms-auto rounded-md border border-amber-400 bg-white px-3 py-1.5 font-semibold text-amber-900 hover:bg-amber-100"
+                >
+                  {t('Back to my own view')}
+                </button>
+              </div>
+            )}
             {!user.emailVerified && <UnverifiedBanner email={user.email} />}
             <Outlet />
           </section>

@@ -25,6 +25,9 @@ function isNativeApp(): boolean {
 import { recordUserLogin } from '../lib/userStore';
 import { subscribeSettings, type SiteSettings } from '../lib/settingsStore';
 
+/** Where the "view as" preview is remembered — this tab only. */
+const VIEW_AS_KEY = 'alwaidh.viewAs.v1';
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -33,6 +36,11 @@ interface AuthContextValue {
   isSolarStaff: boolean; // admin OR listed as solar staff
   isInstaller: boolean; // field installer: only their assigned jobs
   hasAdminAccess: boolean; // any role that can open the dashboard
+  /** Colleague whose view is being previewed, or null. */
+  viewAs: string | null;
+  /** True when this account is really an admin, preview or not. */
+  realIsAdmin: boolean;
+  setViewAsEmail: (email: string | null) => void;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<void>;
@@ -90,28 +98,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const email = user?.email?.toLowerCase() ?? null;
 
-  const isAdmin = useMemo(() => {
+  const realIsAdmin = useMemo(() => {
     if (isAdminEmail(email)) return true;
     if (!email) return false;
     return (settings?.extraAdminEmails ?? []).includes(email);
   }, [email, settings]);
 
+  // "View as": an admin can preview the dashboard through a colleague's
+  // eyes. It only changes what this screen shows — every write is still
+  // made, and recorded, as the admin themselves.
+  const [viewAsEmail, setViewAs] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(VIEW_AS_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const viewAs = realIsAdmin ? viewAsEmail : null;
+
+  const setViewAsEmail = (next: string | null) => {
+    try {
+      if (next) sessionStorage.setItem(VIEW_AS_KEY, next.toLowerCase());
+      else sessionStorage.removeItem(VIEW_AS_KEY);
+    } catch {
+      /* private mode — the preview just won't survive a reload */
+    }
+    setViewAs(next ? next.toLowerCase() : null);
+  };
+
+  /** Whose roles the dashboard should reflect right now. */
+  const shownEmail = viewAs ?? email;
+  const listed = (list: string[] | undefined) => !!shownEmail && (list ?? []).includes(shownEmail);
+
+  const isAdmin = viewAs
+    ? isAdminEmail(shownEmail) || listed(settings?.extraAdminEmails)
+    : realIsAdmin;
+
   const isComputerStaff = useMemo(
-    () => isAdmin || (!!email && (settings?.computerStaffEmails ?? []).includes(email)),
-    [isAdmin, email, settings],
+    () => isAdmin || listed(settings?.computerStaffEmails),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAdmin, shownEmail, settings],
   );
 
   const isSolarStaff = useMemo(
-    () => isAdmin || (!!email && (settings?.solarStaffEmails ?? []).includes(email)),
-    [isAdmin, email, settings],
+    () => isAdmin || listed(settings?.solarStaffEmails),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAdmin, shownEmail, settings],
   );
 
   const isInstaller = useMemo(
-    () => !!email && (settings?.installerEmails ?? []).includes(email),
-    [email, settings],
+    () => listed(settings?.installerEmails),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shownEmail, settings],
   );
 
-  const hasAdminAccess = isAdmin || isComputerStaff || isSolarStaff || isInstaller;
+  // The real admin never loses their way back out of a preview.
+  const hasAdminAccess = realIsAdmin || isComputerStaff || isSolarStaff || isInstaller;
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -122,6 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isSolarStaff,
       isInstaller,
       hasAdminAccess,
+      viewAs,
+      realIsAdmin,
+      setViewAsEmail,
       configured: firebaseReady && auth !== null,
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
@@ -188,7 +233,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fbSignOut(auth);
       },
     }),
-    [user, loading, isAdmin, isComputerStaff, isSolarStaff, isInstaller, hasAdminAccess],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      user,
+      loading,
+      isAdmin,
+      isComputerStaff,
+      isSolarStaff,
+      isInstaller,
+      hasAdminAccess,
+      viewAs,
+      realIsAdmin,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

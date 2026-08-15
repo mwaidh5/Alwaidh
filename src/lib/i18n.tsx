@@ -396,6 +396,11 @@ const AR: Record<string, string> = {
   'New enquiry': 'استفسار جديد',
   'Open the dashboard to take a look.': 'افتح لوحة التحكم للاطلاع.',
 
+  // ---- View as ----
+  'Viewing the dashboard as': 'تعرض لوحة التحكم كـ',
+  'Anything you do is still recorded as you.': 'أي إجراء تقوم به يُسجَّل باسمك أنت.',
+  'Back to my own view': 'العودة إلى عرضي',
+
   // ---- Analytics ----
   'How visitors are using the site and where they came from.':
     'كيف يستخدم الزوار الموقع ومن أين جاؤوا.',
