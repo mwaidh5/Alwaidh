@@ -165,7 +165,9 @@ const AR: Record<string, string> = {
   'Your name': 'اسمك',
   'Phone number': 'رقم الهاتف',
   City: 'المدينة',
-  'Select your city': 'اختر مدينتك',
+  'e.g. Baghdad — Karrada': 'مثال: بغداد — الكرادة',
+  'How many amperes do you need?': 'كم أمبير تحتاج؟',
+  'e.g. 20 A': 'مثال: ٢٠ أمبير',
   Baghdad: 'بغداد',
   Basra: 'البصرة',
   Erbil: 'أربيل',
@@ -395,6 +397,24 @@ const AR: Record<string, string> = {
   'New order': 'طلب جديد',
   'New enquiry': 'استفسار جديد',
   'Open the dashboard to take a look.': 'افتح لوحة التحكم للاطلاع.',
+
+  // ---- Contact form ----
+  'Thanks — we received your message.': 'شكراً — استلمنا رسالتك.',
+  "We'll be in touch shortly.": 'سنتواصل معك قريباً.',
+  'Send another message': 'إرسال رسالة أخرى',
+
+  // ---- Admin: jobs (leftovers) ----
+  Showing: 'عرض',
+  of: 'من',
+  jobs: 'عمل',
+  'Waze link will be created automatically from this': 'سيتم إنشاء رابط Waze تلقائياً من هذا',
+  'No installers yet — add one under Users, with the role “Installer”.':
+    'لا يوجد فنيون بعد — أضف واحداً من صفحة المستخدمين بدور «فني».',
+  'Currently written down as': 'مسجَّل حالياً باسم',
+  'Drag & drop a PDF invoice here, or click to choose':
+    'اسحب وأفلت فاتورة PDF هنا، أو اضغط للاختيار',
+  'Invoice preview': 'معاينة الفاتورة',
+  'Open in new tab': 'فتح في تبويب جديد',
 
   // ---- View as ----
   'Viewing the dashboard as': 'تعرض لوحة التحكم كـ',

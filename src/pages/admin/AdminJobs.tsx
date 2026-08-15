@@ -376,36 +376,38 @@ export default function AdminJobs() {
           </span>
         </div>
         <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold">
+          {/* Named `f`, not `t` — shadowing the translate function here is
+              what left these three buttons in English. */}
           {(
             [
               { key: 'all', label: 'All' },
               { key: 'install', label: 'Installs' },
               { key: 'repair', label: 'Repairs' },
             ] as { key: 'all' | JobType; label: string }[]
-          ).map((t) => (
+          ).map((f) => (
             <button
-              key={t.key}
+              key={f.key}
               type="button"
-              onClick={() => setTypeFilter(t.key)}
+              onClick={() => setTypeFilter(f.key)}
               className={`rounded-md px-3 py-1.5 transition ${
-                typeFilter === t.key
+                typeFilter === f.key
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {t.label}
+              {t(f.label)}
             </button>
           ))}
         </div>
         {(query || typeFilter !== 'all') && (
           <p className="text-sm text-slate-500">
-            Showing {filtered.length} of {jobs?.length ?? 0} jobs
+            {t('Showing')} {filtered.length} {t('of')} {jobs?.length ?? 0} {t('jobs')}
           </p>
         )}
       </div>
 
       {jobs === null ? (
-        <p className="text-center text-sm text-slate-500">Loading…</p>
+        <p className="text-center text-sm text-slate-500">{t('Loading…')}</p>
       ) : (
         <DndContext
           sensors={sensors}
@@ -593,6 +595,7 @@ function Column({
   onDelete: (j: Job) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { t } = useLang();
   const style = STATUS_STYLES[status];
   return (
     <div
@@ -605,7 +608,7 @@ function Column({
       <div className="flex items-center justify-between border-b border-slate-100 px-3.5 py-3">
         <h2 className={`flex items-center gap-2 text-sm font-bold ${style.header}`}>
           <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
-          {useLang().t(label)}
+          {t(label)}
         </h2>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${style.badge}`}>
           {jobs.length}
@@ -629,7 +632,7 @@ function Column({
         {jobs.length === 0 && (
           <div className="flex h-24 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
             <span className="text-lg">🛠️</span>
-            <p className="mt-1 text-xs font-medium">Drag jobs here</p>
+            <p className="mt-1 text-xs font-medium">{t('Drag jobs here')}</p>
           </div>
         )}
       </div>
@@ -1002,8 +1005,8 @@ function JobDialog({
                 value={state.type}
                 onChange={(e) => setState({ ...state, type: e.target.value as JobType })}
               >
-                <option value="install">Install</option>
-                <option value="repair">Repair</option>
+                <option value="install">{t('Install')}</option>
+                <option value="repair">{t('Repair')}</option>
               </select>
             </Field>
           </div>
@@ -1019,16 +1022,16 @@ function JobDialog({
               className="input"
               value={state.mapUrl}
               onChange={(e) => setState({ ...state, mapUrl: e.target.value })}
-              placeholder="Paste a Google Maps link — Waze link is made automatically"
+              placeholder={t('Paste a Google Maps link — Waze link is made automatically')}
             />
             {state.mapUrl.trim() &&
               (wazeFromGoogleMaps(state.mapUrl, state.address) ? (
                 <p className="mt-1 text-xs font-medium text-green-700">
-                  ✅ Waze link will be created automatically from this
+                  ✅ {t('Waze link will be created automatically from this')}
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-amber-700">
-                  Couldn't read a location from this link — the Waze button will be hidden
+                  {t("Couldn't read a location from this link — the Waze button will be hidden")}
                 </p>
               ))}
           </Field>
@@ -1055,14 +1058,15 @@ function JobDialog({
                 />
               ) : (
                 <p className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-500">
-                  No installers yet — add one under Users, with the role “Installer”.
+                  {t('No installers yet — add one under Users, with the role “Installer”.')}
                 </p>
               )}
               {/* A name typed in before installers had accounts: keep showing
                   it until someone is ticked, so saving doesn't wipe it. */}
               {keepsOldName && (
                 <p className="mt-1 text-xs text-slate-500">
-                  Currently written down as <span className="font-semibold">{state.installer}</span>
+                  {t('Currently written down as')}{' '}
+                  <span className="font-semibold">{state.installer}</span>
                 </p>
               )}
             </Field>
@@ -1091,10 +1095,10 @@ function JobDialog({
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3">
           <button type="button" onClick={onCancel} className="btn-secondary" disabled={busy}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="button" onClick={onSave} className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
+            {busy ? t('Saving…') : t('Save')}
           </button>
         </div>
       </div>
@@ -1161,6 +1165,7 @@ function InvoiceField({
   setState: (s: FormState) => void;
   onPreview: (url: string) => void;
 }) {
+  const { t } = useLang();
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -1183,7 +1188,7 @@ function InvoiceField({
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Invoice (PDF)
+        {t('Invoice (PDF)')}
       </label>
       {state.invoiceUrl ? (
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -1196,14 +1201,14 @@ function InvoiceField({
             onClick={() => onPreview(state.invoiceUrl)}
             className="text-sm font-semibold text-brand-700 hover:underline"
           >
-            Preview
+            {t('Preview')}
           </button>
           <button
             type="button"
             onClick={() => setState({ ...state, invoiceUrl: '', invoiceName: '' })}
             className="text-sm font-semibold text-red-700 hover:underline"
           >
-            Remove
+            {t('Remove')}
           </button>
         </div>
       ) : (
@@ -1225,12 +1230,12 @@ function InvoiceField({
           }`}
         >
           {uploading ? (
-            <span className="text-slate-600">Uploading…</span>
+            <span className="text-slate-600">{t('Uploading…')}</span>
           ) : (
             <>
               <span className="text-2xl">📄</span>
               <span className="mt-1 text-slate-600">
-                Drag &amp; drop a PDF invoice here, or click to choose
+                {t('Drag & drop a PDF invoice here, or click to choose')}
               </span>
             </>
           )}
@@ -1260,7 +1265,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-800">Invoice preview</span>
+          <span className="text-sm font-semibold text-slate-800">{t('Invoice preview')}</span>
           <div className="flex gap-4 text-sm">
             <a
               href={url}
@@ -1268,7 +1273,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
               rel="noreferrer"
               className="font-semibold text-brand-700 hover:underline"
             >
-              Open in new tab
+              {t('Open in new tab')}
             </a>
             <button
               type="button"

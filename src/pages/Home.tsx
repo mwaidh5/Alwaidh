@@ -450,7 +450,7 @@ function SolarQuote({ logo }: { logo?: string }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  const [bill, setBill] = useState('');
+  const [amps, setAmps] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -469,7 +469,7 @@ function SolarQuote({ logo }: { logo?: string }) {
         email: '',
         phone: phone.trim(),
         subject: 'Solar quote request',
-        message: [`City: ${city || '—'}`, `Monthly bill: ${bill || '—'}`].join('\n'),
+        message: [`City: ${city || '—'}`, `Amperes needed: ${amps || '—'}`].join('\n'),
       });
       setDone(true);
     } catch {
@@ -559,26 +559,24 @@ function SolarQuote({ logo }: { logo?: string }) {
                   />
                 </Labelled>
               </div>
-              <Labelled label="City">
-                <select className="input" value={city} onChange={(e) => setCity(e.target.value)}>
-                  <option value="">{t('Select your city')}</option>
-                  {['Baghdad', 'Basra', 'Erbil', 'Mosul', 'Najaf'].map((c) => (
-                    <option key={c} value={c}>
-                      {t(c)}
-                    </option>
-                  ))}
-                </select>
-              </Labelled>
-              <Labelled label="Average monthly bill">
-                <select className="input" value={bill} onChange={(e) => setBill(e.target.value)}>
-                  <option value="">{t('Select a range')}</option>
-                  {['Under 50,000 IQD', '50,000 – 150,000 IQD', 'Over 150,000 IQD'].map((b) => (
-                    <option key={b} value={b}>
-                      {t(b)}
-                    </option>
-                  ))}
-                </select>
-              </Labelled>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Labelled label="City">
+                  <input
+                    className="input"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder={t('e.g. Baghdad — Karrada')}
+                  />
+                </Labelled>
+                <Labelled label="How many amperes do you need?">
+                  <input
+                    className="input"
+                    value={amps}
+                    onChange={(e) => setAmps(e.target.value)}
+                    placeholder={t('e.g. 20 A')}
+                  />
+                </Labelled>
+              </div>
               {error && <p className="text-xs text-red-700">{error}</p>}
               <button
                 type="submit"
