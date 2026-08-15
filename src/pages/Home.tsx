@@ -79,13 +79,18 @@ export default function Home() {
               i === slide ? 'opacity-100' : 'pointer-events-none opacity-0'
             }`}
           >
-            {/* The photo fills the whole banner, edge to edge. */}
-            <img
-              src={s.image}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-              loading={i === 0 ? 'eager' : 'lazy'}
-            />
+            {/* The photo fills the whole banner. Phones get the taller crop
+                when one has been uploaded — the banner is portrait there, so
+                a wide photo would lose its left and right edges. */}
+            <picture>
+              {s.mobileImage && <source media="(max-width: 639px)" srcSet={s.mobileImage} />}
+              <img
+                src={s.image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                loading={i === 0 ? 'eager' : 'lazy'}
+              />
+            </picture>
             {/* Darkened just enough that the words stay readable. */}
             <div
               className="absolute inset-0"

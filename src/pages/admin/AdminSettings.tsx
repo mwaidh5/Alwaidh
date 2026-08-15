@@ -242,6 +242,7 @@ export default function AdminSettings() {
                 ...(settings.heroSlides ?? []),
                 {
                   image: '',
+                  mobileImage: '',
                   eyebrow: '',
                   title: 'New banner',
                   subtitle: '',
@@ -440,11 +441,24 @@ function HeroSlideEditor({
       </div>
 
       <ImageField
-        label="Banner photo"
+        label="Banner photo (computer — wide)"
         value={slide.image}
         folder="site"
         onChange={(url) => set('image', url)}
       />
+      <div className="mt-3">
+        <ImageField
+          label="Banner photo for phones (tall — optional)"
+          value={slide.mobileImage}
+          folder="site"
+          onChange={(url) => set('mobileImage', url)}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          {t(
+            'On a phone the banner is taller than it is wide, so a wide photo loses its sides. Upload a tall version here — about 720 × 880 — or leave it empty to crop the wide one.',
+          )}
+        </p>
+      </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Field label="Small label above the headline">
