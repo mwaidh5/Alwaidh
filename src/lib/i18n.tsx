@@ -422,6 +422,10 @@ const AR: Record<string, string> = {
   'On a phone the banner is taller than it is wide, so a wide photo loses its sides. Upload a tall version here — about 720 × 880 — or leave it empty to crop the wide one.':
     'على الهاتف يكون البانر أطول من عرضه، لذا تفقد الصورة العريضة جوانبها. ارفع نسخة طولية هنا — بحدود ٧٢٠ × ٨٨٠ — أو اتركها فارغة ليتم قص الصورة العريضة.',
   'Your headline here': 'العنوان هنا',
+  '🖥️ Computer': '🖥️ حاسوب',
+  '📱 Phone': '📱 هاتف',
+  'No phone photo yet — the wide one is being cropped to fit.':
+    'لا توجد صورة للهاتف بعد — يتم قص الصورة العريضة لتناسب المساحة.',
   'Small label above the headline': 'نص صغير فوق العنوان',
   'e.g. New arrivals': 'مثال: وصل حديثاً',
   Headline: 'العنوان',
