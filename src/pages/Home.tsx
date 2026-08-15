@@ -63,11 +63,14 @@ export default function Home() {
   return (
     <div className="bg-white">
       {/* ---------------- Hero banner ---------------- */}
-      <section
-        className="relative h-[26rem] w-full overflow-hidden bg-slate-900 sm:h-[32rem]"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
+      {/* Sits in the page's usual centred column; inside it the photo fills
+          the whole banner, with the wording laid over the top. */}
+      <section className="container-page pt-6">
+        <div
+          className="relative h-[26rem] overflow-hidden rounded-3xl bg-slate-900 sm:h-[32rem]"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
         {slides.map((s, i) => (
           <div
             key={i}
@@ -88,7 +91,7 @@ export default function Home() {
               className="absolute inset-0"
               style={{ background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, s.overlay)) / 100})` }}
             />
-            <div className="container-page relative flex h-full flex-col justify-center gap-4">
+            <div className="relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14">
               {s.eyebrow && (
                 <span
                   className="self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] ring-1 ring-inset"
@@ -161,6 +164,7 @@ export default function Home() {
             </button>
           </div>
         )}
+        </div>
       </section>
 
       {/* ---------------- Promo banners ---------------- */}

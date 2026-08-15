@@ -95,7 +95,7 @@ export default function AdminSettings() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Section title="Storefront">
+        <Section title="Storefront" hint="Shop name, contact details and currency." defaultOpen>
           <Grid>
             <Field label="Store name">
               <input
@@ -130,7 +130,7 @@ export default function AdminSettings() {
           </Grid>
         </Section>
 
-        <Section title="Checkout">
+        <Section title="Checkout" hint="Tax, delivery fee and whether customers can order.">
           <Grid>
             <Field label="Tax rate (%)">
               <input
@@ -161,7 +161,7 @@ export default function AdminSettings() {
           />
         </Section>
 
-        <Section title="Site behaviour">
+        <Section title="Site behaviour" hint="Maintenance mode and the announcement bar.">
           <Toggle
             label="Show solar prices link"
             description="Show the Solar Prices page link in the site navigation."
@@ -184,7 +184,7 @@ export default function AdminSettings() {
           </Field>
         </Section>
 
-        <Section title="Product sub-categories">
+        <Section title="Product sub-categories" hint="The groups staff can file products under.">
           <p className="text-sm text-slate-600">
             {t(
               'Group products inside a category — for example Laptops, Desktops and Printers under Computers. One per line; staff pick from these when editing a product, and shoppers can filter by them.',
@@ -202,10 +202,10 @@ export default function AdminSettings() {
           ))}
         </Section>
 
-        <Section title="Homepage banners">
+        <Section title="Homepage banners" hint="The big banners at the top of the homepage.">
           <p className="text-sm text-slate-600">
             {t(
-              'The big banners at the top of the homepage. Each one is a full-width photo with wording and a button over it — change the words, the colours and where the button goes.',
+              'Each banner is a photo with wording and a button over it. Tap one to change its words, colours and where the button goes.',
             )}
           </p>
           {(settings.heroSlides ?? []).map((slide, i) => (
@@ -257,7 +257,7 @@ export default function AdminSettings() {
           </button>
         </Section>
 
-        <Section title="Site images">
+        <Section title="Site images" hint="Logo, category tiles and brand logos.">
           <p className="text-sm text-slate-600">
             {t('Replace the main images used across the website. Changes go live as soon as you save.')}
           </p>
@@ -345,16 +345,45 @@ function HeroSlideEditor({
   onMove: (dir: 1 | -1) => void;
 }) {
   const { t } = useLang();
+  const [open, setOpen] = useState(false);
   const set = <K extends keyof HeroSlide>(key: K, value: HeroSlide[K]) =>
     onChange({ ...slide, [key]: value });
 
   return (
-    <div className="rounded-xl border border-slate-200 p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-sm font-bold text-slate-900">
-          {t('Banner')} {index + 1}
-        </p>
-        <div className="flex items-center gap-1">
+    <div className="overflow-hidden rounded-xl border border-slate-200">
+      {/* Collapsed row: a thumbnail and the headline, enough to tell the
+          banners apart without opening any of them. */}
+      <div className="flex items-center gap-3 p-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="relative h-12 w-20 flex-none overflow-hidden rounded-md bg-slate-800">
+            {slide.image && (
+              <img src={slide.image} alt="" className="h-full w-full object-cover" />
+            )}
+            <span
+              className="absolute inset-0"
+              style={{
+                background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, slide.overlay)) / 100})`,
+              }}
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              {t('Banner')} {index + 1}
+            </span>
+            <span className="block truncate text-sm font-bold text-slate-900">
+              {slide.title || t('Your headline here')}
+            </span>
+          </span>
+          <span className={`ms-auto flex-none text-slate-400 transition ${open ? 'rotate-180' : ''}`}>
+            ▾
+          </span>
+        </button>
+        <div className="flex flex-none items-center gap-1">
           <button
             type="button"
             onClick={() => onMove(-1)}
@@ -384,6 +413,8 @@ function HeroSlideEditor({
         </div>
       </div>
 
+      {!open ? null : (
+        <div className="border-t border-slate-100 p-4">
       {/* Live preview — what the banner will look like. */}
       <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-slate-800">
         {slide.image && (
@@ -479,6 +510,8 @@ function HeroSlideEditor({
           <p className="text-xs text-slate-500">{slide.overlay}%</p>
         </Field>
       </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -512,11 +545,39 @@ function ColorField({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * A settings group that stays folded away until it's needed, so the page
+ * is a short list of headings rather than one long scroll. The first one
+ * opens by default so the page doesn't look empty.
+ */
+function Section({
+  title,
+  hint,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const { t } = useLang();
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="card p-5">
-      <h2 className="text-base font-bold text-slate-900">{useLang().t(title)}</h2>
-      <div className="mt-3 space-y-4">{children}</div>
+    <div className="card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-slate-50"
+      >
+        <span>
+          <span className="block text-base font-bold text-slate-900">{t(title)}</span>
+          {hint && <span className="mt-0.5 block text-xs text-slate-500">{t(hint)}</span>}
+        </span>
+        <span className={`flex-none text-slate-400 transition ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && <div className="space-y-4 border-t border-slate-100 p-5">{children}</div>}
     </div>
   );
 }
