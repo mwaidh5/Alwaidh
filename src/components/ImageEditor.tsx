@@ -46,6 +46,7 @@ export default function ImageEditor({
   const imgRef = useRef<HTMLImageElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragMode | null>(null);
+  const localInput = useRef<HTMLInputElement>(null);
 
   // Load the original into a local working copy.
   useEffect(() => {
@@ -62,7 +63,13 @@ export default function ImageEditor({
       .catch((e) => {
         if (cancelled) return;
         const raw = e instanceof Error ? e.message : 'Could not open the image.';
-        setError(raw.startsWith('SOURCE_UNREADABLE:') ? raw.slice(18).trim() : raw);
+        const friendly = raw.startsWith('SOURCE_UNREADABLE:') ? raw.slice(18).trim() : raw;
+        // "Failed to fetch" means nothing to the person reading it.
+        setError(
+          /failed to fetch|networkerror|load failed/i.test(friendly)
+            ? 'Could not download this image — it may come from another website, or a firewall or antivirus is blocking it. Pick the photo from this device instead.'
+            : friendly,
+        );
         setBusy(null);
       });
     return () => {
@@ -71,6 +78,18 @@ export default function ImageEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Fallback when the original can't be downloaded: edit a local copy. */
+  function useLocalFile(file: File) {
+    setError('');
+    setWorkUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(file);
+    });
+    setIsPng(file.type === 'image/png');
+    setCrop(FULL);
+    setDirty(true);
+  }
 
   function swapWork(blob: Blob) {
     setWorkUrl((old) => {
@@ -309,8 +328,30 @@ export default function ImageEditor({
               </div>
             </div>
           ) : (
-            <p className="py-16 text-center text-sm text-slate-500">{t('Could not open the image.')}</p>
+            <div className="py-12 text-center">
+              <p className="mx-auto max-w-sm text-sm text-slate-600">
+                {error || t('Could not open the image.')}
+              </p>
+              <button
+                type="button"
+                onClick={() => localInput.current?.click()}
+                className="btn-secondary mt-4"
+              >
+                📁 {t('Choose the photo from this device')}
+              </button>
+            </div>
           )}
+          <input
+            ref={localInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) useLocalFile(f);
+            }}
+          />
 
           {workUrl && (
             <>
@@ -338,7 +379,8 @@ export default function ImageEditor({
               </div>
             </>
           )}
-          {error && <p className="mt-3 text-center text-xs text-red-700">{error}</p>}
+          {/* Once something is loaded, errors sit under the toolbar. */}
+          {error && workUrl && <p className="mt-3 text-center text-xs text-red-700">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">

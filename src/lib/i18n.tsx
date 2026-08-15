@@ -297,6 +297,9 @@ const AR: Record<string, string> = {
   'Drag the corners to crop. The rest is dimmed and will be cut away.':
     'اسحب الزوايا للقص. الجزء المعتم سيُقتطع.',
   'Could not open the image.': 'تعذر فتح الصورة.',
+  'Choose the photo from this device': 'اختر الصورة من هذا الجهاز',
+  'Could not download this image — it may come from another website, or a firewall or antivirus is blocking it. Pick the photo from this device instead.':
+    'تعذر تنزيل هذه الصورة — قد تكون من موقع آخر، أو أن جدار حماية أو مضاد فيروسات يمنع تنزيلها. اختر الصورة من هذا الجهاز بدلاً من ذلك.',
   'Background removal could not load its AI model. Check your internet connection and try again.':
     'تعذر تحميل نموذج الذكاء الاصطناعي لإزالة الخلفية. تحقق من اتصال الإنترنت وحاول مجدداً.',
   'This device ran out of memory running the AI. Try on a computer instead.':

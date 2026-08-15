@@ -164,3 +164,17 @@
     }
   }
 }
+
+/* iPhones zoom the page in when you tap a field whose text is under 16px,
+   and leave no obvious way back out. Keeping form text at 16px on touch
+   screens removes the cause; the viewport's maximum-scale covers the rest.
+   Outside every layer and marked important so the type-size utilities on
+   individual inputs can't undo it. Desktop keeps the smaller type — no
+   browser zooms there. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
