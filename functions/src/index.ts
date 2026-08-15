@@ -5,7 +5,7 @@
  * devices subscribe to the topics their role covers (see src/lib/push.ts in
  * the web app). Topics avoid storing and expiring device tokens.
  */
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
@@ -20,6 +20,7 @@ setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 
 export const TOPICS = {
   jobs: 'staff-jobs',
+  jobActivity: 'staff-job-activity',
   orders: 'staff-orders',
   messages: 'staff-messages',
 } as const;
@@ -71,6 +72,46 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
     `🛠️ ${kind}: ${customer}`,
     [system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
     '/admin/jobs',
+  );
+});
+
+/**
+ * Anything that happens to a job: a comment, an edit, or a move between
+ * columns. Every one of those already writes a line to the job's activity
+ * log, so watching that one collection covers them all. "created" is
+ * skipped — notifyNewJob has just announced it.
+ */
+export const notifyJobActivity = onDocumentCreated(
+  'jobs/{jobId}/activity/{entryId}',
+  async (event) => {
+    const entry = event.data?.data();
+    if (!entry || entry.kind === 'created') return;
+    const snap = await getFirestore().doc(`jobs/${event.params.jobId}`).get();
+    const customer = preview(snap.data()?.customer, 40) || 'a job';
+    const who = preview(String(entry.by ?? '').split('@')[0], 24) || 'Someone';
+    const icon = entry.kind === 'comment' ? '💬' : entry.kind === 'status' ? '🔄' : '✏️';
+    await push(
+      TOPICS.jobActivity,
+      `${icon} ${customer}`,
+      entry.kind === 'comment'
+        ? `${who}: ${preview(entry.text)}`
+        : `${who} — ${preview(entry.text) || 'updated this job'}`,
+      '/admin/jobs',
+    );
+  },
+);
+
+/** An order moving through its stages (paid, shipped, cancelled…). */
+export const notifyOrderUpdate = onDocumentUpdated('orders/{orderId}', async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after || before.status === after.status) return;
+  const name = preview(after.customerName, 40) || 'A customer';
+  await push(
+    TOPICS.orders,
+    `🧾 Order ${preview(after.status, 20)}`,
+    `${name}${after.customerPhone ? ` · ${preview(after.customerPhone, 20)}` : ''}`,
+    '/admin/orders',
   );
 });
 
