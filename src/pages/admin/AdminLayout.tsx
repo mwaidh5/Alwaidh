@@ -7,13 +7,15 @@ import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
 import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
 import {
-  enablePush,
   handlePushTaps,
+  isChannelOn,
   isNativeApp,
   pushState,
-  topicsFor,
+  syncSubscriptions,
+  type NotificationKey,
   type PushState,
 } from '../../lib/push';
+import NotificationSettings from '../../components/NotificationSettings';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar
@@ -52,6 +54,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const alerts = useStaffAlerts();
   const [push, setPush] = useState<PushState>('unsupported');
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // Notification permission state, and tapping a notification opens its page.
   useEffect(() => {
@@ -67,31 +70,50 @@ export default function AdminLayout() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   // Website notifications: while a dashboard tab is open (even in the
-  // background), a rise in chat unread fires a browser notification. The
-  // native app skips this — FCM already pings it.
-  const prevChatUnread = useRef<number | null>(null);
+  // background), anything new fires a browser notification, honouring the
+  // same switches as the app. The native app skips this — FCM pings it.
+  const previous = useRef<Record<AlertKey, number> | null>(null);
   useEffect(() => {
-    const prev = prevChatUnread.current;
-    prevChatUnread.current = alerts.chat;
-    if (prev === null || alerts.chat <= prev) return; // first load or nothing new
+    const prev = previous.current;
+    previous.current = { ...alerts };
+    if (!prev) return; // first load: nothing to compare against
     if (isNativeApp() || typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
-    // Reading the thread right now — no need to interrupt.
-    if (location.pathname === '/admin/chat' && !document.hidden) return;
-    try {
-      const n = new Notification(t('New chat message'), {
-        body: t('A visitor wrote in the website chat. Tap to reply.'),
-        tag: 'alwaidh-chat', // newer messages replace the old bubble, no pile-up
-      });
-      n.onclick = () => {
-        window.focus();
-        navigate('/admin/chat');
-        n.close();
-      };
-    } catch {
-      /* some browsers only allow notifications from a service worker */
+
+    const rules: { key: AlertKey; channel: NotificationKey; path: string; title: string }[] = [
+      { key: 'chat', channel: 'messages', path: '/admin/chat', title: 'New chat message' },
+      { key: 'team', channel: 'team', path: '/admin/team', title: 'New team message' },
+      { key: 'jobs', channel: 'jobs', path: '/admin/jobs', title: 'New solar job' },
+      { key: 'orders', channel: 'orders', path: '/admin/orders', title: 'New order' },
+      { key: 'submissions', channel: 'messages', path: '/admin/submissions', title: 'New enquiry' },
+    ];
+    for (const rule of rules) {
+      if (alerts[rule.key] <= prev[rule.key]) continue; // nothing new here
+      if (!isChannelOn(rule.channel)) continue; // switched off
+      // Looking at that page right now — no need to interrupt.
+      if (location.pathname === rule.path && !document.hidden) continue;
+      try {
+        const n = new Notification(t(rule.title), {
+          body: t('Open the dashboard to take a look.'),
+          tag: `alwaidh-${rule.key}`, // newer ones replace the old bubble
+        });
+        n.onclick = () => {
+          window.focus();
+          navigate(rule.path);
+          n.close();
+        };
+      } catch {
+        /* some browsers only allow notifications from a service worker */
+      }
     }
-  }, [alerts.chat, location.pathname, navigate, t]);
+  }, [alerts, location.pathname, navigate, t]);
+
+  // Keep this device's topic subscriptions in step with its switches: they
+  // are lost on reinstall or when the push token is refreshed.
+  useEffect(() => {
+    if (push !== 'granted') return;
+    syncSubscriptions({ isAdmin, isComputerStaff, isSolarStaff, isInstaller }, user?.email ?? null);
+  }, [push, isAdmin, isComputerStaff, isSolarStaff, isInstaller, user]);
 
   useEffect(() => subscribeSettings(setSettings), []);
   useEffect(() => setOpen(false), [location.pathname]);
@@ -204,35 +226,21 @@ export default function AdminLayout() {
                   <p className="truncate">
                     {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
                   </p>
-                  {push !== 'unsupported' && (
-                    <button
-                      type="button"
-                      disabled={push === 'granted'}
-                      onClick={async () =>
-                        setPush(
-                          await enablePush(
-                            topicsFor({
-                              isAdmin,
-                              isSolarStaff,
-                              isComputerStaff,
-                              email: user.email,
-                            }),
-                          ),
-                        )
-                      }
-                      className={`mt-2 w-full rounded-md border px-3 py-1.5 text-sm font-semibold ${
-                        push === 'granted'
-                          ? 'border-green-300 bg-green-50 text-green-800'
-                          : 'border-slate-300 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {push === 'granted'
-                        ? `🔔 ${t('Notifications on')}`
-                        : push === 'denied'
-                          ? `🔕 ${t('Notifications blocked — enable them in phone settings')}`
-                          : `🔔 ${t('Turn on notifications')}`}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setNotifOpen(true)}
+                    className={`mt-2 w-full rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                      push === 'granted'
+                        ? 'border-green-300 bg-green-50 text-green-800'
+                        : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {push === 'granted'
+                      ? `🔔 ${t('Notifications')}`
+                      : push === 'denied'
+                        ? `🔕 ${t('Notifications blocked')}`
+                        : `🔔 ${t('Turn on notifications')}`}
+                  </button>
                   <button
                     type="button"
                     onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
@@ -251,6 +259,17 @@ export default function AdminLayout() {
               </nav>
             </div>
           </aside>
+
+          {notifOpen && (
+            <NotificationSettings
+              roles={{ isAdmin, isComputerStaff, isSolarStaff, isInstaller }}
+              email={user.email}
+              onClose={() => {
+                setNotifOpen(false);
+                pushState().then(setPush);
+              }}
+            />
+          )}
 
           <section className="min-w-0">
             {!user.emailVerified && <UnverifiedBanner email={user.email} />}

@@ -301,6 +301,36 @@ const AR: Record<string, string> = {
     'تعذر الإرسال — تحقق من الاتصال وحاول مجدداً.',
   Messages: 'الرسائل',
   'New chat message': 'رسالة دردشة جديدة',
+  'New team message': 'رسالة جديدة من الفريق',
+  'New solar job': 'عمل طاقة شمسية جديد',
+  'New order': 'طلب جديد',
+  'New enquiry': 'استفسار جديد',
+  'Open the dashboard to take a look.': 'افتح لوحة التحكم للاطلاع.',
+
+  // ---- Notification settings ----
+  Notifications: 'الإشعارات',
+  'Notifications blocked': 'الإشعارات محظورة',
+  'Turning on…': 'جاري التفعيل…',
+  'Notifications are on for this device.': 'الإشعارات مفعّلة على هذا الجهاز.',
+  'Get a notification on this device when something needs you.':
+    'احصل على إشعار على هذا الجهاز عندما يستجد شيء يخصك.',
+  'This device cannot show notifications. In the phone app, make sure you have the latest version installed.':
+    'هذا الجهاز لا يدعم الإشعارات. في تطبيق الهاتف، تأكد من تثبيت أحدث إصدار.',
+  'Notifications are blocked. Allow them for Alwaidh in your phone or browser settings, then come back.':
+    'الإشعارات محظورة. اسمح بها لتطبيق الوايذ من إعدادات الهاتف أو المتصفح ثم عد إلى هنا.',
+  'Tell me about': 'أبلغني عن',
+  'New solar jobs': 'أعمال شمسية جديدة',
+  'When a job is added to the board.': 'عند إضافة عمل جديد إلى اللوحة.',
+  'Job comments & changes': 'تعليقات وتعديلات الأعمال',
+  'Comments, edits, and moves between columns.': 'التعليقات والتعديلات والنقل بين الأعمدة.',
+  'New orders and status changes.': 'الطلبات الجديدة وتغيّر حالتها.',
+  'Customer messages': 'رسائل الزبائن',
+  'Website chat and contact-form enquiries.': 'دردشة الموقع واستفسارات نموذج التواصل.',
+  'Messages from colleagues, and @ tags.': 'رسائل الزملاء والإشارات بـ @.',
+  'These settings apply to this phone only.': 'هذه الإعدادات تخص هذا الهاتف فقط.',
+  'In a browser, notifications arrive while a dashboard tab is open.':
+    'في المتصفح، تصل الإشعارات ما دامت لوحة التحكم مفتوحة في تبويب.',
+  Done: 'تم',
   'A visitor wrote in the website chat. Tap to reply.':
     'كتب زائر في دردشة الموقع. اضغط للرد.',
   'Conversations from the chat bubble on the website appear here.':
