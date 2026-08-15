@@ -22,13 +22,48 @@ type DragMode =
  * the background out — all on a working copy. Nothing touches the product
  * until Save, which hands the finished bytes back to the caller.
  */
+/**
+ * Second route to the pixels: let the browser load the picture as an
+ * ordinary image and copy it off a canvas.
+ *
+ * Some security extensions and antivirus web shields block a page's
+ * download requests while still letting images render — which is exactly
+ * how this failed on one PC but not the phone. An <img> load is a
+ * different kind of request and usually sails past them.
+ */
+async function blobFromImageElement(url: string): Promise<Blob> {
+  const img = new Image();
+  // Needed to read the pixels back out; the bucket allows it.
+  img.crossOrigin = 'anonymous';
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Could not load this image.'));
+    img.src = `${url}${url.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('This browser cannot edit images.');
+  ctx.drawImage(img, 0, 0);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Could not read this image.'))),
+      'image/png',
+    ),
+  );
+}
+
 export default function ImageEditor({
   getSource,
+  sourceUrl,
   onCancel,
   onSave,
 }: {
   /** Fetches the original bytes (the caller knows how to reach Storage). */
   getSource: () => Promise<Blob>;
+  /** The image's address, used as a fallback route when the download fails. */
+  sourceUrl?: string;
   onCancel: () => void;
   /** Receives the edited image; the caller uploads and swaps it in. */
   onSave: (file: File) => Promise<void>;
@@ -53,6 +88,11 @@ export default function ImageEditor({
     let url = '';
     let cancelled = false;
     getSource()
+      // The download was refused — try loading it as a plain image instead.
+      .catch((first) => {
+        if (!sourceUrl) throw first;
+        return blobFromImageElement(sourceUrl);
+      })
       .then((blob) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);

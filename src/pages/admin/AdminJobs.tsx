@@ -215,9 +215,12 @@ export default function AdminJobs() {
         ),
       );
     }
-    // The installer's query filters by assignee, which rules out an
-    // "order by" on the server — so keep the columns tidy here.
-    return [...list].sort((a, b) => a.order - b.order);
+    // Newest job at the top of its column. `order` is a timestamp taken
+    // when the card was added or last moved, so sorting on it descending
+    // puts the most recent work first; createdAt breaks any tie.
+    return [...list].sort(
+      (a, b) => b.order - a.order || (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0),
+    );
   }, [jobs, typeFilter, query]);
 
   const byStatus = useMemo(() => {
