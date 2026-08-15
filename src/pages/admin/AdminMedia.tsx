@@ -475,6 +475,7 @@ export default function AdminMedia() {
       {editing && (
         <ImageEditor
           getSource={() => fetchOriginal(editing)}
+          sourceUrl={editing.url}
           onCancel={() => setEditing(null)}
           onSave={(file) => saveEdited(editing, file)}
         />

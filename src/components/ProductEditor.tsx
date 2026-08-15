@@ -738,6 +738,7 @@ export function ProductDialog({
       {editingImage !== null && state.images[editingImage] && (
         <ImageEditor
           getSource={() => readSourceImage(state.images[editingImage])}
+          sourceUrl={state.images[editingImage]}
           onCancel={() => setEditingImage(null)}
           onSave={async (file) => {
             // Upload the edited copy and swap it into the same slot; the
