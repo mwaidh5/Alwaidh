@@ -51,3 +51,10 @@ public/imgly-data/
 android/key.properties
 *.jks
 *.keystore
+
+# Build artefacts. vite.config.js in particular shadows vite.config.ts,
+# so a stale copy silently overrides the real config.
+vite.config.js
+vite.config.d.ts
+vite.config.js.timestamp-*.mjs
+*.tsbuildinfo
