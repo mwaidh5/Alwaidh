@@ -180,6 +180,7 @@ export default function AdminJobs() {
     };
   }, []);
 
+  const installerName = (email: string) => installerNames[email] || prettyHandle(email);
   const onlyMine = installerOnly ? myEmail : '';
   const rolesReady = installerEmails !== null;
   useEffect(() => {
@@ -313,8 +314,8 @@ export default function AdminJobs() {
               : t('Track installs and repairs. Drag a card between columns to update its status.')}
           </p>
         </div>
-        {!installerOnly && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {!installerOnly && (
             <button
               type="button"
               onClick={() => setTrashOpen(true)}
@@ -323,18 +324,26 @@ export default function AdminJobs() {
             >
               🗑️ {t('Trash')}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError('');
-                setEditing({ ...EMPTY, order: Date.now() });
-              }}
-              className="btn-primary"
-            >
-              {t('+ New job')}
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setEditing({
+                ...EMPTY,
+                order: Date.now(),
+                // An installer's own job: they're on it from the start, so
+                // it stays visible to them once saved.
+                ...(installerOnly
+                  ? { installerEmails: [myEmail], installer: installerName(myEmail) }
+                  : {}),
+              });
+            }}
+            className="btn-primary"
+          >
+            {t('+ New job')}
+          </button>
+        </div>
       </header>
 
       {error && (

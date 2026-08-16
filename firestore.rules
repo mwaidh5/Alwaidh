@@ -152,6 +152,11 @@ service cloud.firestore {
         && request.auth.token.email in resource.data.installerEmails
         && request.auth.token.email in request.resource.data.installerEmails
         && !('deletedAt' in request.resource.data);
+      // An installer can log a job themselves — a call-out they were sent
+      // to directly — as long as they put themselves on it, so it can't be
+      // used to create work for someone else.
+      allow create: if isInstaller()
+        && request.auth.token.email in request.resource.data.installerEmails;
 
       // History and comments for a job. Entries are a record of what
       // happened, so they can be added and read but never rewritten;
