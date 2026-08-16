@@ -537,8 +537,9 @@ const AR: Record<string, string> = {
   'Website chat and contact-form enquiries.': 'دردشة الموقع واستفسارات نموذج التواصل.',
   'Messages from colleagues, and @ tags.': 'رسائل الزملاء والإشارات بـ @.',
   'These settings apply to this phone only.': 'هذه الإعدادات تخص هذا الهاتف فقط.',
-  'In a browser, notifications arrive while a dashboard tab is open.':
-    'في المتصفح، تصل الإشعارات ما دامت لوحة التحكم مفتوحة في تبويب.',
+  'These settings apply to this browser only.': 'هذه الإعدادات تخص هذا المتصفح فقط.',
+  'In this browser, notifications only arrive while a dashboard tab is open.':
+    'في هذا المتصفح، تصل الإشعارات فقط ما دامت لوحة التحكم مفتوحة في تبويب.',
   Done: 'تم',
   'A visitor wrote in the website chat. Tap to reply.':
     'كتب زائر في دردشة الموقع. اضغط للرد.',

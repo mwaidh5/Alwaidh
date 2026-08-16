@@ -38,6 +38,8 @@ export default defineConfig({
         // The app talks to Firebase live; only precache the shell.
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,svg,png}'],
+        // Firebase registers this one itself, on its own scope.
+        globIgnores: ['firebase-messaging-sw.js'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),

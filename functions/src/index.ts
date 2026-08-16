@@ -6,6 +6,7 @@
  * the web app). Topics avoid storing and expiring device tokens.
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
@@ -71,6 +72,35 @@ function preview(text: unknown, max = 80): string {
   const s = String(text ?? '').replace(/\s+/g, ' ').trim();
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
+
+/**
+ * Point a browser at the same topics the phone app uses.
+ *
+ * The web SDK can't subscribe itself to a topic — only a server can — so
+ * the dashboard hands its push token here and this does it. Without this,
+ * a site installed from the browser only ever gets the notifications a
+ * running tab draws itself, which is nothing once it's closed.
+ */
+export const subscribeWebPush = onCall(async (request) => {
+  const token = String(request.data?.token ?? '');
+  const subscribe: string[] = Array.isArray(request.data?.subscribe)
+    ? request.data.subscribe.map(String)
+    : [];
+  const unsubscribe: string[] = Array.isArray(request.data?.unsubscribe)
+    ? request.data.unsubscribe.map(String)
+    : [];
+
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  if (!token) throw new HttpsError('invalid-argument', 'A push token is required.');
+
+  const messaging = getMessaging();
+  await Promise.all([
+    ...subscribe.map((topic) => messaging.subscribeToTopic(token, topic)),
+    ...unsubscribe.map((topic) => messaging.unsubscribeFromTopic(token, topic)),
+  ]);
+  logger.info(`web push: ${request.auth.token.email} +${subscribe.length} -${unsubscribe.length}`);
+  return { ok: true };
+});
 
 export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
   const job = event.data?.data();

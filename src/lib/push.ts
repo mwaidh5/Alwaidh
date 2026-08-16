@@ -79,6 +79,44 @@ export function channelsFor(roles: Roles): NotificationChannel[] {
 
 export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
 
+/**
+ * Web Push certificate from Firebase (Project settings → Cloud Messaging →
+ * Web Push certificates). Without it a browser can only show notifications
+ * a running page draws itself; with it, alerts arrive with the site closed.
+ */
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '';
+
+export function webPushConfigured(): boolean {
+  return Boolean(VAPID_KEY);
+}
+
+/** Register the background handler and get this browser's push token. */
+async function webPushToken(): Promise<string> {
+  if (!VAPID_KEY || !('serviceWorker' in navigator)) return '';
+  const { firebaseApp } = await import('../firebase');
+  if (!firebaseApp) return '';
+  const { getMessaging, getToken, isSupported } = await import('firebase/messaging');
+  if (!(await isSupported())) return '';
+  // Its own scope, so it sits alongside the app's offline worker.
+  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+    scope: '/firebase-cloud-messaging-push-scope',
+  });
+  return getToken(getMessaging(firebaseApp), {
+    vapidKey: VAPID_KEY,
+    serviceWorkerRegistration: registration,
+  });
+}
+
+/** Ask the server to point this browser's token at the given topics. */
+async function setWebTopics(token: string, subscribe: string[], unsubscribe: string[]) {
+  if (!token || (!subscribe.length && !unsubscribe.length)) return;
+  const { firebaseApp } = await import('../firebase');
+  if (!firebaseApp) return;
+  const { getFunctions, httpsCallable } = await import('firebase/functions');
+  const call = httpsCallable(getFunctions(firebaseApp, 'us-central1'), 'subscribeWebPush');
+  await call({ token, subscribe, unsubscribe });
+}
+
 /** Must match the channelId the Cloud Functions send with. */
 const ANDROID_CHANNEL = 'alwaidh-staff';
 
@@ -246,9 +284,15 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
     if (typeof Notification === 'undefined') return { state: 'unsupported' };
     try {
       const perm = await Notification.requestPermission();
-      return { state: perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : 'prompt' };
-    } catch {
-      return { state: 'unsupported' };
+      if (perm !== 'granted') return { state: perm === 'denied' ? 'denied' : 'prompt' };
+      // Register for real push so alerts arrive with the site closed.
+      await syncSubscriptions(roles, email);
+      return { state: 'granted' };
+    } catch (e) {
+      return {
+        state: 'granted',
+        error: e instanceof Error ? e.message : 'Could not finish setting up notifications.',
+      };
     }
   }
   try {
@@ -275,7 +319,27 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
  * its token is refreshed, and re-subscribing costs nothing.
  */
 export async function syncSubscriptions(roles: Roles, email: string | null): Promise<void> {
-  if (!isNativeApp()) return;
+  if (!isNativeApp()) {
+    // Browser and home-screen app: the server does the subscribing, since
+    // the web SDK can't join a topic by itself.
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try {
+      const token = await webPushToken();
+      if (!token) return;
+      const prefs = notificationPrefs();
+      const on: string[] = [];
+      const off: string[] = [];
+      for (const { key } of channelsFor(roles)) {
+        if (key === 'team' && !email) continue;
+        (prefs[key] === false ? off : on).push(topicFor(key, email ?? ''));
+      }
+      await setWebTopics(token, on, off);
+    } catch {
+      /* no certificate configured, or the browser refused — the dashboard
+         still shows alerts while a tab is open */
+    }
+    return;
+  }
   await ensureAndroidChannel();
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
@@ -301,7 +365,18 @@ export async function setNotificationChannel(
   email: string | null,
 ): Promise<void> {
   savePrefs({ ...notificationPrefs(), [key]: on });
-  if (!isNativeApp()) return;
+  if (!isNativeApp()) {
+    try {
+      const token = await webPushToken();
+      if (!token) return;
+      if (key === 'team' && !email) return;
+      const topic = topicFor(key, email ?? '');
+      await setWebTopics(token, on ? [topic] : [], on ? [] : [topic]);
+    } catch {
+      /* stays saved; the next sync applies it */
+    }
+    return;
+  }
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
     if (key === 'team' && !email) return;
