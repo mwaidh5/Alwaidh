@@ -83,8 +83,14 @@ export type PushState = 'unsupported' | 'granted' | 'denied' | 'prompt';
  * Web Push certificate from Firebase (Project settings → Cloud Messaging →
  * Web Push certificates). Without it a browser can only show notifications
  * a running page draws itself; with it, alerts arrive with the site closed.
+ *
+ * This is the public half of the pair and is meant to ship in the page —
+ * the same as the Firebase config in src/firebase.ts. An env var overrides
+ * it for a separate project.
  */
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '';
+const VAPID_KEY =
+  import.meta.env.VITE_FIREBASE_VAPID_KEY ||
+  'BAfhWvMaMuXTUQflk_mRaljuIKgBb5hbrmeQ8aiQr_kwRxqDconFg-KZ6MTc6-Qm91NwF2z3p_sZyLyIj5eUp1c';
 
 export function webPushConfigured(): boolean {
   return Boolean(VAPID_KEY);
