@@ -14,6 +14,7 @@ import { categories } from '../../data/categories';
 import { allBrands } from '../../data/brands';
 import MediaPicker from '../../components/MediaPicker';
 import { useLang } from '../../lib/i18n';
+import { APP_BUILD, flushAppCache, hardReload, type FlushResult } from '../../lib/appCache';
 
 export default function AdminSettings() {
   const { t } = useLang();
@@ -412,6 +413,13 @@ export default function AdminSettings() {
           </button>
         </Section>
 
+        <Section
+          title="App version"
+          hint="Force a device onto the newest version of the site."
+        >
+          <UpdatePanel />
+        </Section>
+
         <Section title="Site images" hint="Logo, category tiles and brand logos.">
           <p className="text-sm text-slate-600">
             {t('Replace the main images used across the website. Changes go live as soon as you save.')}
@@ -572,6 +580,47 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
         <p className="mt-2 text-center text-xs text-amber-700">
           {t('No phone photo yet — the wide one is being cropped to fit.')}
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Which version this device is running, and a way to force the newest one.
+ * Phones keep a stored copy of the site for offline use, which is what
+ * leaves them a version behind after a deploy.
+ */
+function UpdatePanel() {
+  const { t } = useLang();
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<FlushResult | null>(null);
+
+  async function flush() {
+    setBusy(true);
+    const result = await flushAppCache();
+    setDone(result);
+    // Let them read what happened before the page goes.
+    setTimeout(hardReload, 1200);
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-600">
+        {t(
+          'This device is running the version below. If a phone or computer is showing something old, open this page there and press the button — it throws away the stored copy and downloads the newest one.',
+        )}
+      </p>
+      <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+        {t('Version')}: {APP_BUILD}
+      </p>
+      {done ? (
+        <p className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          ✅ {t('Cleared. Reloading…')}
+        </p>
+      ) : (
+        <button type="button" onClick={flush} disabled={busy} className="btn-secondary">
+          {busy ? t('Clearing…') : `♻️ ${t('Clear cache and reload')}`}
+        </button>
       )}
     </div>
   );

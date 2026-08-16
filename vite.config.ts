@@ -4,6 +4,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Stamped at build time so the dashboard can show which version a device
+  // is actually running — the quickest way to spot a stale one.
+  define: {
+    __APP_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+  },
   plugins: [
     react(),
     VitePWA({

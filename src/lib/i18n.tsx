@@ -425,6 +425,14 @@ const AR: Record<string, string> = {
   '+ Add a tile': '+ إضافة بطاقة',
   'Remove this tile': 'حذف هذه البطاقة',
   'Brand logos': 'شعارات الماركات',
+  'App version': 'إصدار التطبيق',
+  'Force a device onto the newest version of the site.': 'إجبار الجهاز على أحدث نسخة من الموقع.',
+  'This device is running the version below. If a phone or computer is showing something old, open this page there and press the button — it throws away the stored copy and downloads the newest one.':
+    'هذا الجهاز يعمل بالإصدار أدناه. إذا كان هاتف أو حاسوب يعرض نسخة قديمة، افتح هذه الصفحة عليه واضغط الزر — سيحذف النسخة المخزّنة وينزّل الأحدث.',
+  Version: 'الإصدار',
+  'Clear cache and reload': 'مسح الذاكرة المؤقتة وإعادة التحميل',
+  'Clearing…': 'جاري المسح…',
+  'Cleared. Reloading…': 'تم المسح. جاري إعادة التحميل…',
   'The brands strip on the homepage.': 'شريط الماركات في الصفحة الرئيسية.',
   'Add the brands you carry, upload each logo, and reorder or remove them.':
     'أضف الماركات التي توفّرها، وارفع شعار كل واحدة، ورتّبها أو احذفها.',
