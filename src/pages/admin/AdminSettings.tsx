@@ -4,12 +4,14 @@ import {
   HERO_DEFAULT_COLORS,
   loadSettings,
   saveSettings,
+  type BrandLogo,
   type HeroSlide,
+  type PromoTile,
   type SiteSettings,
 } from '../../lib/settingsStore';
 import { uploadImage } from '../../lib/imageUpload';
 import { categories } from '../../data/categories';
-import { solarBrands } from '../../data/brands';
+import { allBrands } from '../../data/brands';
 import MediaPicker from '../../components/MediaPicker';
 import { useLang } from '../../lib/i18n';
 
@@ -72,6 +74,12 @@ export default function AdminSettings() {
   if (!settings) {
     return <p className="text-center text-sm text-slate-500">{t('Loading…')}</p>;
   }
+
+  // Start from the built-in brands the first time, so the list opens with
+  // what the site already shows rather than empty.
+  const brandRows: BrandLogo[] = settings.brands?.length
+    ? settings.brands
+    : allBrands.map((b) => ({ name: b.name, image: settings.brandLogos?.[b.slug] ?? '' }));
 
   return (
     <div className="space-y-6">
@@ -258,6 +266,152 @@ export default function AdminSettings() {
           </button>
         </Section>
 
+        <Section
+          title="Homepage tiles"
+          hint="The three smaller cards under the main banner."
+        >
+          <p className="text-sm text-slate-600">
+            {t('Tap a tile to change its photo, its wording, its colours and where it leads.')}
+          </p>
+          {(settings.promoTiles ?? []).map((tile, i) => (
+            <PromoTileEditor
+              key={i}
+              index={i}
+              tile={tile}
+              total={(settings.promoTiles ?? []).length}
+              onChange={(next) =>
+                update(
+                  'promoTiles',
+                  (settings.promoTiles ?? []).map((x, n) => (n === i ? next : x)),
+                )
+              }
+              onRemove={() =>
+                update(
+                  'promoTiles',
+                  (settings.promoTiles ?? []).filter((_, n) => n !== i),
+                )
+              }
+              onMove={(dir) => {
+                const list = [...(settings.promoTiles ?? [])];
+                const to = i + dir;
+                if (to < 0 || to >= list.length) return;
+                [list[i], list[to]] = [list[to], list[i]];
+                update('promoTiles', list);
+              }}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              update('promoTiles', [
+                ...(settings.promoTiles ?? []),
+                {
+                  image: '',
+                  title: 'New tile',
+                  buttonLabel: 'Explore now',
+                  buttonLink: '/shop',
+                  ...HERO_DEFAULT_COLORS,
+                  overlay: 25,
+                },
+              ])
+            }
+            className="btn-secondary"
+          >
+            {t('+ Add a tile')}
+          </button>
+        </Section>
+
+        <Section title="Brand logos" hint="The brands strip on the homepage.">
+          <p className="text-sm text-slate-600">
+            {t('Add the brands you carry, upload each logo, and reorder or remove them.')}
+          </p>
+          {brandRows.map((b, i) => (
+            <div key={i} className="rounded-xl border border-slate-200 p-3">
+              <div className="mb-2 flex items-center gap-3">
+                <span className="grid h-12 w-20 flex-none place-items-center overflow-hidden rounded-md border border-slate-200 bg-white">
+                  {b.image ? (
+                    <img src={b.image} alt="" className="max-h-10 w-auto object-contain" />
+                  ) : (
+                    <span className="text-[10px] text-slate-400">{t('No logo')}</span>
+                  )}
+                </span>
+                <input
+                  className="input"
+                  value={b.name}
+                  placeholder={t('Brand name')}
+                  onChange={(e) =>
+                    update(
+                      'brands',
+                      brandRows.map((x, n) => (n === i ? { ...x, name: e.target.value } : x)),
+                    )
+                  }
+                />
+                <div className="flex flex-none items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = [...brandRows];
+                      if (i === 0) return;
+                      [list[i - 1], list[i]] = [list[i], list[i - 1]];
+                      update('brands', list);
+                    }}
+                    disabled={i === 0}
+                    title={t('Move up')}
+                    className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = [...brandRows];
+                      if (i === list.length - 1) return;
+                      [list[i], list[i + 1]] = [list[i + 1], list[i]];
+                      update('brands', list);
+                    }}
+                    disabled={i === brandRows.length - 1}
+                    title={t('Move down')}
+                    className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update(
+                        'brands',
+                        brandRows.filter((_, n) => n !== i),
+                      )
+                    }
+                    title={t('Remove this brand')}
+                    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+              <ImageField
+                label="Logo"
+                value={b.image}
+                folder="site"
+                onChange={(url) =>
+                  update(
+                    'brands',
+                    brandRows.map((x, n) => (n === i ? { ...x, image: url } : x)),
+                  )
+                }
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => update('brands', [...brandRows, { name: '', image: '' }])}
+            className="btn-secondary"
+          >
+            {t('+ Add a brand')}
+          </button>
+        </Section>
+
         <Section title="Site images" hint="Logo, category tiles and brand logos.">
           <p className="text-sm text-slate-600">
             {t('Replace the main images used across the website. Changes go live as soon as you save.')}
@@ -300,17 +454,6 @@ export default function AdminSettings() {
               folder="site"
               onChange={(url) =>
                 update('categoryLogos', { ...(settings.categoryLogos ?? {}), [c.slug]: url })
-              }
-            />
-          ))}
-          {solarBrands.map((b) => (
-            <ImageField
-              key={b.slug}
-              label={`${b.name} — ${t('brand strip logo')}`}
-              value={settings.brandLogos?.[b.slug] ?? ''}
-              folder="site"
-              onChange={(url) =>
-                update('brandLogos', { ...(settings.brandLogos ?? {}), [b.slug]: url })
               }
             />
           ))}
@@ -429,6 +572,187 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
         <p className="mt-2 text-center text-xs text-amber-700">
           {t('No phone photo yet — the wide one is being cropped to fit.')}
         </p>
+      )}
+    </div>
+  );
+}
+
+/** One of the smaller cards under the banner. */
+function PromoTileEditor({
+  index,
+  tile,
+  total,
+  onChange,
+  onRemove,
+  onMove,
+}: {
+  index: number;
+  tile: PromoTile;
+  total: number;
+  onChange: (t: PromoTile) => void;
+  onRemove: () => void;
+  onMove: (dir: 1 | -1) => void;
+}) {
+  const { t } = useLang();
+  const [open, setOpen] = useState(false);
+  const set = <K extends keyof PromoTile>(key: K, value: PromoTile[K]) =>
+    onChange({ ...tile, [key]: value });
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200">
+      <div className="flex items-center gap-3 p-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="relative h-12 w-20 flex-none overflow-hidden rounded-md bg-slate-800">
+            {tile.image && <img src={tile.image} alt="" className="h-full w-full object-cover" />}
+            <span
+              className="absolute inset-0"
+              style={{
+                background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, tile.overlay)) / 100})`,
+              }}
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              {t('Tile')} {index + 1}
+            </span>
+            <span className="block truncate text-sm font-bold text-slate-900">
+              {tile.title || t('Untitled')}
+            </span>
+          </span>
+          <span className={`ms-auto flex-none text-slate-400 transition ${open ? 'rotate-180' : ''}`}>
+            ▾
+          </span>
+        </button>
+        <div className="flex flex-none items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            title={t('Move up')}
+            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            title={t('Move down')}
+            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            title={t('Remove this tile')}
+            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="border-t border-slate-100 p-4">
+          {/* Preview at the tile's real shape — 395 × 240 on a computer. */}
+          <div
+            className="relative mb-4 overflow-hidden rounded-lg bg-slate-800"
+            style={{ aspectRatio: '395 / 240', maxWidth: '395px' }}
+          >
+            {tile.image && (
+              <img src={tile.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            )}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, tile.overlay)) / 100})`,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+            <div className="absolute inset-0 flex flex-col justify-end gap-2 p-5">
+              <p className="text-lg font-extrabold" style={{ color: tile.textColor }}>
+                {tile.title || t('Untitled')}
+              </p>
+              {tile.buttonLabel && (
+                <span
+                  className="w-fit rounded-full px-4 py-1.5 text-xs font-bold"
+                  style={{ background: tile.buttonBg, color: tile.buttonText }}
+                >
+                  {tile.buttonLabel} →
+                </span>
+              )}
+            </div>
+          </div>
+
+          <ImageField
+            label="Tile photo"
+            value={tile.image}
+            folder="site"
+            onChange={(url) => set('image', url)}
+          />
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Field label="Title">
+              <input
+                className="input"
+                value={tile.title}
+                onChange={(e) => set('title', e.target.value)}
+              />
+            </Field>
+            <Field label="Button text">
+              <input
+                className="input"
+                value={tile.buttonLabel}
+                onChange={(e) => set('buttonLabel', e.target.value)}
+                placeholder={t('Leave empty to hide the button')}
+              />
+            </Field>
+          </div>
+          <Field label="Tile goes to">
+            <input
+              className="input"
+              dir="ltr"
+              value={tile.buttonLink}
+              onChange={(e) => set('buttonLink', e.target.value)}
+              placeholder="/shop?category=solar"
+            />
+          </Field>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <ColorField
+              label="Text colour"
+              value={tile.textColor}
+              onChange={(v) => set('textColor', v)}
+            />
+            <ColorField
+              label="Button colour"
+              value={tile.buttonBg}
+              onChange={(v) => set('buttonBg', v)}
+            />
+            <ColorField
+              label="Button text colour"
+              value={tile.buttonText}
+              onChange={(v) => set('buttonText', v)}
+            />
+            <Field label="Darken photo">
+              <input
+                type="range"
+                min={0}
+                max={90}
+                value={tile.overlay}
+                onChange={(e) => set('overlay', Number(e.target.value))}
+                className="mt-2 w-full"
+              />
+              <p className="text-xs text-slate-500">{tile.overlay}%</p>
+            </Field>
+          </div>
+        </div>
       )}
     </div>
   );
