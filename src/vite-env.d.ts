@@ -12,3 +12,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Build timestamp, injected by vite.config.ts. */
+declare const __APP_BUILD__: string;
