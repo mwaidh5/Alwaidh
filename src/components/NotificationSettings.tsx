@@ -10,6 +10,7 @@ import {
   type NotificationKey,
   type NotificationPrefs,
   type PushState,
+  webPushConfigured,
   type Roles,
 } from '../lib/push';
 import { useLang } from '../lib/i18n';
@@ -147,7 +148,9 @@ export default function NotificationSettings({
             <p className="mt-2 text-xs text-slate-500">
               {isNativeApp()
                 ? t('These settings apply to this phone only.')
-                : t('In a browser, notifications arrive while a dashboard tab is open.')}
+                : webPushConfigured()
+                  ? t('These settings apply to this browser only.')
+                  : t('In this browser, notifications only arrive while a dashboard tab is open.')}
             </p>
           </div>
         </div>

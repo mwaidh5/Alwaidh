@@ -1079,7 +1079,7 @@ function JobDialog({
             >
               {JOB_STATUSES.map((s) => (
                 <option key={s.key} value={s.key}>
-                  {s.label}
+                  {t(s.label)}
                 </option>
               ))}
             </select>
