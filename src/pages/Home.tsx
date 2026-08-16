@@ -54,6 +54,13 @@ export default function Home() {
     setSlide((s) => (s + dir + slides.length) % slides.length);
   };
 
+  const tiles = settings.promoTiles ?? [];
+  // The list staff manage in Settings; until they add one, the built-in
+  // brands with whatever logos were uploaded against them.
+  const brandList = (settings.brands ?? []).length
+    ? settings.brands
+    : allBrands.map((b) => ({ name: b.name, image: settings.brandLogos?.[b.slug] ?? '' }));
+
   const inStock = useMemo(() => products.filter((p) => p.inStock), [products]);
   const newest = inStock.slice(0, 4);
   // A second strip further down, so the page shows more of the shop
@@ -175,30 +182,46 @@ export default function Home() {
       {/* ---------------- Promo banners ---------------- */}
       <section className="container-page pt-12">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* One tile per category, straight into its filtered shop page. */}
-          {categories.map((c, i) => (
-            <Link
-              key={c.slug}
-              to={`/shop?category=${c.slug}`}
+          {/* Written in Settings → Homepage tiles. */}
+          {tiles.map((tile, i) => (
+            <TileLink
+              key={i}
+              to={tile.buttonLink}
               className="group relative block h-60 overflow-hidden rounded-2xl bg-slate-900"
             >
               <img
-                src={imageFor(c.slug) || stockImage[i % stockImage.length]}
+                src={tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length]}
                 alt=""
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, tile.overlay)) / 100})`,
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end gap-2 p-6">
-                <p className="text-lg font-extrabold text-white">{t(c.name)}</p>
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-600 py-2 pe-2 ps-4 text-sm font-bold text-white shadow-lg">
-                  {t('Explore now')}
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-extrabold text-brand-600">
-                    →
+                <p className="text-lg font-extrabold" style={{ color: tile.textColor }}>
+                  {t(tile.title)}
+                </p>
+                {tile.buttonLabel && (
+                  <span
+                    className="inline-flex w-fit items-center gap-2 rounded-full py-2 pe-2 ps-4 text-sm font-bold shadow-lg"
+                    style={{ background: tile.buttonBg, color: tile.buttonText }}
+                  >
+                    {t(tile.buttonLabel)}
+                    <span
+                      className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-extrabold"
+                      style={{ color: tile.buttonBg }}
+                    >
+                      →
+                    </span>
                   </span>
-                </span>
+                )}
               </div>
-            </Link>
+            </TileLink>
           ))}
         </div>
       </section>
@@ -246,11 +269,11 @@ export default function Home() {
           {t('Brands we carry')}
         </h2>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          {allBrands.map((b) => {
-            const logo = settings.brandLogos?.[b.slug];
+          {brandList.map((b, i) => {
+            const logo = b.image;
             return (
               <div
-                key={b.slug}
+                key={`${b.name}-${i}`}
                 className="grid h-20 place-items-center rounded-xl border border-slate-200 bg-white px-3"
               >
                 {logo ? (
@@ -300,6 +323,30 @@ export default function Home() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** A tile's whole card is the link; it may point anywhere. */
+function TileLink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (to.startsWith('#') || /^https?:\/\//i.test(to)) {
+    return (
+      <a href={to} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={to || '/shop'} className={className}>
+      {children}
+    </Link>
   );
 }
 

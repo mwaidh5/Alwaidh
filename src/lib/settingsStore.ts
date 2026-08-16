@@ -68,6 +68,51 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   },
 ];
 
+/** One of the smaller tiles under the main banner. */
+export interface PromoTile {
+  image: string;
+  title: string;
+  buttonLabel: string;
+  buttonLink: string;
+  textColor: string;
+  buttonBg: string;
+  buttonText: string;
+  overlay: number;
+}
+
+export const DEFAULT_PROMO_TILES: PromoTile[] = [
+  {
+    image: '',
+    title: 'Computers',
+    buttonLabel: 'Explore now',
+    buttonLink: '/shop?category=computers',
+    ...HERO_DEFAULT_COLORS,
+    overlay: 25,
+  },
+  {
+    image: '',
+    title: 'Solar Energy',
+    buttonLabel: 'Explore now',
+    buttonLink: '/shop?category=solar',
+    ...HERO_DEFAULT_COLORS,
+    overlay: 25,
+  },
+  {
+    image: '',
+    title: 'Tiandy Cameras',
+    buttonLabel: 'Explore now',
+    buttonLink: '/shop?category=tiandy-cameras',
+    ...HERO_DEFAULT_COLORS,
+    overlay: 25,
+  },
+];
+
+/** A brand shown in the homepage strip. */
+export interface BrandLogo {
+  name: string;
+  image: string;
+}
+
 export interface SiteSettings {
   storeName: string;
   contactEmail: string;
@@ -96,6 +141,11 @@ export interface SiteSettings {
   brandLogos: Record<string, string>;
   /** Full-width banners at the top of the homepage. */
   heroSlides: HeroSlide[];
+  /** The smaller tiles under the main banner. */
+  promoTiles: PromoTile[];
+  /** Brands in the homepage strip — added and removed here, in this order.
+   *  Empty means fall back to the built-in list (see data/brands.ts). */
+  brands: BrandLogo[];
   /** Sub-categories staff can pick from, keyed by main category slug. */
   subcategories: Record<string, string[]>;
   solarPriceColumns: PriceColumn[];
@@ -125,6 +175,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   brandLogos: {},
   subcategories: {},
   heroSlides: DEFAULT_HERO_SLIDES,
+  promoTiles: DEFAULT_PROMO_TILES,
+  brands: [],
   solarPriceColumns: DEFAULT_COLUMNS,
 };
 
@@ -216,6 +268,23 @@ function normalize(data: Record<string, unknown>): SiteSettings {
             : HERO_DEFAULT_COLORS.overlay,
         }))
       : DEFAULT_SETTINGS.heroSlides,
+    promoTiles: Array.isArray(data.promoTiles)
+      ? (data.promoTiles as Record<string, unknown>[]).map((tile) => ({
+          image: String(tile.image ?? ''),
+          title: String(tile.title ?? ''),
+          buttonLabel: String(tile.buttonLabel ?? ''),
+          buttonLink: String(tile.buttonLink ?? ''),
+          textColor: String(tile.textColor ?? HERO_DEFAULT_COLORS.textColor),
+          buttonBg: String(tile.buttonBg ?? HERO_DEFAULT_COLORS.buttonBg),
+          buttonText: String(tile.buttonText ?? HERO_DEFAULT_COLORS.buttonText),
+          overlay: Number.isFinite(Number(tile.overlay)) ? Number(tile.overlay) : 25,
+        }))
+      : DEFAULT_SETTINGS.promoTiles,
+    brands: Array.isArray(data.brands)
+      ? (data.brands as Record<string, unknown>[])
+          .map((b) => ({ name: String(b.name ?? ''), image: String(b.image ?? '') }))
+          .filter((b) => b.name || b.image)
+      : DEFAULT_SETTINGS.brands,
     solarPriceColumns:
       Array.isArray(data.solarPriceColumns) && data.solarPriceColumns.length
         ? (data.solarPriceColumns as PriceColumn[])
