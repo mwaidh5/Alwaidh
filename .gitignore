@@ -58,3 +58,6 @@ vite.config.js
 vite.config.d.ts
 vite.config.js.timestamp-*.mjs
 *.tsbuildinfo
+
+# A separate project that lives in this folder — never part of this repo.
+balloon-tasks/
