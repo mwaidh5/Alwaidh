@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "387647473445",
+    "project_id": "alwaidh-baeb5",
+    "storage_bucket": "alwaidh-baeb5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387647473445:android:8ef484619a8e9e0f063ccc",
+        "android_client_info": {
+          "package_name": "com.alwaidh.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387647473445-l8v89ihkp0dmbcv842u64gq1p3stthda.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9IK1-pslVonIWGZEuBPEao3kK9NbCnTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387647473445-l8v89ihkp0dmbcv842u64gq1p3stthda.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "387647473445-j8tnqfumkf1glt8ue88p1lk3vaqq9agb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.alwaidh.staff"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
