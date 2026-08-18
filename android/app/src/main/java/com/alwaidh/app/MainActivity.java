@@ -1,4 +1,4 @@
-package com.alwaidh.staff;
+package com.alwaidh.app;
 
 import com.getcapacitor.BridgeActivity;
 

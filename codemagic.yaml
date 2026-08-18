@@ -8,7 +8,7 @@
 
 workflows:
   ios-testflight:
-    name: Alwaidh Staff — iOS TestFlight
+    name: Alwaidh — iOS TestFlight
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
@@ -84,7 +84,7 @@ workflows:
   #      Without it the build still produces an .aab you can upload by hand.
   # ---------------------------------------------------------------------------
   android-play:
-    name: Alwaidh Staff — Android (Play internal testing)
+    name: Alwaidh — Android (Play internal testing)
     # Same machine as the iOS workflow: Linux instances aren't included on
     # every billing plan, and the macOS image ships the Android SDK + JDK,
     # so it builds the .aab just as well.
@@ -98,7 +98,7 @@ workflows:
       # groups:
       #   - google_play
       vars:
-        PACKAGE_NAME: 'com.alwaidh.staff'
+        PACKAGE_NAME: 'com.alwaidh.app'
     scripts:
       - name: Install dependencies
         script: npm ci
