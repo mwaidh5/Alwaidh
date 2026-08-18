@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "387647473445-g5l24ievu3fpsqp6vppiokbec3l835dq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.alwaidh.app",
+            "certificate_hash": "838ab0cb4349c229802e4c1cf7fb6cff6b92c055"
+          }
+        },
+        {
           "client_id": "387647473445-l8v89ihkp0dmbcv842u64gq1p3stthda.apps.googleusercontent.com",
           "client_type": 3
         }
