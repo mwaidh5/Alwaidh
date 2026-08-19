@@ -240,7 +240,7 @@ export default function Home() {
         <section className="mt-14 border-y border-slate-200 bg-slate-50">
           <div className="container-page py-14">
             <SectionHead eyebrow="In stock now" title="New arrivals" linkTo="/shop" linkLabel="Shop all" />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {newest.map((p) => (
                 <ArrivalCard key={p.id} product={p} />
               ))}
@@ -261,7 +261,7 @@ export default function Home() {
             linkTo="/shop"
             linkLabel="Browse everything"
           />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {more.slice(0, 8).map((p) => (
               <ArrivalCard key={p.id} product={p} />
             ))}
