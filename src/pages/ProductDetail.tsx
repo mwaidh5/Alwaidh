@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProducts } from '../lib/useProducts';
 import { getCategory } from '../data/categories';
-import { formatPrice } from '../lib/format';
+import { discountPercent, formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
@@ -37,6 +37,11 @@ export default function ProductDetail() {
   const category = getCategory(product.category);
   const gallery = product.images?.length ? product.images : product.image ? [product.image] : [];
   const related = relatedProducts(product, products);
+  const off = discountPercent(product.price, product.oldPrice);
+  // Product photos are rarely square, so showing the whole picture is the
+  // sensible default; filling the frame crops it, which is what made some
+  // look zoomed in.
+  const fitClass = product.imageFit === 'cover' ? 'object-cover' : 'object-contain';
 
   function handleAdd() {
     if (!product) return;
@@ -63,11 +68,18 @@ export default function ProductDetail() {
 
       <div className="grid gap-10 md:grid-cols-2">
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-2xl bg-slate-100">
+          <div className="relative overflow-hidden rounded-2xl bg-slate-100">
+            {off > 0 && (
+              <span className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
+                −{off}%
+              </span>
+            )}
             <img
               src={gallery[activeImage] ?? product.image}
               alt={product.name}
-              className="aspect-square w-full object-cover"
+              className={`aspect-square w-full ${fitClass} ${
+                product.imageFit === 'cover' ? '' : 'p-4'
+              }`}
             />
           </div>
           {gallery.length > 1 && (
@@ -82,7 +94,7 @@ export default function ProductDetail() {
                   }`}
                   aria-label={`View image ${i + 1}`}
                 >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+                  <img src={img} alt="" className={`h-full w-full ${fitClass}`} />
                 </button>
               ))}
             </div>
@@ -95,9 +107,21 @@ export default function ProductDetail() {
           </div>
           <h1 className="mt-1 text-3xl font-extrabold text-slate-900">{product.name}</h1>
           <div className="mt-3 flex items-center gap-3">
-            <div className="text-2xl font-bold text-brand-700">
-              {formatPrice(product.price, product.currency)}
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-2xl font-bold text-brand-700">
+                {formatPrice(product.price, product.currency)}
+              </span>
+              {off > 0 && (
+                <span className="text-base text-slate-400 line-through">
+                  {formatPrice(product.oldPrice as number, product.currency)}
+                </span>
+              )}
             </div>
+            {off > 0 && (
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                {t('You save')} {off}%
+              </span>
+            )}
             {product.rating > 0 && (
               <div className="text-sm text-slate-500">★ {product.rating.toFixed(1)}</div>
             )}

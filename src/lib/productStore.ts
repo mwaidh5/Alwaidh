@@ -59,6 +59,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
       return { subcategory: subcategories[0] ?? '', subcategories };
     })(),
     price: Number(data.price ?? 0),
+    oldPrice: typeof data.oldPrice === 'number' ? data.oldPrice : null,
     currency: String(data.currency ?? 'IQD'),
     ...(() => {
       const arr = Array.isArray(data.images) ? data.images.map(String).filter(Boolean) : [];
@@ -66,6 +67,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
       const images = arr.length ? arr : primary ? [primary] : [];
       return { image: images[0] ?? '', images };
     })(),
+    imageFit: data.imageFit === 'cover' ? 'cover' : 'contain',
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),

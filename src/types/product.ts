@@ -15,10 +15,16 @@ export interface Product {
   brand: string;
   subcategory?: string;      // first sub-category; kept for older records
   subcategories?: string[];  // a product can sit in several at once
-  price: number;        // in your local currency unit
+  price: number;        // what the customer pays now, in your local currency
+  /** The price before the discount. Shown struck through when it's higher
+   *  than `price`; empty or lower means the product isn't on offer. */
+  oldPrice?: number | null;
   currency: string;     // e.g. "USD", "AED", "SAR"
   image: string;        // primary image (= images[0]); kept for thumbnails/back-compat
   images: string[];     // full gallery, first entry is the primary
+  /** 'contain' shows the whole photo (default); 'cover' fills the square
+   *  and crops whatever doesn't fit. */
+  imageFit?: 'contain' | 'cover';
   rating: number;       // 0..5
   inStock: boolean;
   shortDescription: string;

@@ -8,6 +8,7 @@ import ImageEditor from './ImageEditor';
 import { useLang } from '../lib/i18n';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../lib/useSettings';
+import { discountPercent } from '../lib/format';
 import type { Product, CategorySlug } from '../types/product';
 
 export type FormState = Omit<Product, 'specs'> & { specsText: string };
@@ -18,9 +19,11 @@ export const EMPTY_FORM: FormState = {
   category: 'computers',
   brand: '',
   price: 0,
+  oldPrice: null,
   currency: 'IQD',
   image: '',
   images: [],
+  imageFit: 'contain',
   rating: 0,
   inStock: true,
   shortDescription: '',
@@ -90,11 +93,18 @@ export default function ProductEditor({
         subcategories: (state.subcategories ?? []).map((x) => x.trim()).filter(Boolean),
         subcategory: (state.subcategories ?? [])[0]?.trim() ?? '',
         price: Number(state.price) || 0,
+        // Only kept when it's genuinely higher — a lower "was" price would
+        // advertise a markup as a saving.
+        oldPrice:
+          state.oldPrice && Number(state.oldPrice) > (Number(state.price) || 0)
+            ? Number(state.oldPrice)
+            : null,
         currency: state.currency.trim().toUpperCase() || 'IQD',
         image: images[0] ?? '',
         images,
         rating: Math.max(0, Math.min(5, Number(state.rating) || 0)),
         inStock: state.inStock,
+        imageFit: (state.imageFit === 'cover' ? 'cover' : 'contain') as 'contain' | 'cover',
         shortDescription: state.shortDescription.trim(),
         specs: parseSpecs(state.specsText),
         // Saved alongside the map so the order survives — Firestore hands
@@ -474,6 +484,34 @@ export function ProductDialog({
               onChange={(e) => setState({ ...state, price: Number(e.target.value) })}
             />
           </Field>
+          <Field label="Was price (leave empty if not on offer)">
+            <input
+              type="number"
+              min={0}
+              className="input"
+              value={state.oldPrice ?? ''}
+              placeholder={t('The old price, shown crossed out')}
+              onChange={(e) =>
+                setState({
+                  ...state,
+                  oldPrice: e.target.value === '' ? null : Number(e.target.value),
+                })
+              }
+            />
+            {(state.oldPrice ?? 0) > 0 && (
+              <p className="mt-1 text-xs font-medium">
+                {(state.oldPrice ?? 0) > Number(state.price) ? (
+                  <span className="text-green-700">
+                    {t('Shows as')} −{discountPercent(Number(state.price), state.oldPrice)}%
+                  </span>
+                ) : (
+                  <span className="text-amber-700">
+                    {t('The was price has to be higher than the price to show a discount.')}
+                  </span>
+                )}
+              </p>
+            )}
+          </Field>
           <Field label="Currency">
             <input
               className="input"
@@ -520,6 +558,23 @@ export function ProductDialog({
                 </span>
               </span>
             </label>
+          </Field>
+          <Field label="How photos are shown">
+            <select
+              className="input"
+              value={state.imageFit ?? 'contain'}
+              onChange={(e) =>
+                setState({ ...state, imageFit: e.target.value as 'contain' | 'cover' })
+              }
+            >
+              <option value="contain">{t('Show the whole photo (nothing cut off)')}</option>
+              <option value="cover">{t('Fill the frame (edges may be cut off)')}</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              {t(
+                'Photos that are not square get cut off when they fill the frame — that is what makes some look zoomed in.',
+              )}
+            </p>
           </Field>
           <Field label="In stock">
             <label className="flex items-center gap-2 pt-2 text-sm">
