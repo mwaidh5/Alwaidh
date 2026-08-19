@@ -190,13 +190,13 @@ export default function Home() {
 
       {/* ---------------- Promo banners ---------------- */}
       <section className="container-page pt-12">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {/* Written in Settings → Homepage tiles. */}
           {tiles.map((tile, i) => (
             <TileLink
               key={i}
               to={tile.buttonLink}
-              className="group relative block h-60 overflow-hidden rounded-2xl bg-slate-900"
+              className="group relative block h-40 overflow-hidden rounded-2xl bg-slate-900 sm:h-60"
             >
               <img
                 src={tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length]}
@@ -211,18 +211,18 @@ export default function Home() {
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
-              <div className="absolute inset-0 flex flex-col justify-end gap-2 p-6">
-                <p className="text-lg font-extrabold" style={{ color: tile.textColor }}>
+              <div className="absolute inset-0 flex flex-col justify-end gap-1.5 p-3 sm:gap-2 sm:p-6">
+                <p className="text-sm font-extrabold sm:text-lg" style={{ color: tile.textColor }}>
                   {t(tile.title)}
                 </p>
                 {tile.buttonLabel && (
                   <span
-                    className="inline-flex w-fit items-center gap-2 rounded-full py-2 pe-2 ps-4 text-sm font-bold shadow-lg"
+                    className="inline-flex w-fit items-center gap-1.5 rounded-full py-1.5 pe-1.5 ps-3 text-[11px] font-bold shadow-lg sm:gap-2 sm:py-2 sm:pe-2 sm:ps-4 sm:text-sm"
                     style={{ background: tile.buttonBg, color: tile.buttonText }}
                   >
                     {t(tile.buttonLabel)}
                     <span
-                      className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-extrabold"
+                      className="grid h-4 w-4 place-items-center rounded-full bg-white text-[10px] font-extrabold sm:h-5 sm:w-5 sm:text-xs"
                       style={{ color: tile.buttonBg }}
                     >
                       →
@@ -298,7 +298,7 @@ export default function Home() {
 
       {/* ---------------- Why us ---------------- */}
       <section className="container-page py-14">
-        <div className="grid gap-6 border-t border-slate-200 pt-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 border-t border-slate-200 pt-8 lg:grid-cols-4">
           {[
             {
               icon: '🚚',
