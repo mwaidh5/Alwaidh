@@ -10,7 +10,11 @@ import { getAnalytics, isSupported, logEvent, type Analytics } from 'firebase/an
 // these defaults when present (e.g. for a separate staging project).
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? 'AIzaSyAvnrI9n3-3Rhx9omxO3W9YF-IHPJWrIKM',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? 'alwaidh-baeb5.firebaseapp.com',
+  // Sign-in runs through our own domain, so the address bar says
+  // alwaidh.com instead of the project's Firebase address. Firebase Hosting
+  // serves the /__/auth/ handler on every domain connected to the project,
+  // and the Google OAuth client lists this one as an allowed redirect.
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? 'alwaidh.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? 'alwaidh-baeb5',
   storageBucket:
     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? 'alwaidh-baeb5.firebasestorage.app',
