@@ -189,6 +189,17 @@ const AR: Record<string, string> = {
 
   // ---- Product & shop ----
   'Add to cart': 'أضف إلى السلة',
+  'You save': 'توفير',
+  'Was price (leave empty if not on offer)': 'السعر السابق (اتركه فارغاً إن لم يكن هناك عرض)',
+  'The old price, shown crossed out': 'السعر القديم، يظهر مشطوباً',
+  'Shows as': 'يظهر كـ',
+  'The was price has to be higher than the price to show a discount.':
+    'يجب أن يكون السعر السابق أعلى من السعر الحالي حتى يظهر الخصم.',
+  'How photos are shown': 'طريقة عرض الصور',
+  'Show the whole photo (nothing cut off)': 'إظهار الصورة كاملة (بدون قص)',
+  'Fill the frame (edges may be cut off)': 'ملء الإطار (قد تُقص الحواف)',
+  'Photos that are not square get cut off when they fill the frame — that is what makes some look zoomed in.':
+    'الصور غير المربعة تُقص عند ملء الإطار — وهذا ما يجعل بعضها تبدو مكبّرة.',
   'Added ✓': 'تمت الإضافة ✓',
   'In stock': 'متوفر',
   'Out of stock': 'غير متوفر',

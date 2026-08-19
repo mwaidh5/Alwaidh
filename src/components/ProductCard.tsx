@@ -1,15 +1,21 @@
 import { Link } from 'react-router-dom';
 import type { Product } from '../types/product';
-import { formatPrice } from '../lib/format';
+import { discountPercent, formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
   const { t } = useLang();
+  const off = discountPercent(product.price, product.oldPrice);
 
   return (
-    <div className="card group flex flex-col overflow-hidden">
+    <div className="card group relative flex flex-col overflow-hidden">
+      {off > 0 && (
+        <span className="absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
+          −{off}%
+        </span>
+      )}
       <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-100">
         <img
           src={product.image}
@@ -28,8 +34,15 @@ export default function ProductCard({ product }: { product: Product }) {
         </Link>
         <p className="line-clamp-2 hidden text-sm text-slate-600 sm:block">{product.shortDescription}</p>
         <div className="mt-auto flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pt-3">
-          <div className="text-base font-bold text-brand-700 sm:text-lg">
-            {formatPrice(product.price, product.currency)}
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-base font-bold text-brand-700 sm:text-lg">
+              {formatPrice(product.price, product.currency)}
+            </span>
+            {off > 0 && (
+              <span className="text-xs text-slate-400 line-through">
+                {formatPrice(product.oldPrice as number, product.currency)}
+              </span>
+            )}
           </div>
           <button
             type="button"

@@ -4,7 +4,7 @@ import type { Product } from '../types/product';
 import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
 import { useCart } from '../context/CartContext';
-import { formatPrice } from '../lib/format';
+import { discountPercent, formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
 import { StaffProductEdit } from '../components/ProductEditor';
 
@@ -530,12 +530,18 @@ function PageButton({
 }
 
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
+  const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col overflow-hidden text-center">
       <StaffProductEdit
         product={product}
         className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
       />
+      {off > 0 && (
+        <span className="absolute right-2 top-2 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
+          −{off}%
+        </span>
+      )}
       <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-3 sm:p-6">
         <img
           src={product.image}
@@ -552,8 +558,15 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
         >
           {product.name}
         </Link>
-        <div className="text-base font-bold text-brand-700 sm:text-lg">
-          {formatPrice(product.price, product.currency)}
+        <div className="flex flex-wrap items-baseline justify-center gap-x-2">
+          <span className="text-base font-bold text-brand-700 sm:text-lg">
+            {formatPrice(product.price, product.currency)}
+          </span>
+          {off > 0 && (
+            <span className="text-xs text-slate-400 line-through">
+              {formatPrice(product.oldPrice as number, product.currency)}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -569,6 +582,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
 }
 
 function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
+  const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
       <StaffProductEdit
@@ -597,8 +611,15 @@ function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
         <StarRating rating={product.rating} showValue className="mt-1" />
         <p className="mt-2 line-clamp-2 text-sm text-slate-600">{product.shortDescription}</p>
         <div className="mt-auto flex items-center justify-between pt-3">
-          <div className="text-lg font-bold text-brand-700">
-            {formatPrice(product.price, product.currency)}
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-lg font-bold text-brand-700">
+              {formatPrice(product.price, product.currency)}
+            </span>
+            {off > 0 && (
+              <span className="text-sm text-slate-400 line-through">
+                {formatPrice(product.oldPrice as number, product.currency)}
+              </span>
+            )}
           </div>
           <button
             type="button"
