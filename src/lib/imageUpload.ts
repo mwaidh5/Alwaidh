@@ -1,6 +1,15 @@
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
 import { storage } from '../firebase';
 import type { FirebaseStorage } from 'firebase/storage';
+/**
+ * Storage serves uploads as `private, max-age=0` unless told otherwise, so
+ * every picture was re-downloaded on every page view. Each filename carries
+ * a timestamp, so a file at a given URL never changes — it can be kept for
+ * good.
+ */
+export const LONG_CACHE = 'public, max-age=31536000, immutable';
+
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
@@ -141,7 +150,10 @@ export async function uploadImage(file: File, folder = 'site'): Promise<UploadRe
   const path = `${folder.replace(/\/+$/, '')}/${Date.now()}-${safe}`;
   const objectRef = ref(store, path);
   try {
-    await uploadBytes(objectRef, prepared, { contentType: prepared.type });
+    await uploadBytes(objectRef, prepared, {
+      contentType: prepared.type,
+      cacheControl: LONG_CACHE,
+    });
     const url = await getDownloadURL(objectRef);
     return { url, path, file: prepared };
   } catch (e) {
@@ -184,7 +196,10 @@ export async function uploadProductDoc(
   const path = `${folder}/${Date.now()}-${safe}`;
   const objectRef = ref(storage, path);
   try {
-    await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+    await uploadBytes(objectRef, file, {
+      contentType: 'application/pdf',
+      cacheControl: LONG_CACHE,
+    });
     const url = await getDownloadURL(objectRef);
     return { url, path };
   } catch (e) {
@@ -213,7 +228,10 @@ export async function uploadJobCommentFile(
     const path = `${folder}/${Date.now()}-${safe}`;
     const objectRef = ref(storage, path);
     try {
-      await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+      await uploadBytes(objectRef, file, {
+      contentType: 'application/pdf',
+      cacheControl: LONG_CACHE,
+    });
       return { url: await getDownloadURL(objectRef), path, kind: 'pdf' };
     } catch (e) {
       throw friendlyUploadError(e);
@@ -237,7 +255,10 @@ export async function uploadInvoice(file: File, jobId?: string): Promise<UploadR
   const folder = jobId ? `jobs/${jobId}` : `jobs/_drafts/${crypto.randomUUID()}`;
   const path = `${folder}/${Date.now()}-${safe}`;
   const objectRef = ref(storage, path);
-  await uploadBytes(objectRef, file, { contentType: 'application/pdf' });
+  await uploadBytes(objectRef, file, {
+      contentType: 'application/pdf',
+      cacheControl: LONG_CACHE,
+    });
   const url = await getDownloadURL(objectRef);
   return { url, path };
 }
