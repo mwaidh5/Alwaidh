@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
+import ImageTouchUp from './ImageTouchUp';
 
 /** Normalized crop rectangle: 0..1 of the working image, so it survives
  *  rotation and window resizes without recalculating pixels. */
@@ -82,6 +83,19 @@ export default function ImageEditor({
   const frameRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragMode | null>(null);
   const localInput = useRef<HTMLInputElement>(null);
+  const [touchUp, setTouchUp] = useState(false);
+  const [touchUpSource, setTouchUpSource] = useState<Blob | null>(null);
+
+  /** Open the hand tools on the picture as it stands, crop included. */
+  async function openTouchUp() {
+    setError('');
+    try {
+      setTouchUpSource(await toBlob(draw(crop), true));
+      setTouchUp(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not open the tools.');
+    }
+  }
 
   // Load the original into a local working copy.
   useEffect(() => {
@@ -411,6 +425,14 @@ export default function ImageEditor({
                 <button type="button" onClick={removeBg} disabled={working} className="btn-secondary py-1.5 text-sm">
                   {busy === 'bg' ? t('Removing…') : `✨ ${t('Remove background')}`}
                 </button>
+                <button
+                  type="button"
+                  onClick={openTouchUp}
+                  disabled={working}
+                  className="btn-secondary py-1.5 text-sm"
+                >
+                  ✏️ {t('Touch up')}
+                </button>
                 {cropped && (
                   <button type="button" onClick={() => setCrop(FULL)} disabled={working} className="btn-secondary py-1.5 text-sm">
                     {t('Reset crop')}
@@ -422,6 +444,17 @@ export default function ImageEditor({
           {/* Once something is loaded, errors sit under the toolbar. */}
           {error && workUrl && <p className="mt-3 text-center text-xs text-red-700">{error}</p>}
         </div>
+
+        {touchUp && workUrl && touchUpSource && (
+          <ImageTouchUp
+            source={touchUpSource}
+            onCancel={() => setTouchUp(false)}
+            onApply={(blob) => {
+              swapWork(blob);
+              setTouchUp(false);
+            }}
+          />
+        )}
 
         <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">
           <button type="button" onClick={onCancel} disabled={busy === 'saving'} className="btn-secondary">

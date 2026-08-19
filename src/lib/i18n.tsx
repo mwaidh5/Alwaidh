@@ -293,6 +293,22 @@ const AR: Record<string, string> = {
   'Remove background (main)': 'إزالة الخلفية (الرئيسية)',
   'Removing…': 'جاري الإزالة…',
   'Edit image': 'تعديل الصورة',
+  'Touch up': 'تنقيح',
+  'Rub out': 'مسح',
+  'Bring back': 'إرجاع',
+  'Draw around': 'تحديد بالرسم',
+  'Click a colour': 'اختر لوناً',
+  'Brush size': 'حجم الفرشاة',
+  'How similar': 'درجة التشابه',
+  'Delete inside': 'حذف الداخل',
+  'Keep only this': 'إبقاء هذا فقط',
+  Undo: 'تراجع',
+  Done: 'تم',
+  'Drag over what you want gone.': 'مرّر فوق ما تريد إزالته.',
+  'Drag to paint the picture back.': 'مرّر لإعادة رسم الصورة.',
+  'Draw a loop, then choose what happens to it.': 'ارسم حلقة ثم اختر ما تريد فعله بها.',
+  'Click a colour to drop it — the slider widens the match.':
+    'اضغط على لون لإزالته — المؤشر يوسّع نطاق التشابه.',
   'Rotate left': 'تدوير لليسار',
   'Rotate right': 'تدوير لليمين',
   'Apply crop': 'تطبيق القص',
@@ -540,7 +556,6 @@ const AR: Record<string, string> = {
   'These settings apply to this browser only.': 'هذه الإعدادات تخص هذا المتصفح فقط.',
   'In this browser, notifications only arrive while a dashboard tab is open.':
     'في هذا المتصفح، تصل الإشعارات فقط ما دامت لوحة التحكم مفتوحة في تبويب.',
-  Done: 'تم',
   'A visitor wrote in the website chat. Tap to reply.':
     'كتب زائر في دردشة الموقع. اضغط للرد.',
   'Conversations from the chat bubble on the website appear here.':
