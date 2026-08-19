@@ -34,6 +34,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   isComputerStaff: boolean; // admin OR listed as computer staff
   isSolarStaff: boolean; // admin OR listed as solar staff
+  isShopManager: boolean; // the whole shop catalogue, but no solar jobs
   isInstaller: boolean; // field installer: only their assigned jobs
   hasAdminAccess: boolean; // any role that can open the dashboard
   /** Colleague whose view is being previewed, or null. */
@@ -146,6 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isAdmin, shownEmail, settings],
   );
 
+  // Shop manager: every product category, and nothing from the solar side.
+  const isShopManager = useMemo(
+    () => isAdmin || listed(settings?.shopManagerEmails),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAdmin, shownEmail, settings],
+  );
+
   const isInstaller = useMemo(
     () => listed(settings?.installerEmails),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,7 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   // The real admin never loses their way back out of a preview.
-  const hasAdminAccess = realIsAdmin || isComputerStaff || isSolarStaff || isInstaller;
+  const hasAdminAccess =
+    realIsAdmin || isComputerStaff || isSolarStaff || isShopManager || isInstaller;
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -162,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isComputerStaff,
       isSolarStaff,
+      isShopManager,
       isInstaller,
       hasAdminAccess,
       viewAs,
@@ -240,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isComputerStaff,
       isSolarStaff,
+      isShopManager,
       isInstaller,
       hasAdminAccess,
       viewAs,

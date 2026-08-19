@@ -41,6 +41,7 @@ const navItems: { to: string; label: string; icon: string; end?: boolean; access
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
   { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff' },
   { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team' },
+  { to: '/admin/files', label: 'Files', icon: '📁', access: 'team' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
   { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin' },
   { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin' },
@@ -54,6 +55,7 @@ export default function AdminLayout() {
     isAdmin,
     isComputerStaff,
     isSolarStaff,
+    isShopManager,
     isInstaller,
     hasAdminAccess,
     viewAs,
@@ -128,6 +130,7 @@ export default function AdminLayout() {
     isAdmin: realIsAdmin,
     isComputerStaff: realIsAdmin || isComputerStaff,
     isSolarStaff: realIsAdmin || isSolarStaff,
+    isShopManager: realIsAdmin || isShopManager,
     isInstaller: !viewAs && isInstaller,
   };
 
@@ -137,7 +140,7 @@ export default function AdminLayout() {
     if (push !== 'granted') return;
     syncSubscriptions(notifyRoles, user?.email ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [push, realIsAdmin, isComputerStaff, isSolarStaff, isInstaller, viewAs, user]);
+  }, [push, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, viewAs, user]);
 
   useEffect(() => subscribeSettings(setSettings), []);
   useEffect(() => setOpen(false), [location.pathname]);
@@ -170,10 +173,10 @@ export default function AdminLayout() {
 
   const canSee = (access: Access) => {
     if (isAdmin) return true;
-    if (access === 'products') return isComputerStaff || isSolarStaff;
+    if (access === 'products') return isComputerStaff || isSolarStaff || isShopManager;
     if (access === 'solar') return isSolarStaff;
     if (access === 'jobs') return isSolarStaff || isInstaller;
-    if (access === 'staff') return isComputerStaff || isSolarStaff;
+    if (access === 'staff') return isComputerStaff || isSolarStaff || isShopManager;
     if (access === 'team') return true; // any signed-in staff role
     return false;
   };

@@ -17,7 +17,14 @@ export interface AppUser {
   email: string;
   displayName?: string;
   photoURL?: string;
-  role: 'admin' | 'computer-staff' | 'solar-staff' | 'full-staff' | 'installer' | 'customer';
+  role:
+    | 'admin'
+    | 'computer-staff'
+    | 'solar-staff'
+    | 'full-staff'
+    | 'shop-manager'
+    | 'installer'
+    | 'customer';
   disabled?: boolean;
   createdAt: number;
   lastSeenAt: number;
@@ -50,9 +57,15 @@ function normalize(data: Record<string, unknown>, uid: string): AppUser {
     displayName: data.displayName ? String(data.displayName) : undefined,
     photoURL: data.photoURL ? String(data.photoURL) : undefined,
     role: (
-      ['admin', 'computer-staff', 'solar-staff', 'full-staff', 'installer', 'customer'].includes(
-        String(data.role),
-      )
+      [
+        'admin',
+        'computer-staff',
+        'solar-staff',
+        'full-staff',
+        'shop-manager',
+        'installer',
+        'customer',
+      ].includes(String(data.role))
       ? data.role
       : 'customer') as AppUser['role'],
     disabled: Boolean(data.disabled ?? false),

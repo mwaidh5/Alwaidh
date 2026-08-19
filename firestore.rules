@@ -26,29 +26,50 @@ service cloud.firestore {
       return emailVerified()
         && request.auth.token.email in settingsData().get('solarStaffEmails', []);
     }
+    // Shop manager: the whole product catalogue, but nothing solar-side.
+    function isShopManager() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('shopManagerEmails', []);
+    }
     // Field installer: sees nothing except the jobs assigned to them.
     function isInstaller() {
       return emailVerified()
         && request.auth.token.email in settingsData().get('installerEmails', []);
     }
+    // Anyone who works here — used for the shared file library.
+    function isStaff() {
+      return isAdmin() || isComputerStaff() || isSolarStaff()
+        || isShopManager() || isInstaller();
+    }
 
-    // Product catalogue: public read. Admins write anything; computer staff may
-    // write computer/camera products; solar staff may write solar products.
+    // Product catalogue: public read. Admins and shop managers write anything;
+    // computer staff may write computer/camera products; solar staff may write
+    // solar products.
     match /products/{id} {
       allow read: if true;
-      allow create: if isAdmin()
+      allow create: if isAdmin() || isShopManager()
         || (isComputerStaff() && request.resource.data.category in ['computers', 'tiandy-cameras'])
         || (isSolarStaff() && request.resource.data.category == 'solar');
-      allow update: if isAdmin()
+      allow update: if isAdmin() || isShopManager()
         || (isComputerStaff()
             && resource.data.category in ['computers', 'tiandy-cameras']
             && request.resource.data.category in ['computers', 'tiandy-cameras'])
         || (isSolarStaff()
             && resource.data.category == 'solar'
             && request.resource.data.category == 'solar');
-      allow delete: if isAdmin()
+      allow delete: if isAdmin() || isShopManager()
         || (isComputerStaff() && resource.data.category in ['computers', 'tiandy-cameras'])
         || (isSolarStaff() && resource.data.category == 'solar');
+    }
+
+    // Shared file library: catalogues and other PDFs everyone who works here
+    // can reach. Any staff member can add one; entries are never rewritten,
+    // and only an admin or whoever uploaded it can remove one.
+    match /library/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.by == request.auth.token.email;
+      allow update: if false;
+      allow delete: if isAdmin() || (isStaff() && resource.data.by == request.auth.token.email);
     }
 
     // Orders: guests can place orders; admins manage them; signed-in
@@ -96,7 +117,7 @@ service cloud.firestore {
     // are open, but only staff can LIST the conversations.
     match /chats/{chatId} {
       allow get, create, update: if true;
-      allow list: if isAdmin() || isComputerStaff() || isSolarStaff();
+      allow list: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
       allow delete: if isAdmin();
 
       match /messages/{msgId} {

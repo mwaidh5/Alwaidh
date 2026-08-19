@@ -25,6 +25,7 @@ import AdminMedia from './pages/admin/AdminMedia';
 import AdminChat from './pages/admin/AdminChat';
 import AdminTeam from './pages/admin/AdminTeam';
 import AdminJobs from './pages/admin/AdminJobs';
+import AdminFiles from './pages/admin/AdminFiles';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="media" element={<AdminMedia />} />
           <Route path="chat" element={<AdminChat />} />
           <Route path="team" element={<AdminTeam />} />
+          <Route path="files" element={<AdminFiles />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

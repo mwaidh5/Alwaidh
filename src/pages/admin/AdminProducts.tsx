@@ -32,16 +32,16 @@ export default function AdminProducts() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
+  const { isAdmin, isComputerStaff, isSolarStaff, isShopManager } = useAuth();
   const allowedCategories = useMemo<CategorySlug[]>(
     () =>
-      isAdmin
+      isAdmin || isShopManager
         ? categories.map((c) => c.slug)
         : [
             ...(isComputerStaff ? (['computers', 'tiandy-cameras'] as CategorySlug[]) : []),
             ...(isSolarStaff ? (['solar'] as CategorySlug[]) : []),
           ],
-    [isAdmin, isComputerStaff, isSolarStaff],
+    [isAdmin, isComputerStaff, isSolarStaff, isShopManager],
   );
   const categoryOptions = categories.filter((c) => allowedCategories.includes(c.slug));
 

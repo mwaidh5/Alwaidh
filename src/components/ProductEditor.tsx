@@ -62,7 +62,7 @@ export default function ProductEditor({
   onClose: () => void;
   onSaved?: () => void;
 }) {
-  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
+  const { isAdmin, isComputerStaff, isSolarStaff, isShopManager } = useAuth();
   const [state, setState] = useState<FormState>(() => toFormState(product));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -72,13 +72,13 @@ export default function ProductEditor({
 
   const allowedCategories = useMemo<CategorySlug[]>(
     () =>
-      isAdmin
+      isAdmin || isShopManager
         ? categories.map((c) => c.slug)
         : [
             ...(isComputerStaff ? (['computers', 'tiandy-cameras'] as CategorySlug[]) : []),
             ...(isSolarStaff ? (['solar'] as CategorySlug[]) : []),
           ],
-    [isAdmin, isComputerStaff, isSolarStaff],
+    [isAdmin, isComputerStaff, isSolarStaff, isShopManager],
   );
 
   async function handleSave(asDraft: boolean) {
@@ -163,12 +163,13 @@ export function StaffProductEdit({
   product: Product;
   className?: string;
 }) {
-  const { isAdmin, isComputerStaff, isSolarStaff } = useAuth();
+  const { isAdmin, isComputerStaff, isSolarStaff, isShopManager } = useAuth();
   const { t } = useLang();
   const [open, setOpen] = useState(false);
 
   const canEdit =
     isAdmin ||
+    isShopManager ||
     (isComputerStaff &&
       (product.category === 'computers' || product.category === 'tiandy-cameras')) ||
     (isSolarStaff && product.category === 'solar');

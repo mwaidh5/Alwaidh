@@ -27,15 +27,33 @@ service firebase.storage {
       return emailVerified()
         && request.auth.token.email in settingsData().get('solarStaffEmails', []);
     }
+    function isShopManager() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('shopManagerEmails', []);
+    }
+    function isInstaller() {
+      return emailVerified()
+        && request.auth.token.email in settingsData().get('installerEmails', []);
+    }
+    function isStaff() {
+      return isAdmin() || isComputerStaff() || isSolarStaff()
+        || isShopManager() || isInstaller();
+    }
 
     // Public read for anything customers might see (product images, etc).
     match /{allPaths=**} {
       allow read: if true;
     }
 
-    // Product images: admins and product staff (either team).
+    // Product images: admins and product staff (either team, plus the shop
+    // manager, who looks after the whole catalogue).
     match /products/{allPaths=**} {
-      allow write: if isAdmin() || isComputerStaff() || isSolarStaff();
+      allow write: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+    }
+
+    // Shared file library: catalogues and other PDFs for the whole team.
+    match /library/{allPaths=**} {
+      allow write: if isStaff();
     }
 
     // Site images (hero, banners, logo): admin only.

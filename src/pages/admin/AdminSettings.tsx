@@ -52,6 +52,8 @@ export default function AdminSettings() {
         extraAdminEmails: latest.extraAdminEmails,
         computerStaffEmails: latest.computerStaffEmails,
         solarStaffEmails: latest.solarStaffEmails,
+        shopManagerEmails: latest.shopManagerEmails,
+        installerEmails: latest.installerEmails,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
