@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { createProduct, upsertProduct } from '../lib/productStore';
+import { createProduct, updateProductMedia, upsertProduct } from '../lib/productStore';
 import { replaceImageAt, uploadProductDoc, uploadProductImage } from '../lib/imageUpload';
-import { storagePathFromUrl } from '../lib/mediaStore';
+import { keepOriginalOnce, storagePathFromUrl } from '../lib/mediaStore';
 import { categories } from '../data/categories';
 import MediaPicker from './MediaPicker';
 import ImageEditor from './ImageEditor';
@@ -806,6 +806,14 @@ export function ProductDialog({
             // picture from another site has no file of ours to replace, so
             // that one is uploaded fresh.
             const existing = storagePathFromUrl(state.images[editingImage]);
+            // Keep the photo as it stands the first time it's edited, so
+            // "Back to original" has something to go back to.
+            if (existing) {
+              await keepOriginalOnce({
+                path: existing,
+                url: state.images[editingImage],
+              }).catch(() => undefined);
+            }
             const { url, file: stored } = existing
               ? await replaceImageAt(existing, file)
               : await uploadProductImage(file, state.id || undefined);
@@ -816,6 +824,26 @@ export function ProductDialog({
             });
             setEditingImage(null);
           }}
+          restore={(() => {
+            const path = storagePathFromUrl(state.images[editingImage]);
+            if (!path) return undefined; // a picture from another site
+            return {
+              path,
+              onRestored: async (url: string) => {
+                const images = state.images.map((img, idx) =>
+                  idx === editingImage ? url : img,
+                );
+                // The old address stops working the moment the file is
+                // written over, so a saved product is re-pointed straight
+                // away rather than waiting for Save.
+                if (state.id) {
+                  await updateProductMedia(state.id, { images, image: images[0] ?? '' });
+                }
+                setState({ ...state, images });
+                setEditingImage(null);
+              },
+            };
+          })()}
         />
       )}
     </div>

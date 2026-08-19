@@ -1,5 +1,13 @@
-import { deleteObject, listAll, ref, updateMetadata } from 'firebase/storage';
-import { LONG_CACHE } from './imageUpload';
+import {
+  deleteObject,
+  getDownloadURL,
+  getMetadata,
+  listAll,
+  ref,
+  updateMetadata,
+  uploadBytes,
+} from 'firebase/storage';
+import { LONG_CACHE, replaceImageAt } from './imageUpload';
 import { storage } from '../firebase';
 
 export interface MediaItem {
@@ -105,6 +113,102 @@ export async function listAllMedia(): Promise<MediaItem[]> {
 export async function deleteMedia(path: string): Promise<void> {
   if (!storage) return;
   await deleteObject(ref(storage, path));
+  // The untouched copy is no use once the picture itself is gone.
+  await deleteObject(ref(storage, backupPathFor(path))).catch(() => undefined);
+}
+
+/**
+ * Where the untouched copy of a picture is kept. Editing writes over the
+ * original file — which is what keeps every product and banner pointing at
+ * it — so the first edit tucks the original away here, and it stays put
+ * however many times the picture is edited afterwards.
+ *
+ * The path is encoded whole, so it maps back exactly and can never collide
+ * with another folder's file of the same name. `originals` is deliberately
+ * not one of ROOTS: these copies don't belong in the library.
+ */
+const ORIGINALS = 'originals';
+
+export function backupPathFor(path: string): string {
+  return `${ORIGINALS}/${encodeURIComponent(path)}`;
+}
+
+/** Which pictures have an untouched copy on file — one listing, not one
+ *  request per image. */
+export async function listOriginalBackups(): Promise<Set<string>> {
+  if (!storage) return new Set();
+  try {
+    const res = await listAll(ref(storage, ORIGINALS));
+    return new Set(
+      res.items.map((item) => {
+        try {
+          return decodeURIComponent(item.name);
+        } catch {
+          return item.name;
+        }
+      }),
+    );
+  } catch {
+    // No folder yet, or listing refused — nothing to offer restoring.
+    return new Set();
+  }
+}
+
+/** Is there an untouched copy of this picture to go back to? */
+export async function hasOriginalBackup(path: string): Promise<boolean> {
+  if (!storage) return false;
+  try {
+    await getMetadata(ref(storage, backupPathFor(path)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Keep a copy of the picture as it stands, unless one is already kept.
+ * Returns true if this call is what saved it.
+ *
+ * Only a genuine "it isn't there" counts as missing: if the check itself
+ * fails (offline, say), we stop rather than risk overwriting a real
+ * original with an already-edited version.
+ */
+export async function keepOriginalOnce(item: { path: string; url: string }): Promise<boolean> {
+  const store = storage;
+  if (!store) return false;
+  const backup = ref(store, backupPathFor(item.path));
+  try {
+    await getMetadata(backup);
+    return false; // already kept
+  } catch (e) {
+    if ((e as { code?: string })?.code !== 'storage/object-not-found') throw e;
+  }
+  const resp = await fetch(item.url, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(`Could not read this image (error ${resp.status}).`);
+  const blob = await resp.blob();
+  await uploadBytes(backup, blob, {
+    contentType: blob.type || 'image/jpeg',
+    cacheControl: LONG_CACHE,
+  });
+  return true;
+}
+
+/**
+ * Put the untouched copy back over the edited file. The address changes
+ * (Storage mints a new token on every write), so the caller still has to
+ * re-point whatever used the old one — the same as after an edit.
+ */
+export async function restoreOriginal(path: string): Promise<string> {
+  const store = storage;
+  if (!store) throw new Error('Firebase Storage is not configured.');
+  const backupUrl = await getDownloadURL(ref(store, backupPathFor(path)));
+  const resp = await fetch(backupUrl, { cache: 'no-store' });
+  if (!resp.ok) throw new Error('Could not read the saved original.');
+  const blob = await resp.blob();
+  const name = path.split('/').pop() || 'original';
+  const file = new File([blob], name, { type: blob.type || 'image/png' });
+  const { url } = await replaceImageAt(path, file);
+  return url;
 }
 
 /**

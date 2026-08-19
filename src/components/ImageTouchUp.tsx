@@ -1,16 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { buildEdgeMap, snapToEdge, type Point } from '../lib/edgeSnap';
 import { useLang } from '../lib/i18n';
 
-type Tool = 'erase' | 'restore' | 'lasso' | 'wand';
+type Tool = 'erase' | 'restore' | 'lasso' | 'magnet' | 'wand';
 
 /** How many steps back Undo can go. Snapshots are full frames, so this is
  *  a memory/usefulness trade rather than a technical limit. */
 const HISTORY = 12;
-
-interface Point {
-  x: number;
-  y: number;
-}
 
 /**
  * Hand tools for cleaning up a photo: rub parts away, paint them back,
@@ -47,6 +43,13 @@ export default function ImageTouchUp({
   const lasso = useRef<Point[]>([]);
   const lastPoint = useRef<Point | null>(null);
   const [hasLoop, setHasLoop] = useState(false);
+  /** Where the colours change sharply — how the magnetic lasso finds an
+   *  edge. Built from the picture as it stands, and thrown away whenever
+   *  the picture changes. */
+  const edges = useRef<Float32Array | null>(null);
+
+  /** Both loop tools behave the same; only the snapping differs. */
+  const isLoopTool = tool === 'lasso' || tool === 'magnet';
 
   /** Paint the working canvas into the visible one, plus any live lasso. */
   function repaint() {
@@ -103,6 +106,8 @@ export default function ImageTouchUp({
     if (!ctx) return;
     history.current.push(ctx.getImageData(0, 0, work.width, work.height));
     if (history.current.length > HISTORY) history.current.shift();
+    // The picture is about to change, so any edge map is now out of date.
+    edges.current = null;
     setCanUndo(true);
   }
 
@@ -110,6 +115,7 @@ export default function ImageTouchUp({
     const previous = history.current.pop();
     if (!previous) return;
     workRef.current.getContext('2d')?.putImageData(previous, 0, 0);
+    edges.current = null;
     setCanUndo(history.current.length > 0);
     repaint();
   }
@@ -208,6 +214,22 @@ export default function ImageTouchUp({
     repaint();
   }
 
+  /** Read the edges of the picture as it stands. */
+  function buildEdges(): Float32Array | null {
+    const work = workRef.current;
+    const ctx = work.getContext('2d');
+    if (!ctx || !work.width || !work.height) return null;
+    return buildEdgeMap(ctx.getImageData(0, 0, work.width, work.height).data, work.width, work.height);
+  }
+
+  /** Pull a point onto the nearest edge, if there is one worth having. */
+  function snap(point: Point): Point {
+    const map = edges.current;
+    if (!map) return point;
+    const { width, height } = workRef.current;
+    return snapToEdge(map, width, height, point);
+  }
+
   /** Finish a lasso: clear what's inside it, or everything outside. */
   function applyLasso(keepInside: boolean) {
     const path = lasso.current;
@@ -248,8 +270,14 @@ export default function ImageTouchUp({
       return;
     }
     drawing.current = true;
-    if (tool === 'lasso') {
-      lasso.current = [point];
+    if (isLoopTool) {
+      if (tool === 'magnet') {
+        // Read the edges once, here, so the drag itself stays smooth.
+        if (!edges.current) edges.current = buildEdges();
+        lasso.current = [snap(point)];
+      } else {
+        lasso.current = [point];
+      }
       setHasLoop(false);
       return;
     }
@@ -261,8 +289,8 @@ export default function ImageTouchUp({
   function onMove(e: React.PointerEvent) {
     if (!drawing.current) return;
     const point = toImage(e);
-    if (tool === 'lasso') {
-      lasso.current.push(point);
+    if (isLoopTool) {
+      lasso.current.push(tool === 'magnet' ? snap(point) : point);
       repaint();
       return;
     }
@@ -276,7 +304,7 @@ export default function ImageTouchUp({
     lastPoint.current = null;
     // A closed lasso is only a selection until it's acted on — the buttons
     // under the picture decide what happens to it.
-    if (tool === 'lasso') {
+    if (isLoopTool) {
       setHasLoop(lasso.current.length > 2);
       repaint();
     }
@@ -301,6 +329,7 @@ export default function ImageTouchUp({
     { key: 'erase', icon: '🧽', label: 'Rub out' },
     { key: 'restore', icon: '↩️', label: 'Bring back' },
     { key: 'lasso', icon: '➰', label: 'Draw around' },
+    { key: 'magnet', icon: '🧲', label: 'Snap to edges' },
     { key: 'wand', icon: '✨', label: 'Click a colour' },
   ];
 
@@ -373,7 +402,7 @@ export default function ImageTouchUp({
               <span className="w-8">{tolerance}</span>
             </label>
           )}
-          {tool === 'lasso' && hasLoop && (
+          {isLoopTool && hasLoop && (
             <span className="flex items-center gap-2">
               <button
                 type="button"
@@ -395,6 +424,7 @@ export default function ImageTouchUp({
             {tool === 'erase' && t('Drag over what you want gone.')}
             {tool === 'restore' && t('Drag to paint the picture back.')}
             {tool === 'lasso' && t('Draw a loop, then choose what happens to it.')}
+            {tool === 'magnet' && t('Trace around the edge — the line sticks to it as you go.')}
             {tool === 'wand' && t('Click a colour to drop it — the slider widens the match.')}
           </span>
         </div>

@@ -58,6 +58,12 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // Untouched copies of pictures that have been edited, so an edit can
+    // always be undone. Whoever may edit a picture may keep its original.
+    match /originals/{allPaths=**} {
+      allow write: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+    }
+
     // Site images (hero, banners, logo): admin only.
     match /site/{allPaths=**} {
       allow write: if isAdmin();

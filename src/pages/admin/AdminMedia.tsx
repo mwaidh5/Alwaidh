@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  keepOriginalOnce,
   listAllMedia,
+  listOriginalBackups,
   deleteMedia,
   refreshMediaCaching,
+  restoreOriginal,
   storagePathFromUrl,
   type MediaItem,
 } from '../../lib/mediaStore';
@@ -32,6 +35,9 @@ export default function AdminMedia() {
   const [editing, setEditing] = useState<MediaItem | null>(null);
   const [speeding, setSpeeding] = useState('');
   const [notice, setNotice] = useState('');
+  // Pictures with an untouched copy kept from an earlier edit.
+  const [backups, setBackups] = useState<Set<string>>(new Set());
+  const [restoring, setRestoring] = useState('');
 
   // Everything that can reference an image, so we can show what's in use.
   const settings = useSettings();
@@ -46,6 +52,9 @@ export default function AdminMedia() {
     try {
       setItems(await listAllMedia());
       setSelected(new Set());
+      // One listing tells us which pictures can be put back, rather than
+      // asking about each one.
+      setBackups(await listOriginalBackups());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load media.');
     } finally {
@@ -197,16 +206,12 @@ export default function AdminMedia() {
   }
 
   /**
-   * Upload the edited copy next to the original, then re-point every product
-   * and site setting that used the old file — so the edit shows up wherever
-   * the image appears, not just in the library.
+   * Point every product and site setting that used this file at its new
+   * address — so a change shows up wherever the image appears, not just in
+   * the library. Returns how many places were updated.
    */
-  async function saveEdited(item: MediaItem, file: File) {
-    // Write over the same file rather than leaving a second copy in the
-    // library. Storage issues a new download token on every write, so the
-    // address still changes and everything pointing at it is updated below.
-    const { url } = await replaceImageAt(item.path, file);
-    const matches = (u?: string) => Boolean(u) && storagePathFromUrl(u as string) === item.path;
+  async function repointReferences(path: string, url: string): Promise<number> {
+    const matches = (u?: string) => Boolean(u) && storagePathFromUrl(u as string) === path;
     let updated = 0;
 
     for (const p of [...products, ...trashed]) {
@@ -247,15 +252,62 @@ export default function AdminMedia() {
       }
     }
 
+    return updated;
+  }
+
+  /** Write the edited picture over the same file, keeping the untouched one
+   *  first so the edit can be undone later. */
+  async function saveEdited(item: MediaItem, file: File) {
+    // The first edit puts the photo as it stands into safekeeping. If that
+    // can't be done, the edit still goes ahead — but say so, rather than
+    // leaving a "Back to original" button that was never earned.
+    let kept = true;
+    try {
+      await keepOriginalOnce(item);
+    } catch {
+      kept = false;
+    }
+    // Write over the same file rather than leaving a second copy in the
+    // library. Storage issues a new download token on every write, so the
+    // address still changes and everything pointing at it is updated below.
+    const { url } = await replaceImageAt(item.path, file);
+    const updated = await repointReferences(item.path, url);
+
     setEditing(null);
     setPreview(null);
     setNotice(
-      updated
-        ? `✅ Image edited — ${updated} place${updated === 1 ? '' : 's'} now show the new version.`
-        : '✅ Edited copy saved to the library.',
+      `${
+        updated
+          ? `✅ Image edited — ${updated} place${updated === 1 ? '' : 's'} now show the new version.`
+          : '✅ Edited copy saved to the library.'
+      }${kept ? '' : ' (The original could not be kept, so this one cannot be undone.)'}`,
     );
     window.setTimeout(() => setNotice(''), 5000);
     await load();
+  }
+
+  /** Put the untouched photo back, wherever the edited one was used. */
+  async function handleRestore(item: MediaItem) {
+    if (!confirm('Put the original photo back? The edited version will be replaced.')) return;
+    setError('');
+    setRestoring(item.path);
+    try {
+      const url = await restoreOriginal(item.path);
+      const updated = await repointReferences(item.path, url);
+      setEditing(null);
+      setPreview(null);
+      setNotice(
+        updated
+          ? `↩ Original put back — ${updated} place${updated === 1 ? '' : 's'} updated.`
+          : '↩ Original put back.',
+      );
+      window.setTimeout(() => setNotice(''), 5000);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not put the original back.');
+    } finally {
+      setRestoring('');
+    }
   }
 
   /**
@@ -463,6 +515,17 @@ export default function AdminMedia() {
                     >
                       ✎ Edit
                     </button>
+                    {backups.has(item.path) && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(item)}
+                        disabled={restoring === item.path}
+                        title="Put the untouched photo back"
+                        className="text-xs font-semibold text-amber-700 hover:underline disabled:opacity-50"
+                      >
+                        {restoring === item.path ? '…' : '↩ Original'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => remove(item)}
@@ -533,6 +596,21 @@ export default function AdminMedia() {
           sourceUrl={editing.url}
           onCancel={() => setEditing(null)}
           onSave={(file) => saveEdited(editing, file)}
+          restore={{
+            path: editing.path,
+            onRestored: async (url) => {
+              const updated = await repointReferences(editing.path, url);
+              setEditing(null);
+              setPreview(null);
+              setNotice(
+                updated
+                  ? `↩ Original put back — ${updated} place${updated === 1 ? '' : 's'} updated.`
+                  : '↩ Original put back.',
+              );
+              window.setTimeout(() => setNotice(''), 5000);
+              await load();
+            },
+          }}
         />
       )}
     </div>
