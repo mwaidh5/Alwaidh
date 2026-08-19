@@ -46,6 +46,7 @@ export default function ImageTouchUp({
   const drawing = useRef(false);
   const lasso = useRef<Point[]>([]);
   const lastPoint = useRef<Point | null>(null);
+  const [hasLoop, setHasLoop] = useState(false);
 
   /** Paint the working canvas into the visible one, plus any live lasso. */
   function repaint() {
@@ -211,6 +212,7 @@ export default function ImageTouchUp({
   function applyLasso(keepInside: boolean) {
     const path = lasso.current;
     lasso.current = [];
+    setHasLoop(false);
     if (path.length < 3) {
       repaint();
       return;
@@ -245,12 +247,13 @@ export default function ImageTouchUp({
       wandAt(point);
       return;
     }
-    snapshot();
     drawing.current = true;
     if (tool === 'lasso') {
       lasso.current = [point];
+      setHasLoop(false);
       return;
     }
+    snapshot();
     lastPoint.current = point;
     paint(point, point);
   }
@@ -273,7 +276,10 @@ export default function ImageTouchUp({
     lastPoint.current = null;
     // A closed lasso is only a selection until it's acted on — the buttons
     // under the picture decide what happens to it.
-    if (tool === 'lasso') repaint();
+    if (tool === 'lasso') {
+      setHasLoop(lasso.current.length > 2);
+      repaint();
+    }
   }
 
   async function apply() {
@@ -316,6 +322,7 @@ export default function ImageTouchUp({
               type="button"
               onClick={() => {
                 lasso.current = [];
+                setHasLoop(false);
                 setTool(item.key);
                 repaint();
               }}
@@ -366,7 +373,7 @@ export default function ImageTouchUp({
               <span className="w-8">{tolerance}</span>
             </label>
           )}
-          {tool === 'lasso' && lasso.current.length > 2 && (
+          {tool === 'lasso' && hasLoop && (
             <span className="flex items-center gap-2">
               <button
                 type="button"
