@@ -80,6 +80,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     draft: Boolean(data.draft ?? false),
     datasheet: String(data.datasheet ?? ''),
     manual: String(data.manual ?? ''),
+    createdAtMs: toMillis(data.createdAt),
     deletedAtMs: toMillis(data.deletedAt),
     deletedBy: String(data.deletedBy ?? ''),
   };
@@ -207,10 +208,15 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function upsertProduct(product: Product): Promise<void> {
   const database = db;
   if (database) {
-    await setDoc(doc(database, COLLECTION, product.id), {
-      ...product,
-      updatedAt: serverTimestamp(),
-    });
+    // createdAtMs/deletedAtMs are read-side conveniences, not stored fields —
+    // writing them back would shadow the real timestamps. Merging keeps
+    // createdAt intact; a plain write dropped it on every edit.
+    const { createdAtMs, deletedAtMs, ...stored } = product;
+    await setDoc(
+      doc(database, COLLECTION, product.id),
+      { ...stored, updatedAt: serverTimestamp() },
+      { merge: true },
+    );
     return;
   }
   const list = readLocal();

@@ -61,7 +61,16 @@ export default function Home() {
     ? settings.brands
     : allBrands.map((b) => ({ name: b.name, image: settings.brandLogos?.[b.slug] ?? '' }));
 
-  const inStock = useMemo(() => products.filter((p) => p.inStock), [products]);
+  // Newest first. The shop hands products over in alphabetical order, which
+  // is why "New arrivals" used to open with whatever began with a digit.
+  // Products added before the date was recorded fall to the back.
+  const inStock = useMemo(
+    () =>
+      products
+        .filter((p) => p.inStock)
+        .sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0)),
+    [products],
+  );
   const newest = inStock.slice(0, 4);
   // A second strip further down, so the page shows more of the shop
   // without repeating what's already above it.
