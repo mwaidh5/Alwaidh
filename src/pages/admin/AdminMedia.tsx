@@ -13,7 +13,7 @@ import {
   updateProductMedia,
 } from '../../lib/productStore';
 import { updateSettingsField, type SiteSettings } from '../../lib/settingsStore';
-import { uploadImage } from '../../lib/imageUpload';
+import { replaceImageAt } from '../../lib/imageUpload';
 import ImageEditor from '../../components/ImageEditor';
 import { useSettings } from '../../lib/useSettings';
 import type { Product } from '../../types/product';
@@ -202,8 +202,10 @@ export default function AdminMedia() {
    * the image appears, not just in the library.
    */
   async function saveEdited(item: MediaItem, file: File) {
-    const folder = item.path.split('/').slice(0, -1).join('/') || 'site';
-    const { url } = await uploadImage(file, folder);
+    // Write over the same file rather than leaving a second copy in the
+    // library. Storage issues a new download token on every write, so the
+    // address still changes and everything pointing at it is updated below.
+    const { url } = await replaceImageAt(item.path, file);
     const matches = (u?: string) => Boolean(u) && storagePathFromUrl(u as string) === item.path;
     let updated = 0;
 

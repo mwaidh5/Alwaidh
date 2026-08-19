@@ -262,3 +262,29 @@ export async function uploadInvoice(file: File, jobId?: string): Promise<UploadR
   const url = await getDownloadURL(objectRef);
   return { url, path };
 }
+
+/**
+ * Write an edited picture back over the file it came from, instead of
+ * leaving a second copy in the library.
+ *
+ * Storage mints a fresh download token on every write, so the address
+ * changes even though the file doesn't — the caller still has to re-point
+ * whatever referred to it. That's the price of keeping images cacheable:
+ * an unchanged address with a year-long cache would keep showing the old
+ * picture.
+ */
+export async function replaceImageAt(path: string, file: File): Promise<UploadResult> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not configured. Add VITE_FIREBASE_* values to your .env.');
+  }
+  const objectRef = ref(storage, path);
+  try {
+    await uploadBytes(objectRef, file, {
+      contentType: file.type || 'image/png',
+      cacheControl: LONG_CACHE,
+    });
+    return { url: await getDownloadURL(objectRef), path, file };
+  } catch (e) {
+    throw friendlyUploadError(e);
+  }
+}

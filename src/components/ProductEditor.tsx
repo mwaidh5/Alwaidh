@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createProduct, upsertProduct } from '../lib/productStore';
-import { uploadProductDoc, uploadProductImage } from '../lib/imageUpload';
+import { replaceImageAt, uploadProductDoc, uploadProductImage } from '../lib/imageUpload';
+import { storagePathFromUrl } from '../lib/mediaStore';
 import { categories } from '../data/categories';
 import MediaPicker from './MediaPicker';
 import ImageEditor from './ImageEditor';
@@ -744,9 +745,14 @@ export function ProductDialog({
           sourceUrl={state.images[editingImage]}
           onCancel={() => setEditingImage(null)}
           onSave={async (file) => {
-            // Upload the edited copy and swap it into the same slot; the
-            // original stays in Storage untouched in case it's needed again.
-            const { url, file: stored } = await uploadProductImage(file, state.id || undefined);
+            // Write over the same file where we can, so editing a photo
+            // doesn't leave a second copy behind in the media library. A
+            // picture from another site has no file of ours to replace, so
+            // that one is uploaded fresh.
+            const existing = storagePathFromUrl(state.images[editingImage]);
+            const { url, file: stored } = existing
+              ? await replaceImageAt(existing, file)
+              : await uploadProductImage(file, state.id || undefined);
             if (stored) uploadedFiles.current.set(url, stored);
             setState({
               ...state,
