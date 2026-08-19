@@ -90,6 +90,17 @@ export default function AdminMedia() {
       add(u, `Category tile — ${slug}`),
     );
     Object.entries(settings.brandLogos ?? {}).forEach(([slug, u]) => add(u, `Brand logo — ${slug}`));
+    // Homepage banners, tiles and the brand strip are edited in Settings and
+    // hold their pictures in lists — without these they showed as "Unused"
+    // and were easy to delete by mistake.
+    (settings.heroSlides ?? []).forEach((slide, i) => {
+      add(slide.image, `Homepage banner ${i + 1}`);
+      add(slide.mobileImage, `Homepage banner ${i + 1} — phone`);
+    });
+    (settings.promoTiles ?? []).forEach((tile, i) =>
+      add(tile.image, `Homepage tile ${i + 1}${tile.title ? ` — ${tile.title}` : ''}`),
+    );
+    (settings.brands ?? []).forEach((b) => add(b.image, `Brand — ${b.name || 'unnamed'}`));
     return map;
   }, [products, trashed, settings]);
 
