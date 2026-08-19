@@ -69,7 +69,9 @@ service cloud.firestore {
       allow read: if isStaff();
       allow create: if isStaff() && request.resource.data.by == request.auth.token.email;
       allow update: if false;
-      allow delete: if isAdmin() || (isStaff() && resource.data.by == request.auth.token.email);
+      // Removing a file is the admin's call: everyone else works from what
+      // is on the shelf, so nobody can take one away from under them.
+      allow delete: if isAdmin();
     }
 
     // Orders: guests can place orders; admins manage them; signed-in

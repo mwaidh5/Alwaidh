@@ -14,14 +14,12 @@ import PdfView from '../../components/PdfView';
 
 /**
  * The team's shelf of documents. Anyone who works here can open what's on
- * it and add to it; a file is removed by whoever put it there, or by an
- * admin. PDFs open in a viewer here rather than sending people off to
- * another tab.
+ * it and add to it; only an admin removes anything. PDFs open in a viewer
+ * here rather than sending people off to another tab.
  */
 export default function AdminFiles() {
   const { t } = useLang();
-  const { user, isAdmin } = useAuth();
-  const me = user?.email?.toLowerCase() ?? '';
+  const { isAdmin } = useAuth();
   const [files, setFiles] = useState<LibraryFile[] | null>(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -150,7 +148,9 @@ export default function AdminFiles() {
                   >
                     {copied === f.id ? t('Copied ✓') : t('Copy link')}
                   </button>
-                  {(isAdmin || f.by.toLowerCase() === me) && (
+                  {/* Only an admin takes a file off the shelf — everyone
+                      else relies on it being there. */}
+                  {isAdmin && (
                     <button
                       type="button"
                       onClick={() => handleDelete(f)}

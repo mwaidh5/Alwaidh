@@ -52,8 +52,10 @@ service firebase.storage {
     }
 
     // Shared file library: catalogues and other PDFs for the whole team.
+    // Anyone who works here can add one; only an admin removes one.
     match /library/{allPaths=**} {
-      allow write: if isStaff();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
     }
 
     // Site images (hero, banners, logo): admin only.

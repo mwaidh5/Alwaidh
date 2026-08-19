@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "balloon-tasks",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "balloon-tasks", "-l", "4600"],
+      "port": 4600
+    },
+    {
       "name": "alwaidh-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
