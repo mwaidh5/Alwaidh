@@ -126,8 +126,8 @@ export async function uploadLibraryFile(input: {
 }
 
 /**
- * Take a file off the shelf. The record goes first: if the stored file is
- * already gone (or this account may not touch it), the entry still
+ * Take a file off the shelf — admins only, as the rules enforce. The
+ * record goes first: if the stored file is already gone, the entry still
  * disappears instead of being left pointing at nothing.
  */
 export async function deleteLibraryFile(item: LibraryFile): Promise<void> {
