@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
+import { hasOriginalBackup, restoreOriginal } from '../lib/mediaStore';
 import ImageTouchUp from './ImageTouchUp';
 
 /** Normalized crop rectangle: 0..1 of the working image, so it survives
@@ -60,6 +61,7 @@ export default function ImageEditor({
   sourceUrl,
   onCancel,
   onSave,
+  restore,
 }: {
   /** Fetches the original bytes (the caller knows how to reach Storage). */
   getSource: () => Promise<Blob>;
@@ -68,6 +70,12 @@ export default function ImageEditor({
   onCancel: () => void;
   /** Receives the edited image; the caller uploads and swaps it in. */
   onSave: (file: File) => Promise<void>;
+  /**
+   * Lets an edit be undone long after it was saved. Give the Storage path
+   * of the picture; if an untouched copy was kept, a "Back to original"
+   * button appears and `onRestored` gets the address it's at now.
+   */
+  restore?: { path: string; onRestored: (url: string) => void | Promise<void> };
 }) {
   const { t } = useLang();
   const [workUrl, setWorkUrl] = useState('');
@@ -85,6 +93,34 @@ export default function ImageEditor({
   const localInput = useRef<HTMLInputElement>(null);
   const [touchUp, setTouchUp] = useState(false);
   const [touchUpSource, setTouchUpSource] = useState<Blob | null>(null);
+  // Whether this picture has an untouched copy kept from an earlier edit.
+  const [canRestore, setCanRestore] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
+  useEffect(() => {
+    if (!restore) return;
+    let cancelled = false;
+    hasOriginalBackup(restore.path).then((yes) => {
+      if (!cancelled) setCanRestore(yes);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [restore?.path]);
+
+  async function handleRestore() {
+    if (!restore) return;
+    if (!confirm(t('Put the original photo back? Your edits to it will be lost.'))) return;
+    setError('');
+    setRestoring(true);
+    try {
+      const url = await restoreOriginal(restore.path);
+      await restore.onRestored(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not put the original back.');
+      setRestoring(false);
+    }
+  }
 
   /** Open the hand tools on the picture as it stands, crop included. */
   async function openTouchUp() {
@@ -456,7 +492,19 @@ export default function ImageEditor({
           />
         )}
 
-        <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
+          {/* An edit is never final: the untouched photo is kept the first
+              time one is saved, and this puts it back. */}
+          {canRestore && (
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={working || restoring}
+              className="me-auto rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+            >
+              {restoring ? t('Putting it back…') : `↩ ${t('Back to original')}`}
+            </button>
+          )}
           <button type="button" onClick={onCancel} disabled={busy === 'saving'} className="btn-secondary">
             {t('Cancel')}
           </button>

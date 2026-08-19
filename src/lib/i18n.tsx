@@ -770,6 +770,15 @@ const AR: Record<string, string> = {
   'Upload failed.': 'فشل الرفع.',
   'This file type opens outside the dashboard — use Download.':
     'يُفتح هذا النوع خارج لوحة التحكم — استخدم تنزيل.',
+
+  // ---- Photo tools ----
+  'Snap to edges': 'التصاق بالحواف',
+  'Trace around the edge — the line sticks to it as you go.':
+    'ارسم حول الحافة — يلتصق الخط بها أثناء الرسم.',
+  'Back to original': 'العودة إلى الأصل',
+  'Putting it back…': 'جاري الإرجاع…',
+  'Put the original photo back? Your edits to it will be lost.':
+    'إرجاع الصورة الأصلية؟ ستفقد التعديلات التي أجريتها عليها.',
 };
 
 interface LanguageValue {
