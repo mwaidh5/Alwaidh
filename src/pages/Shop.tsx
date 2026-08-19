@@ -155,9 +155,9 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="container-page grid gap-8 py-8 lg:grid-cols-[280px_1fr]">
+      <div className="container-page grid gap-8 py-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         {/* Sidebar — a panel on phones, always-on column from lg up. */}
-        <aside className={`space-y-8 ${filtersOpen ? '' : 'hidden'} lg:block`}>
+        <aside className={`min-w-0 space-y-8 ${filtersOpen ? '' : 'hidden'} lg:block`}>
           <div className="flex items-center justify-between lg:hidden">
             <p className="font-bold text-slate-900">Filters</p>
             <button
@@ -291,7 +291,7 @@ export default function Shop() {
         </aside>
 
         {/* Main */}
-        <section>
+        <section className="min-w-0">
           {/* Toolbar */}
           <div className="mb-4 flex items-center gap-2 lg:hidden">
             <div className="relative flex-1">
@@ -402,7 +402,7 @@ export default function Shop() {
 
           {/* Pagination */}
           {pageCount > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-2">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
               <PageButton
                 disabled={currentPage === 1}
                 onClick={() => setPage(currentPage - 1)}
