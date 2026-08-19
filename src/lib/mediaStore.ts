@@ -1,4 +1,5 @@
-import { deleteObject, listAll, ref } from 'firebase/storage';
+import { deleteObject, listAll, ref, updateMetadata } from 'firebase/storage';
+import { LONG_CACHE } from './imageUpload';
 import { storage } from '../firebase';
 
 export interface MediaItem {
@@ -104,4 +105,38 @@ export async function listAllMedia(): Promise<MediaItem[]> {
 export async function deleteMedia(path: string): Promise<void> {
   if (!storage) return;
   await deleteObject(ref(storage, path));
+}
+
+/**
+ * Give every file already in Storage the long cache life that new uploads
+ * now get. Anything uploaded before that change is served as
+ * `private, max-age=0`, so browsers re-fetch every picture on every page
+ * view — the single biggest reason images feel slower than the rest of the
+ * site. Runs over the whole library once; re-running is harmless.
+ */
+export async function refreshMediaCaching(
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ updated: number; failed: number }> {
+  const store = storage;
+  if (!store) return { updated: 0, failed: 0 };
+  const items = await listAllMedia();
+  let updated = 0;
+  let failed = 0;
+  // A handful at a time: enough to be quick, gentle enough not to be
+  // throttled halfway through a few hundred files.
+  const BATCH = 8;
+  for (let i = 0; i < items.length; i += BATCH) {
+    await Promise.all(
+      items.slice(i, i + BATCH).map(async (item) => {
+        try {
+          await updateMetadata(ref(store, item.path), { cacheControl: LONG_CACHE });
+          updated++;
+        } catch {
+          failed++;
+        }
+      }),
+    );
+    onProgress?.(Math.min(i + BATCH, items.length), items.length);
+  }
+  return { updated, failed };
 }

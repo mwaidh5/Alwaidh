@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { listAllMedia, deleteMedia, storagePathFromUrl, type MediaItem } from '../../lib/mediaStore';
+import {
+  listAllMedia,
+  deleteMedia,
+  refreshMediaCaching,
+  storagePathFromUrl,
+  type MediaItem,
+} from '../../lib/mediaStore';
 import {
   productStorageMode,
   subscribeDeletedProducts,
@@ -24,6 +30,7 @@ export default function AdminMedia() {
   const [filter, setFilter] = useState<Filter>('all');
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState<MediaItem | null>(null);
+  const [speeding, setSpeeding] = useState('');
   const [notice, setNotice] = useState('');
 
   // Everything that can reference an image, so we can show what's in use.
@@ -238,6 +245,30 @@ export default function AdminMedia() {
     await load();
   }
 
+  /**
+   * Older uploads were stored without a cache life, so browsers re-fetched
+   * every picture on every visit. This stamps the long one onto them.
+   */
+  async function speedUpImages() {
+    setSpeeding('Working…');
+    setError('');
+    try {
+      const { updated, failed } = await refreshMediaCaching((done, total) =>
+        setSpeeding(`${done} / ${total}`),
+      );
+      setNotice(
+        failed
+          ? `✅ ${updated} images will now load from the cache. ${failed} could not be updated.`
+          : `✅ ${updated} images will now load from the cache instead of downloading again.`,
+      );
+      window.setTimeout(() => setNotice(''), 6000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update the images.');
+    } finally {
+      setSpeeding('');
+    }
+  }
+
   const local = productStorageMode() === 'local';
 
   return (
@@ -251,9 +282,20 @@ export default function AdminMedia() {
               : 'Every image uploaded to your store.'}
           </p>
         </div>
-        <button type="button" onClick={load} disabled={loading} className="btn-secondary">
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={speedUpImages}
+            disabled={Boolean(speeding) || loading}
+            title="Let browsers keep a copy of each image instead of downloading it every time"
+            className="btn-secondary"
+          >
+            {speeding ? `⚡ ${speeding}` : '⚡ Speed up image loading'}
+          </button>
+          <button type="button" onClick={load} disabled={loading} className="btn-secondary">
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
       </header>
 
       {local && (
