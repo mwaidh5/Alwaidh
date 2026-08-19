@@ -19,6 +19,8 @@ const config: CapacitorConfig = {
     // -> accounts.google.com -> back) gets kicked out to Safari and the
     // app never receives the signed-in session.
     allowNavigation: [
+      'alwaidh.com',
+      'www.alwaidh.com',
       'alwaidh-baeb5.web.app',
       'alwaidh-baeb5.firebaseapp.com',
       'accounts.google.com',
