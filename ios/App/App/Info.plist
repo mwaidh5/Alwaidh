@@ -33,6 +33,15 @@
 			</array>
 		</dict>
 	</array>
+	<!-- iOS terminates the app the moment it opens the camera or photo
+	     library without a stated reason. Choosing "Take Photo" for a product
+	     image did exactly that. These are the words shown in the prompt. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos of products and installations to add to the shop.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose photos of products and installations to add to the shop.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save pictures from the app to your photo library.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
