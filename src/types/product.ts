@@ -34,6 +34,9 @@ export interface Product {
   deliveryFee?: number | null; // overrides the store's default delivery fee
   separateDelivery?: boolean;  // ships on its own: fee is ADDED, not merged
   draft?: boolean;      // true = hidden from the shop, staff-only
+  /** When it was added, for "newest first" ordering. Missing on products
+   *  created before this was recorded. */
+  createdAtMs?: number | null;
   deletedAtMs?: number | null; // set = product is in the Trash
   deletedBy?: string;   // who moved it to the Trash
 }
