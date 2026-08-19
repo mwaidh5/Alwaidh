@@ -64,6 +64,7 @@ export function useStaffDirectory(): StaffPerson[] {
     add(settings.extraAdminEmails, 'Admin');
     add(settings.computerStaffEmails, 'Computer staff');
     add(settings.solarStaffEmails, 'Solar staff');
+    add(settings.shopManagerEmails, 'Shop manager');
     add(settings.installerEmails, 'Installer');
 
     return [...roleOf.entries()]

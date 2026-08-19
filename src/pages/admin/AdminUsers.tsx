@@ -17,6 +17,7 @@ const ROLES: AppUser['role'][] = [
   'computer-staff',
   'solar-staff',
   'full-staff',
+  'shop-manager',
   'installer',
   'customer',
 ];
@@ -26,6 +27,7 @@ const ROLE_LABELS: Record<AppUser['role'], string> = {
   'computer-staff': 'Computer staff — computers & cameras',
   'solar-staff': 'Solar staff — solar, prices & jobs',
   'full-staff': 'Full staff — computers, cameras & solar',
+  'shop-manager': 'Shop manager — the whole shop, no solar jobs',
   installer: 'Installer — only the jobs assigned to them',
   customer: 'Customer',
 };
@@ -36,6 +38,7 @@ function effectiveRole(email: string, settings: SiteSettings | null): AppUser['r
   if (ADMIN_EMAILS.includes(e)) return 'admin';
   if (!settings) return 'customer';
   if (settings.extraAdminEmails.includes(e)) return 'admin';
+  if (settings.shopManagerEmails?.includes(e)) return 'shop-manager';
   const computer = settings.computerStaffEmails.includes(e);
   const solar = settings.solarStaffEmails.includes(e);
   if (computer && solar) return 'full-staff';
@@ -54,6 +57,7 @@ function withRoleAssigned(s: SiteSettings, email: string, role: AppUser['role'])
     extraAdminEmails: without(s.extraAdminEmails),
     computerStaffEmails: without(s.computerStaffEmails),
     solarStaffEmails: without(s.solarStaffEmails),
+    shopManagerEmails: without(s.shopManagerEmails ?? []),
     installerEmails: without(s.installerEmails ?? []),
   };
   if (role === 'admin') next.extraAdminEmails = [...next.extraAdminEmails, e];
@@ -61,6 +65,7 @@ function withRoleAssigned(s: SiteSettings, email: string, role: AppUser['role'])
     next.computerStaffEmails = [...next.computerStaffEmails, e];
   if (role === 'solar-staff' || role === 'full-staff')
     next.solarStaffEmails = [...next.solarStaffEmails, e];
+  if (role === 'shop-manager') next.shopManagerEmails = [...next.shopManagerEmails, e];
   if (role === 'installer') next.installerEmails = [...next.installerEmails, e];
   return next;
 }

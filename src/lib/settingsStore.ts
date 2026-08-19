@@ -127,6 +127,9 @@ export interface SiteSettings {
   extraAdminEmails: string[];
   computerStaffEmails: string[];
   solarStaffEmails: string[];
+  /** Shop managers: the whole product catalogue, but nothing to do with
+   *  solar jobs or prices. */
+  shopManagerEmails: string[];
   /** Field installers: they only see the jobs assigned to them. */
   installerEmails: string[];
   heroImage: string;
@@ -165,6 +168,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   extraAdminEmails: [],
   computerStaffEmails: [],
   solarStaffEmails: [],
+  shopManagerEmails: [],
   installerEmails: [],
   heroImage: '',
   solarBannerImage: '',
@@ -236,6 +240,9 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     solarStaffEmails: Array.isArray(data.solarStaffEmails)
       ? (data.solarStaffEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.solarStaffEmails,
+    shopManagerEmails: Array.isArray(data.shopManagerEmails)
+      ? (data.shopManagerEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.shopManagerEmails,
     installerEmails: Array.isArray(data.installerEmails)
       ? (data.installerEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.installerEmails,
@@ -345,6 +352,7 @@ export async function saveSettings(s: SiteSettings): Promise<void> {
     extraAdminEmails: cleanEmails(s.extraAdminEmails),
     computerStaffEmails: cleanEmails(s.computerStaffEmails),
     solarStaffEmails: cleanEmails(s.solarStaffEmails),
+    shopManagerEmails: cleanEmails(s.shopManagerEmails),
     installerEmails: cleanEmails(s.installerEmails),
   };
   if (database) {

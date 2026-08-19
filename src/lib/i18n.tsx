@@ -741,6 +741,35 @@ const AR: Record<string, string> = {
   Hours: 'أوقات الدوام',
   'Sinaa Street, Baghdad, Iraq': 'شارع الصناعة، بغداد، العراق',
   'Saturday – Thursday, 8:30 AM – 3:30 PM': 'السبت – الخميس، 8:30 صباحاً – 3:30 مساءً',
+
+  // ---- Sharing a product ----
+  Share: 'مشاركة',
+  'Share this product': 'شارك هذا المنتج',
+  'Link copied ✓': 'تم نسخ الرابط ✓',
+  'Could not copy': 'تعذّر النسخ',
+
+  // ---- Shared files ----
+  Files: 'الملفات',
+  'Catalogues, price lists and other documents — shared with everyone who works here.':
+    'الكتالوجات وقوائم الأسعار والمستندات الأخرى — متاحة لكل من يعمل هنا.',
+  'Search files…': 'ابحث في الملفات…',
+  'Nothing here yet — upload a catalogue to get started.':
+    'لا يوجد شيء بعد — ارفع كتالوجاً للبدء.',
+  'No files match that search.': 'لا توجد ملفات مطابقة للبحث.',
+  'Added by': 'أضافه',
+  View: 'عرض',
+  Download: 'تنزيل',
+  'Copied ✓': 'تم النسخ ✓',
+  'Remove this file for everyone?': 'إزالة هذا الملف للجميع؟',
+  'Could not remove the file.': 'تعذّر حذف الملف.',
+  'or drop a file here — PDF up to 25 MB':
+    'أو أفلت ملفاً هنا — PDF لغاية 25 ميغابايت',
+  'Note (optional)': 'ملاحظة (اختياري)',
+  'e.g. 2026 price list': 'مثال: قائمة أسعار 2026',
+  'Uploaded ✓': 'تم الرفع ✓',
+  'Upload failed.': 'فشل الرفع.',
+  'This file type opens outside the dashboard — use Download.':
+    'يُفتح هذا النوع خارج لوحة التحكم — استخدم تنزيل.',
 };
 
 interface LanguageValue {

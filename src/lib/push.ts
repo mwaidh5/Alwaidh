@@ -64,6 +64,7 @@ export interface Roles {
   isAdmin: boolean;
   isComputerStaff: boolean;
   isSolarStaff: boolean;
+  isShopManager?: boolean;
   isInstaller?: boolean;
 }
 
@@ -73,7 +74,8 @@ export function channelsFor(roles: Roles): NotificationChannel[] {
     if (key === 'team') return true; // everyone has colleagues
     if (key === 'jobs' || key === 'jobActivity') return roles.isAdmin || roles.isSolarStaff;
     if (key === 'orders') return roles.isAdmin;
-    return roles.isAdmin || roles.isComputerStaff || roles.isSolarStaff; // messages
+    // messages
+    return roles.isAdmin || roles.isComputerStaff || roles.isSolarStaff || !!roles.isShopManager;
   });
 }
 

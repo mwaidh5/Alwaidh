@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProducts } from '../lib/useProducts';
 import { getCategory } from '../data/categories';
 import { discountPercent, formatPrice } from '../lib/format';
+import { publicUrl, shareLink } from '../lib/share';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
+import PdfView from '../components/PdfView';
 import type { Product } from '../types/product';
 
 export default function ProductDetail() {
@@ -164,6 +166,7 @@ export default function ProductDetail() {
             >
               {added ? t('Added ✓') : t('Add to cart')}
             </button>
+            <ShareButton product={product} />
           </div>
 
           <div className="mt-8">
@@ -231,6 +234,46 @@ function relatedProducts(current: Product, all: Product[]): Product[] {
     .map((x) => x.p);
 }
 
+/**
+ * Send this product to someone. On a phone that's the usual share sheet —
+ * WhatsApp, Messages, anything installed; everywhere else the link is
+ * copied, and the button says so.
+ */
+function ShareButton({ product }: { product: Product }) {
+  const { t } = useLang();
+  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  async function handleShare() {
+    const url = publicUrl(`/product/${product.id}`);
+    const outcome = await shareLink({
+      title: product.name,
+      text: `${product.name} — ${formatPrice(product.price, product.currency)}`,
+      url,
+    });
+    setState(outcome === 'shared' ? 'idle' : outcome === 'copied' ? 'copied' : 'failed');
+    if (outcome !== 'shared') setTimeout(() => setState('idle'), 2000);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="btn-secondary inline-flex items-center gap-1.5"
+      title={t('Share this product')}
+    >
+      {state === 'copied' ? (
+        t('Link copied ✓')
+      ) : state === 'failed' ? (
+        t('Could not copy')
+      ) : (
+        <>
+          <span aria-hidden>🔗</span> {t('Share')}
+        </>
+      )}
+    </button>
+  );
+}
+
 function DatasheetSection({ url }: { url: string }) {
   const { t } = useLang();
   const isPdf = /\.pdf(\?|$)/i.test(safeDecode(url));
@@ -249,78 +292,12 @@ function DatasheetSection({ url }: { url: string }) {
       </div>
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
         {isPdf ? (
-          <PdfPages url={url} />
+          <PdfView url={url} />
         ) : (
           <img src={url} alt="Product datasheet" className="w-full" loading="lazy" />
         )}
       </div>
     </section>
-  );
-}
-
-/**
- * Renders a PDF as sharp page images sized to the container and the
- * device's pixel density (browsers' built-in PDF frames come out blurry,
- * and the iOS webview shows only a low-res first page).
- */
-function PdfPages({ url }: { url: string }) {
-  const { t } = useLang();
-  const holder = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const pdfjs = await import('pdfjs-dist');
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url,
-        ).toString();
-        const docPdf = await pdfjs.getDocument({ url }).promise;
-        if (cancelled || !holder.current) return;
-        const el = holder.current;
-        el.innerHTML = '';
-        const width = el.clientWidth || 800;
-        // Render at up to 2x pixel density for crispness without huge memory.
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        for (let n = 1; n <= docPdf.numPages; n++) {
-          const page = await docPdf.getPage(n);
-          if (cancelled) return;
-          const base = page.getViewport({ scale: 1 });
-          const viewport = page.getViewport({ scale: (width / base.width) * dpr });
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.floor(viewport.width);
-          canvas.height = Math.floor(viewport.height);
-          canvas.style.width = '100%';
-          canvas.style.display = 'block';
-          if (n > 1) canvas.style.borderTop = '1px solid #e2e8f0';
-          const ctx = canvas.getContext('2d');
-          if (!ctx) continue;
-          el.appendChild(canvas);
-          await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-        }
-        if (!cancelled) setStatus('ready');
-      } catch {
-        if (!cancelled) setStatus('error');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [url]);
-
-  if (status === 'error') {
-    // Rendering failed (e.g. corrupted file) — fall back to the browser frame.
-    return <iframe src={url} title="Product datasheet" className="h-[75vh] w-full" />;
-  }
-  return (
-    <div className="max-h-[80vh] overflow-y-auto">
-      {status === 'loading' && (
-        <p className="p-8 text-center text-sm text-slate-500">{t('Loading datasheet…')}</p>
-      )}
-      <div ref={holder} />
-    </div>
   );
 }
 
