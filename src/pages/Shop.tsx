@@ -68,6 +68,15 @@ export default function Shop() {
   );
 
   const [selectedSubs, setSelectedSubs] = useState<string[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Shown on the Filters button so it's obvious something is narrowing the
+  // list even while the panel is closed.
+  const activeFilterCount =
+    (activeCategory !== 'all' ? 1 : 0) +
+    selectedSubs.length +
+    selectedBrands.length +
+    (inStockOnly ? 1 : 0) +
+    (maxPrice != null ? 1 : 0);
 
   // Sub-categories actually present in the current category selection.
   const subOptions = useMemo(() => {
@@ -147,23 +156,18 @@ export default function Shop() {
       </div>
 
       <div className="container-page grid gap-8 py-8 lg:grid-cols-[280px_1fr]">
-        {/* Sidebar */}
-        <aside className="space-y-8">
-          <SidebarSection title="Search">
-            <div className="relative">
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search our store"
-                className="input pr-9"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                🔍
-              </span>
-            </div>
-          </SidebarSection>
-
+        {/* Sidebar — a panel on phones, always-on column from lg up. */}
+        <aside className={`space-y-8 ${filtersOpen ? '' : 'hidden'} lg:block`}>
+          <div className="flex items-center justify-between lg:hidden">
+            <p className="font-bold text-slate-900">Filters</p>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700"
+            >
+              Done
+            </button>
+          </div>
           {topRated.length > 0 && (
           <SidebarSection title="Top Rated Products">
             <ul className="space-y-4">
@@ -289,6 +293,49 @@ export default function Shop() {
         {/* Main */}
         <section>
           {/* Toolbar */}
+          <div className="mb-4 flex items-center gap-2 lg:hidden">
+            <div className="relative flex-1">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search our store"
+                className="input pr-9"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                🔍
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((o) => !o)}
+              className="flex flex-none items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+            >
+              ⚙ Filters
+              {activeFilterCount > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Desktop keeps the search in the sidebar column's place. */}
+          <div className="mb-4 hidden lg:block">
+            <div className="relative">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search our store"
+                className="input pr-9"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                🔍
+              </span>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3">
             <div className="flex items-center gap-1">
               <ViewButton active={view === 'grid'} onClick={() => setView('grid')} label="Grid view">
@@ -340,7 +387,7 @@ export default function Shop() {
               </button>
             </div>
           ) : view === 'grid' ? (
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3">
               {pageItems.map((p) => (
                 <GridCard key={p.id} product={p} onAdd={() => add(p.id, 1)} />
               ))}
@@ -489,7 +536,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
         product={product}
         className="absolute left-2 top-2 z-10 rounded-md bg-slate-900/80 px-2 py-1 text-xs font-bold text-white opacity-0 transition hover:bg-slate-900 focus:opacity-100 group-hover:opacity-100"
       />
-      <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-6">
+      <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-slate-50 p-3 sm:p-6">
         <img
           src={product.image}
           alt={product.name}
@@ -497,22 +544,22 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
           className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
         />
       </Link>
-      <div className="flex flex-1 flex-col items-center gap-2 p-4">
+      <div className="flex flex-1 flex-col items-center gap-1.5 p-3 sm:gap-2 sm:p-4">
         <StarRating rating={product.rating} />
         <Link
           to={`/product/${product.id}`}
-          className="line-clamp-2 font-semibold text-slate-900 hover:text-brand-700"
+          className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 hover:text-brand-700 sm:text-base"
         >
           {product.name}
         </Link>
-        <div className="text-lg font-bold text-brand-700">
+        <div className="text-base font-bold text-brand-700 sm:text-lg">
           {formatPrice(product.price, product.currency)}
         </div>
         <button
           type="button"
           onClick={onAdd}
           disabled={!product.inStock}
-          className="btn-primary mt-2 px-4 py-2 text-sm opacity-0 transition group-hover:opacity-100 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:opacity-100"
+          className="btn-primary mt-1 w-full px-3 py-2 text-xs transition disabled:cursor-not-allowed disabled:bg-slate-300 sm:mt-2 sm:w-auto sm:px-4 sm:text-sm sm:opacity-0 sm:group-hover:opacity-100 sm:disabled:opacity-100"
         >
           {product.inStock ? 'Add to cart' : 'Out of stock'}
         </button>
