@@ -4,8 +4,6 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -23,6 +21,7 @@ function isNativeApp(): boolean {
   return Boolean(cap?.isNativePlatform?.());
 }
 import { recordUserLogin } from '../lib/userStore';
+import { sendAccountEmail } from '../lib/accountEmail';
 import { subscribeSettings, type SiteSettings } from '../lib/settingsStore';
 
 /** Where the "view as" preview is remembered — this tab only. */
@@ -219,14 +218,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (displayName && cred.user) {
           await updateProfile(cred.user, { displayName });
         }
-        if (cred.user) {
+        if (cred.user?.email) {
           // Best-effort: let new password accounts verify right away.
-          await sendEmailVerification(cred.user).catch(() => undefined);
+          await sendAccountEmail('verify', cred.user.email).catch(() => undefined);
         }
       },
       async sendPasswordReset(email: string) {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
-        await sendPasswordResetEmail(auth, email);
+        await sendAccountEmail('reset', email);
       },
       async signOut() {
         if (!auth) return;

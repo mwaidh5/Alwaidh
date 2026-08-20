@@ -7,11 +7,15 @@
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { defineSecret, defineString } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getAuth } from 'firebase-admin/auth';
+import { createTransport } from 'nodemailer';
+import { buildEmail, type EmailKind } from './emails';
 
 initializeApp();
 
@@ -236,4 +240,132 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
     preview(msg.subject) || preview(msg.message) || 'New enquiry',
     '/admin/submissions',
   );
+});
+
+
+// ---------------------------------------------------------------------------
+// Account emails
+// ---------------------------------------------------------------------------
+
+/**
+ * Firebase sends its own verification and password-reset emails, from
+ * noreply@alwaidh-baeb5.firebaseapp.com — an address with no connection to
+ * the shop, which is most of why they land in spam. Its template editor is
+ * also locked on this project, so they can't even be restyled in place.
+ *
+ * So we send them: the link is still Firebase's, minted here with admin
+ * credentials, and still does exactly what Firebase's own link does. Only
+ * the envelope is ours.
+ */
+const SMTP_HOST = defineString('SMTP_HOST', { default: 'smtp.hostinger.com' });
+const SMTP_PORT = defineString('SMTP_PORT', { default: '465' });
+const SMTP_USER = defineString('SMTP_USER', { default: 'noreply@alwaidh.com' });
+const SMTP_REPLY_TO = defineString('SMTP_REPLY_TO', { default: '' });
+const SMTP_PASSWORD = defineSecret('SMTP_PASSWORD');
+
+const SITE = 'https://alwaidh.com';
+
+/**
+ * Rebuild the link on our own domain.
+ *
+ * The one-time code isn't tied to the page that opens it, so pointing it
+ * at our own handler (src/pages/AuthAction.tsx) is safe — and necessary,
+ * since the Action URL in the console can't be changed while templates are
+ * locked. Falls back to Firebase's own link if the code can't be read.
+ */
+function ourLink(firebaseLink: string, kind: EmailKind): string {
+  try {
+    const code = new URL(firebaseLink).searchParams.get('oobCode');
+    if (!code) return firebaseLink;
+    const mode = kind === 'reset' ? 'resetPassword' : 'verifyEmail';
+    return `${SITE}/auth/action?mode=${mode}&oobCode=${encodeURIComponent(code)}`;
+  } catch {
+    return firebaseLink;
+  }
+}
+
+/**
+ * One email a minute, ten a day, per address. This endpoint has to stay
+ * open — someone locked out of their account can't authenticate to ask for
+ * a reset — so without a limit it would be a way to flood any inbox.
+ */
+async function allowSend(email: string): Promise<boolean> {
+  const ref = getFirestore().collection('mailThrottle').doc(email.replace(/[^a-z0-9]/gi, '_'));
+  try {
+    return await getFirestore().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const now = Date.now();
+      const last = Number(snap.data()?.lastAt ?? 0);
+      const count = Number(snap.data()?.count ?? 0);
+      const withinDay = now - last < 24 * 60 * 60 * 1000;
+      if (now - last < 60_000) return false;
+      if (withinDay && count >= 10) return false;
+      tx.set(ref, { lastAt: now, count: withinDay ? count + 1 : 1 }, { merge: true });
+      return true;
+    });
+  } catch (e) {
+    logger.warn('throttle check failed, allowing:', e);
+    return true;
+  }
+}
+
+export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD] }, async (request) => {
+  const email = String(request.data?.email ?? '').trim().toLowerCase();
+  const kind: EmailKind = request.data?.kind === 'reset' ? 'reset' : 'verify';
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    throw new HttpsError('invalid-argument', 'A valid email address is required.');
+  }
+  // Confirming an address is done from inside the account, so it must be
+  // the signed-in one. A reset, by definition, cannot be.
+  if (kind === 'verify') {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+    if (String(request.auth.token.email ?? '').toLowerCase() !== email) {
+      throw new HttpsError('permission-denied', 'That is not your address.');
+    }
+  }
+
+  if (!(await allowSend(email))) {
+    // Say nothing useful: a different answer here would tell a stranger
+    // whether the address is in use.
+    logger.info(`account email throttled for ${email}`);
+    return { ok: true };
+  }
+
+  let link: string;
+  try {
+    link =
+      kind === 'reset'
+        ? await getAuth().generatePasswordResetLink(email, { url: `${SITE}/login` })
+        : await getAuth().generateEmailVerificationLink(email, { url: `${SITE}/account` });
+  } catch (e) {
+    // No such account, most likely. Answer the same either way.
+    logger.info(`no link for ${email}: ${e instanceof Error ? e.message : e}`);
+    return { ok: true };
+  }
+
+  const { subject, html, text } = buildEmail(kind, email, ourLink(link, kind));
+  const port = Number(SMTP_PORT.value()) || 465;
+  const transport = createTransport({
+    host: SMTP_HOST.value(),
+    port,
+    secure: port === 465, // 587 starts plain and upgrades
+    auth: { user: SMTP_USER.value(), pass: SMTP_PASSWORD.value() },
+  });
+
+  try {
+    await transport.sendMail({
+      from: `"Alwaidh" <${SMTP_USER.value()}>`,
+      to: email,
+      replyTo: SMTP_REPLY_TO.value() || undefined,
+      subject,
+      html,
+      text,
+    });
+  } catch (e) {
+    logger.error('SMTP send failed:', e);
+    // The caller falls back to Firebase's own email, so say so plainly.
+    throw new HttpsError('internal', 'Could not send the email.');
+  }
+  logger.info(`sent ${kind} email to ${email}`);
+  return { ok: true };
 });

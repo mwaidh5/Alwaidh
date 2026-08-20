@@ -1,62 +1,77 @@
 # Account emails
 
-The only emails the site sends are the ones Firebase Authentication sends
-itself — there is no mail code in this repo. Firebase writes them from
-`noreply@alwaidh-baeb5.firebaseapp.com` with a plain body, which is why
-they look unbranded and often land in spam: the sending domain has nothing
-to do with alwaidh.com, so a spam filter has no reason to trust it.
+Confirmation and password-reset emails are sent by **us**, not by Firebase:
+`sendAccountEmail` in `functions/src/index.ts`, with the designs in
+`functions/src/emails.ts`.
 
-Two separate things fix that. Do the domain first — a beautiful email from
-a stranger's address still goes to spam.
+That isn't the obvious arrangement, so it's worth saying why. Firebase
+sends these itself by default, from `noreply@alwaidh-baeb5.firebaseapp.com`
+— a domain with no relationship to the shop, which is most of the reason
+they land in spam. Its template editor would let us restyle them, but it
+is **locked on this project**: the console shows "Email template updates
+are currently unavailable for this project". So the only way to control
+the design and the sender was to send them ourselves.
 
-## 1. Send from alwaidh.com
+What we did *not* take over is the security. The Cloud Function asks
+Firebase for the same link it would have emailed
+(`generateEmailVerificationLink` / `generatePasswordResetLink`), so the
+one-time code is Firebase's own and still verifies the real account. Only
+the envelope is ours.
 
-Firebase Console → **Authentication** → **Templates** → pencil icon →
-**Customize domain**, enter `alwaidh.com`, then add the TXT and CNAME
-records it gives you at whoever hosts the domain's DNS. Verification can
-take up to 24 hours; when the console shows "Verification complete", press
-**Apply custom domain**.
+The link is rewritten to point at `alwaidh.com/auth/action`
+(`src/pages/AuthAction.tsx`) rather than Google's handler. A code isn't
+tied to the page that opens it, which is what makes that safe — and
+necessary, since the Action URL setting is locked along with the rest.
 
-Note on SPF: a domain may only have **one** `v=spf1` TXT record. If one
-already exists, merge Firebase's include into it rather than adding a
-second — two records make every check fail, which is worse than none.
+## Setting it up
 
-## 2. Use these templates
+Once, in the Firebase CLI:
 
-In the same editor, each template has a **Message (HTML)** body. Paste the
-matching file in:
+```
+firebase functions:secrets:set SMTP_PASSWORD
+firebase deploy --only functions
+```
 
-| Firebase template      | File                  |
-| ---------------------- | --------------------- |
-| Address verification   | `verify-email.html`   |
-| Password reset         | `password-reset.html` |
-| Email address change   | `email-change.html`   |
+The rest are plain settings with defaults in `functions/src/index.ts`,
+overridable in `functions/.env`:
 
-Select all, copy, and replace everything in the Message box. Firebase
-fills in the placeholders: `%LINK%` (the action link — required by every
-template), `%EMAIL%` and `%NEW_EMAIL%`.
+| Name | Default | Notes |
+| ---- | ------- | ----- |
+| `SMTP_HOST` | `smtp.hostinger.com` | |
+| `SMTP_PORT` | `465` | SSL. Use `587` if the host wants STARTTLS. |
+| `SMTP_USER` | `noreply@alwaidh.com` | Must be a real mailbox — it authenticates. |
+| `SMTP_REPLY_TO` | *(none)* | An address someone reads; replies to `noreply@` bounce. |
 
-The rest of each template's fields:
+Moving to a different mail provider is those four values, nothing more.
 
-| Field | Value |
-| ----- | ----- |
-| Sender name | `Alwaidh` |
-| From | `noreply` (the domain follows from **Customize domain**) |
-| Reply to | a mailbox someone reads — replies to `noreply@` bounce |
-| Action URL | `https://alwaidh.com/auth/action` (under **Customize action URL**) |
+## Guard rails
 
-Write "Alwaidh" into the subject rather than using `%APP_NAME%`: that
-placeholder takes the project's public-facing name, which is the raw
-project id until someone changes it.
+- **One email a minute, ten a day, per address.** A password reset can't
+  require sign-in — someone locked out has no way to authenticate — so
+  without a limit the endpoint would be a way to flood any inbox.
+- **The reply is the same whether or not the address has an account.**
+  Otherwise it would answer "does this person shop here?" for anyone who
+  asked.
+- **If our sending fails, the app falls back to Firebase's plain email**
+  (`src/lib/accountEmail.ts`). Someone locked out needs a link far more
+  than they need a pretty one.
+
+## The HTML files here
+
+`verify-email.html`, `password-reset.html` and `email-change.html` are the
+same designs written for Firebase's own template editor, with its `%LINK%`
+and `%EMAIL%` placeholders. They are **not** what gets sent — they're a
+preview you can open in a browser, and what to paste into the console if
+Firebase ever unlocks it. Change `functions/src/emails.ts` to change a
+real email.
 
 ### Why they're built this way
 
 Email clients are twenty years behind browsers. Layout is tables, every
 style is inline (Gmail and Outlook drop stylesheets), and the button is a
-padded link inside a coloured cell rather than a real button. Each message
-carries English and Arabic together, because we don't know which the
-reader speaks. The logo is pulled from `https://alwaidh.com/pwa-192.png`,
-so it keeps working as long as the site does.
-
-Open any of these files in a browser to see roughly how they land — that
-preview is close, though real clients vary.
+padded link inside a coloured cell rather than a real button. Every
+message carries a plain-text part as well, because one without it is far
+more likely to be treated as spam. Each says its piece in English and
+Arabic, because we don't know which the reader speaks. The logo is pulled
+from `https://alwaidh.com/pwa-192.png`, so it keeps working as long as the
+site does.
