@@ -7,7 +7,7 @@
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineSecret } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
@@ -257,10 +257,13 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
  * credentials, and still does exactly what Firebase's own link does. Only
  * the envelope is ours.
  */
-const SMTP_HOST = defineString('SMTP_HOST', { default: 'smtp.hostinger.com' });
-const SMTP_PORT = defineString('SMTP_PORT', { default: '465' });
-const SMTP_USER = defineString('SMTP_USER', { default: 'noreply@alwaidh.com' });
-const SMTP_REPLY_TO = defineString('SMTP_REPLY_TO', { default: '' });
+// Plain settings, overridable from functions/.env. Only the password is a
+// real secret; making the rest deploy-time params bought nothing and made
+// every deploy stop to ask for them.
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+const SMTP_USER = process.env.SMTP_USER || 'noreply@alwaidh.com';
+const SMTP_REPLY_TO = process.env.SMTP_REPLY_TO || '';
 const SMTP_PASSWORD = defineSecret('SMTP_PASSWORD');
 
 const SITE = 'https://alwaidh.com';
@@ -344,19 +347,18 @@ export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD] }, async (requ
   }
 
   const { subject, html, text } = buildEmail(kind, email, ourLink(link, kind));
-  const port = Number(SMTP_PORT.value()) || 465;
   const transport = createTransport({
-    host: SMTP_HOST.value(),
-    port,
-    secure: port === 465, // 587 starts plain and upgrades
-    auth: { user: SMTP_USER.value(), pass: SMTP_PASSWORD.value() },
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465, // 587 starts plain and upgrades
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD.value() },
   });
 
   try {
     await transport.sendMail({
-      from: `"Alwaidh" <${SMTP_USER.value()}>`,
+      from: `"Alwaidh" <${SMTP_USER}>`,
       to: email,
-      replyTo: SMTP_REPLY_TO.value() || undefined,
+      replyTo: SMTP_REPLY_TO || undefined,
       subject,
       html,
       text,

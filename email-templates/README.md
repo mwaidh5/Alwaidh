@@ -32,8 +32,10 @@ firebase functions:secrets:set SMTP_PASSWORD
 firebase deploy --only functions
 ```
 
-The rest are plain settings with defaults in `functions/src/index.ts`,
-overridable in `functions/.env`:
+The rest are plain settings in `functions/src/index.ts`, overridable with
+environment variables in `functions/.env`. They are deliberately *not*
+deploy-time params: nothing here is secret, and making them params meant
+every non-interactive deploy stopped to ask for values it already had.
 
 | Name | Default | Notes |
 | ---- | ------- | ----- |
