@@ -220,6 +220,8 @@ function messageFor(e: unknown, t: (s: string) => string): string {
   if (code === 'auth/user-disabled') return t('This account has been turned off.');
   if (code === 'auth/user-not-found') return t('That account no longer exists.');
   if (code === 'auth/weak-password') return t('Use at least 6 characters.');
-  const raw = e instanceof Error ? e.message.replace('Firebase: ', '') : '';
-  return raw || t('Something went wrong. Please try again.');
+  // Anything else is a Firebase code dump — meaningless to the person
+  // reading it, so keep it for the console and say something useful here.
+  console.error('Account link failed:', e);
+  return t('Something went wrong. Please try again.');
 }
