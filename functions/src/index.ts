@@ -263,7 +263,8 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 const SMTP_USER = process.env.SMTP_USER || 'noreply@alwaidh.com';
-const SMTP_REPLY_TO = process.env.SMTP_REPLY_TO || '';
+// Replies go to a mailbox someone reads — noreply@ only authenticates.
+const SMTP_REPLY_TO = process.env.SMTP_REPLY_TO || 'support@alwaidh.com';
 const SMTP_PASSWORD = defineSecret('SMTP_PASSWORD');
 
 const SITE = 'https://alwaidh.com';
