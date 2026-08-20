@@ -32,11 +32,22 @@ matching file in:
 | Password reset         | `password-reset.html` |
 | Email address change   | `email-change.html`   |
 
-Firebase fills in the placeholders: `%LINK%` (the action link — required),
-`%EMAIL%`, `%NEW_EMAIL%`, `%DISPLAY_NAME%`, `%APP_NAME%`.
+Select all, copy, and replace everything in the Message box. Firebase
+fills in the placeholders: `%LINK%` (the action link — required by every
+template), `%EMAIL%` and `%NEW_EMAIL%`.
 
-Also set the sender name to **Alwaidh** in the same editor, so the inbox
-shows a name rather than an address.
+The rest of each template's fields:
+
+| Field | Value |
+| ----- | ----- |
+| Sender name | `Alwaidh` |
+| From | `noreply` (the domain follows from **Customize domain**) |
+| Reply to | a mailbox someone reads — replies to `noreply@` bounce |
+| Action URL | `https://alwaidh.com/auth/action` (under **Customize action URL**) |
+
+Write "Alwaidh" into the subject rather than using `%APP_NAME%`: that
+placeholder takes the project's public-facing name, which is the raw
+project id until someone changes it.
 
 ### Why they're built this way
 
