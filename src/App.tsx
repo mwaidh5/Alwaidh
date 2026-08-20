@@ -11,6 +11,7 @@ import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
 import Login from './pages/Login';
+import AuthAction from './pages/AuthAction';
 import Account from './pages/Account';
 import Admin from './pages/Admin';
 import Overview from './pages/admin/Overview';
@@ -49,6 +50,8 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/login" element={<Login />} />
+        {/* Where the links in account emails land — see pages/AuthAction. */}
+        <Route path="/auth/action" element={<AuthAction />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin" element={<Admin />}>
           <Route index element={<Overview />} />

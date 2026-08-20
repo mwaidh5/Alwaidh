@@ -215,7 +215,11 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
     setBusy(true);
     try {
       await sendEmailVerification(auth.currentUser);
-      setMsg('Verification email sent — click the link in it, then sign out and back in.');
+      // Each send cancels the link in the one before it, and people
+      // reliably open the oldest email in the thread.
+      setMsg(
+        'Verification email sent — open the newest one and click its link, then sign out and back in. Older emails no longer work.',
+      );
     } catch (e) {
       const raw = e instanceof Error ? e.message : '';
       setError(

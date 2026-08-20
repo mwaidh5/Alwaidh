@@ -376,7 +376,8 @@ function UnverifiedBanner({ email }: { email: string | null }) {
       {sent && (
         <p className="mt-2 font-semibold">
           ✅ Verification email sent — open it and click the link (check spam too), then press
-          “I've clicked the link” below.
+          “I've clicked the link” below. Open the <strong>newest</strong> email: asking for
+          another one cancels the link in the previous email.
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
