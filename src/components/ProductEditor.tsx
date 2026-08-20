@@ -4,6 +4,7 @@ import { replaceImageAt, uploadProductDoc, uploadProductImage } from '../lib/ima
 import { keepOriginalOnce, storagePathFromUrl } from '../lib/mediaStore';
 import { categories } from '../data/categories';
 import MediaPicker from './MediaPicker';
+import FilePicker from './FilePicker';
 import ImageEditor from './ImageEditor';
 import { useLang } from '../lib/i18n';
 import { useAuth } from '../context/AuthContext';
@@ -735,6 +736,7 @@ export function ProductDialog({
               hint="PDF or image · shown below the product for customers"
               busy={docBusy}
               onPick={(f) => handleDocUpload('datasheet', f)}
+              onPickExisting={(url) => setState({ ...state, datasheet: url })}
               onClear={() => setState({ ...state, datasheet: '' })}
             />
           </Field>
@@ -746,6 +748,7 @@ export function ProductDialog({
               hint="PDF · customers get a download button"
               busy={docBusy}
               onPick={(f) => handleDocUpload('manual', f)}
+              onPickExisting={(url) => setState({ ...state, manual: url })}
               onClear={() => setState({ ...state, manual: '' })}
             />
             {docError && <p className="mt-1 text-xs text-red-700">{docError}</p>}
@@ -857,6 +860,7 @@ function DocPicker({
   hint,
   busy,
   onPick,
+  onPickExisting,
   onClear,
 }: {
   kind: 'datasheet' | 'manual';
@@ -865,8 +869,11 @@ function DocPicker({
   hint: string;
   busy: 'datasheet' | 'manual' | null;
   onPick: (file: File) => void;
+  /** Point at a file already on the site instead of uploading a copy. */
+  onPickExisting: (url: string) => void;
   onClear: () => void;
 }) {
+  const [browsing, setBrowsing] = useState(false);
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
@@ -883,6 +890,20 @@ function DocPicker({
             }}
           />
         </label>
+        <button
+          type="button"
+          onClick={() => setBrowsing(true)}
+          disabled={Boolean(busy)}
+          className="btn-secondary disabled:opacity-60"
+        >
+          📂 Choose from the website
+        </button>
+        <FilePicker
+          open={browsing}
+          allowImages={kind === 'datasheet'}
+          onClose={() => setBrowsing(false)}
+          onSelect={onPickExisting}
+        />
         {value && (
           <>
             <a
