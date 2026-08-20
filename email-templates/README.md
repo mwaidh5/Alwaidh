@@ -42,7 +42,7 @@ every non-interactive deploy stopped to ask for values it already had.
 | `SMTP_HOST` | `smtp.hostinger.com` | |
 | `SMTP_PORT` | `465` | SSL. Use `587` if the host wants STARTTLS. |
 | `SMTP_USER` | `noreply@alwaidh.com` | Must be a real mailbox — it authenticates. |
-| `SMTP_REPLY_TO` | *(none)* | An address someone reads; replies to `noreply@` bounce. |
+| `SMTP_REPLY_TO` | `support@alwaidh.com` | Where replies land; `noreply@` is only there to authenticate. |
 
 Moving to a different mail provider is those four values, nothing more.
 
