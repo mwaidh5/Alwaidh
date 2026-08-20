@@ -204,9 +204,39 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
 
   if (!user) return null;
   const hasPassword = user.providerData.some((p) => p.providerId === 'password');
+
+  /**
+   * Pick up a verification that happened in another tab. Firebase caches
+   * the sign-in token for up to an hour, so an account confirmed a moment
+   * ago still looks unverified here — and to the database rules — until
+   * the token is renewed. Reloading the page reconnects every listener
+   * with the new claim.
+   */
+  async function handleRecheck() {
+    if (!auth?.currentUser) return;
+    setError('');
+    setMsg('');
+    setChecking(true);
+    try {
+      await auth.currentUser.reload();
+      if (!auth.currentUser.emailVerified) {
+        setError(
+          "Still not verified. Open the newest email and click its link — older emails no longer work — then try again.",
+        );
+        return;
+      }
+      await auth.currentUser.getIdToken(true);
+      window.location.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message.replace('Firebase: ', '') : 'Could not check.');
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function handleSendVerification() {
     if (!auth?.currentUser) return;
@@ -285,14 +315,27 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
           <p className="mt-1 text-xs">
             Some features (like staff access) only work with a verified email.
           </p>
-          <button
-            type="button"
-            onClick={handleSendVerification}
-            disabled={busy}
-            className="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100"
-          >
-            {busy ? 'Sending…' : 'Verify now — send email'}
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleSendVerification}
+              disabled={busy || checking}
+              className="rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+            >
+              {busy ? 'Sending…' : 'Verify now — send email'}
+            </button>
+            {/* Confirming happens in another tab, so this page has to be
+                told to look again — otherwise it sits here saying
+                "not verified" long after it is. */}
+            <button
+              type="button"
+              onClick={handleRecheck}
+              disabled={busy || checking}
+              className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+            >
+              {checking ? 'Checking…' : "I've clicked the link — check again"}
+            </button>
+          </div>
         </div>
       )}
 
