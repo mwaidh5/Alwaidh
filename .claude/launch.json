@@ -4,14 +4,35 @@
     {
       "name": "balloon-tasks",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "serve", "balloon-tasks", "-l", "4600"],
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "balloon-tasks",
+        "-l",
+        "4600"
+      ],
       "port": 4600
     },
     {
       "name": "alwaidh-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "email-templates",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "email-templates",
+        "-l",
+        "4700"
+      ],
+      "port": 4700
     }
   ]
 }
