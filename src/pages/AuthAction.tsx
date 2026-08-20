@@ -3,11 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   applyActionCode,
   confirmPasswordReset,
-  sendEmailVerification,
   verifyPasswordResetCode,
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useLang } from '../lib/i18n';
+import { sendAccountEmail } from '../lib/accountEmail';
 
 /**
  * Where the links in account emails land — confirming an address, choosing
@@ -105,7 +105,7 @@ export default function AuthAction() {
   async function resend() {
     if (!auth?.currentUser) return;
     try {
-      await sendEmailVerification(auth.currentUser);
+      await sendAccountEmail('verify', auth.currentUser.email ?? '');
       setResent(t('Sent. Open the newest email — older ones no longer work.'));
     } catch {
       setResent(t('Could not send another email just now. Try again in a minute.'));

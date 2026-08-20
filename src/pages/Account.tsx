@@ -3,12 +3,12 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
-  sendEmailVerification,
   updatePassword,
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { sendAccountEmail } from '../lib/accountEmail';
 import { uploadImage } from '../lib/imageUpload';
 import { recordUserLogin } from '../lib/userStore';
 import { listOrdersForUser, type Order, type OrderStatus } from '../lib/orderStore';
@@ -244,7 +244,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
     setMsg('');
     setBusy(true);
     try {
-      await sendEmailVerification(auth.currentUser);
+      await sendAccountEmail('verify', auth.currentUser.email ?? '');
       // Each send cancels the link in the one before it, and people
       // reliably open the oldest email in the thread.
       setMsg(

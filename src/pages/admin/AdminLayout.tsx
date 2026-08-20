@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
@@ -16,6 +15,7 @@ import {
   type PushState,
 } from '../../lib/push';
 import NotificationSettings from '../../components/NotificationSettings';
+import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
 // 'products' = product editors (computer or solar staff), 'solar' = solar
@@ -338,7 +338,7 @@ function UnverifiedBanner({ email }: { email: string | null }) {
     setError('');
     try {
       if (!auth?.currentUser) throw new Error('Not signed in.');
-      await sendEmailVerification(auth.currentUser);
+      await sendAccountEmail('verify', auth.currentUser.email ?? '');
       setSent(true);
     } catch (e) {
       setError(e instanceof Error ? e.message.replace('Firebase: ', '') : 'Could not send email.');
