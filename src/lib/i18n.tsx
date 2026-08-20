@@ -779,6 +779,40 @@ const AR: Record<string, string> = {
   'Putting it back…': 'جاري الإرجاع…',
   'Put the original photo back? Your edits to it will be lost.':
     'إرجاع الصورة الأصلية؟ ستفقد التعديلات التي أجريتها عليها.',
+
+  // ---- Account email links ----
+  'One moment…': 'لحظة من فضلك…',
+  'Checking your link…': 'جاري التحقق من الرابط…',
+  'Email confirmed': 'تم تأكيد البريد',
+  'Your email address is confirmed. Everything is ready to use.':
+    'تم تأكيد بريدك الإلكتروني. كل شيء جاهز للاستخدام.',
+  'Password changed': 'تم تغيير كلمة المرور',
+  'You can sign in with your new password now.':
+    'يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.',
+  'Choose a new password': 'اختر كلمة مرور جديدة',
+  'New password': 'كلمة المرور الجديدة',
+  'Repeat it': 'أعد كتابتها',
+  'Save new password': 'حفظ كلمة المرور',
+  For: 'لحساب',
+  'Use at least 6 characters.': 'استخدم 6 أحرف على الأقل.',
+  'The two passwords are different.': 'كلمتا المرور غير متطابقتين.',
+  'This link no longer works': 'هذا الرابط لم يعد يعمل',
+  'This link has already been used, or a newer email replaced it.':
+    'تم استخدام هذا الرابط من قبل، أو وصلت رسالة أحدث ألغته.',
+  'This link is missing something. Open the newest email and try again.':
+    'الرابط غير مكتمل. افتح أحدث رسالة وحاول مرة أخرى.',
+  "This link isn't one we recognise.": 'هذا الرابط غير معروف لدينا.',
+  'This account has been turned off.': 'تم إيقاف هذا الحساب.',
+  'That account no longer exists.': 'لم يعد هذا الحساب موجوداً.',
+  'Something went wrong. Please try again.': 'حدث خطأ ما. حاول مرة أخرى.',
+  'Each link works once. Asking for another email cancels the one before it, so only the newest email opens — and a link already opened once will say this the second time, even though it worked.':
+    'كل رابط يعمل مرة واحدة. طلب رسالة جديدة يلغي الرسالة السابقة، لذا تعمل أحدث رسالة فقط — والرابط الذي فُتح مرة سيظهر هذه الرسالة في المرة الثانية رغم أنه نجح.',
+  'Try signing in': 'جرّب تسجيل الدخول',
+  'Send me a new link': 'أرسل لي رابطاً جديداً',
+  'Sent. Open the newest email — older ones no longer work.':
+    'تم الإرسال. افتح أحدث رسالة — الرسائل الأقدم لم تعد تعمل.',
+  'Could not send another email just now. Try again in a minute.':
+    'تعذّر إرسال رسالة أخرى الآن. حاول بعد دقيقة.',
 };
 
 interface LanguageValue {
