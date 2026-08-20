@@ -37,6 +37,12 @@ export default defineConfig({
       workbox: {
         // The app talks to Firebase live; only precache the shell.
         navigateFallback: '/index.html',
+        // …but never for /__/*. Firebase Hosting serves the sign-in handler
+        // at /__/auth/handler, and since sign-in moved to alwaidh.com that
+        // page is on our own origin — so the service worker was answering
+        // it with the app shell, and the router showed "Page not found"
+        // instead of finishing the Google sign-in.
+        navigateFallbackDenylist: [/^\/__\//],
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         // Firebase registers this one itself, on its own scope.
         globIgnores: ['firebase-messaging-sw.js'],
