@@ -251,6 +251,14 @@ export default function AdminJobs() {
 
   const activeJob = (jobs ?? []).find((j) => j.id === activeId) ?? null;
 
+  /** Move a job between columns without dragging — how the phone does it. */
+  function moveJob(job: Job, status: JobStatus) {
+    if (job.status === status) return;
+    setJobStatus(job.id, status, Date.now()).catch((err) =>
+      setError(err instanceof Error ? err.message : 'Could not move the job.'),
+    );
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
     const { active, over } = e;
@@ -351,7 +359,7 @@ export default function AdminJobs() {
       )}
 
       {/* Status summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="hidden gap-3 sm:grid sm:grid-cols-3 xl:grid-cols-5">
         {JOB_STATUSES.map((s) => {
           const style = STATUS_STYLES[s.key];
           return (
@@ -425,9 +433,26 @@ export default function AdminJobs() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
+          {/* Phones get a plain list: a sideways-scrolling board on a 6-inch
+              screen shows one column at a time, which is the opposite of an
+              overview, and dragging a card inside a scrolling strip fights
+              the scroll. */}
+          <MobileJobs
+            byStatus={byStatus}
+            totals={totals}
+            installerOnly={installerOnly}
+            onEdit={(j) => {
+              setError('');
+              setEditing({ ...j });
+            }}
+            onView={setViewing}
+            onDelete={handleDelete}
+            onMove={moveJob}
+          />
+
           {/* Trello-style board: columns keep a readable width and the board
               scrolls sideways instead of squeezing the cards. */}
-          <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-3">
+          <div className="-mx-1 hidden snap-x gap-4 overflow-x-auto px-1 pb-3 sm:flex">
             {JOB_STATUSES.map((col) => (
               <div
                 key={col.key}
@@ -579,6 +604,224 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The jobs board on a phone.
+ *
+ * The desktop board is five columns you drag cards between. Neither half of
+ * that works on a small screen: only one column fits at a time, so there is
+ * no overview, and dragging inside a horizontally scrolling strip fights
+ * the scroll. Here the columns become filter chips and each job is a
+ * full-width row you can actually read, with a menu to move it rather than
+ * a drag.
+ */
+function MobileJobs({
+  byStatus,
+  totals,
+  installerOnly,
+  onEdit,
+  onView,
+  onDelete,
+  onMove,
+}: {
+  byStatus: Record<JobStatus, Job[]>;
+  totals: Record<JobStatus, number>;
+  installerOnly: boolean;
+  onEdit: (j: Job) => void;
+  onView: (j: Job) => void;
+  onDelete: (j: Job) => void;
+  onMove: (j: Job, status: JobStatus) => void;
+}) {
+  const { t } = useLang();
+  const [only, setOnly] = useState<JobStatus | 'all'>('all');
+
+  const shown = JOB_STATUSES.filter((s) => only === 'all' || s.key === only);
+  const count = shown.reduce((n, s) => n + byStatus[s.key].length, 0);
+  const allCount = JOB_STATUSES.reduce((n, s) => n + totals[s.key], 0);
+
+  return (
+    <div className="sm:hidden">
+      {/* Which column to look at. This row scrolls sideways, but it is meant
+          to — unlike the board it replaces. */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3">
+        <Chip active={only === 'all'} onClick={() => setOnly('all')} dot="bg-slate-400">
+          {t('All')} {allCount}
+        </Chip>
+        {JOB_STATUSES.map((s) => (
+          <Chip
+            key={s.key}
+            active={only === s.key}
+            onClick={() => setOnly(s.key)}
+            dot={STATUS_STYLES[s.key].dot}
+          >
+            {t(s.label)} {totals[s.key]}
+          </Chip>
+        ))}
+      </div>
+
+      {count === 0 ? (
+        <div className="rounded-2xl border-2 border-dashed border-slate-200 py-12 text-center">
+          <p className="text-2xl">🛠️</p>
+          <p className="mt-2 text-sm font-medium text-slate-500">{t('Nothing here.')}</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {shown.map((s) =>
+            byStatus[s.key].length === 0 ? null : (
+              <section key={s.key}>
+                {/* Only worth a heading when several columns are on screen. */}
+                {only === 'all' && (
+                  <h2 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    <span className={`h-2.5 w-2.5 rounded-full ${STATUS_STYLES[s.key].dot}`} />
+                    {t(s.label)}
+                    <span className="text-slate-400">{byStatus[s.key].length}</span>
+                  </h2>
+                )}
+                <div className="space-y-2.5">
+                  {byStatus[s.key].map((job) => (
+                    <MobileJobCard
+                      key={job.id}
+                      job={job}
+                      installerOnly={installerOnly}
+                      onEdit={() => onEdit(job)}
+                      onView={() => onView(job)}
+                      onDelete={() => onDelete(job)}
+                      onMove={(status) => onMove(job, status)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  dot,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  dot: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex flex-none items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-semibold transition ${
+        active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600'
+      }`}
+    >
+      <span className={`h-2 w-2 rounded-full ${dot}`} />
+      {children}
+    </button>
+  );
+}
+
+/** One job, sized for a thumb rather than a mouse. */
+function MobileJobCard({
+  job,
+  installerOnly,
+  onEdit,
+  onView,
+  onDelete,
+  onMove,
+}: {
+  job: Job;
+  installerOnly: boolean;
+  onEdit: () => void;
+  onView: () => void;
+  onDelete: () => void;
+  onMove: (status: JobStatus) => void;
+}) {
+  const { t } = useLang();
+  const isRepair = job.type === 'repair';
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <span
+        className={`absolute inset-y-0 left-0 w-1.5 ${isRepair ? 'bg-amber-400' : 'bg-brand-500'}`}
+        aria-hidden="true"
+      />
+      <div className="p-3.5 ps-5">
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+              isRepair ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'
+            }`}
+          >
+            {isRepair ? `🔧 ${t('Repair')}` : `⚡ ${t('Install')}`}
+          </span>
+          {job.invoiceUrl && <span title={t('Has an invoice')}>📄</span>}
+          {job.createdAtMs && (
+            <span className="ms-auto text-xs text-slate-400">{fmtShort(job.createdAtMs)}</span>
+          )}
+        </div>
+
+        <button type="button" onClick={onView} className="mt-2 block w-full text-start">
+          <p className="truncate text-base font-bold leading-snug text-slate-900">
+            {job.customer || t('Unnamed')}
+          </p>
+          {job.system && <p className="mt-0.5 truncate text-sm text-slate-600">{job.system}</p>}
+          <p className="mt-1 truncate text-sm text-slate-500">
+            👷 {job.installer || t('Unassigned')}
+          </p>
+          {job.address && <p className="mt-0.5 truncate text-sm text-slate-500">📍 {job.address}</p>}
+        </button>
+
+        {/* Moving a job is a menu here: dragging inside a scrolling page is a
+            fight on a touchscreen. */}
+        <label className="mt-3 block">
+          <span className="sr-only">{t('Status')}</span>
+          <select
+            value={job.status}
+            onChange={(e) => onMove(e.target.value as JobStatus)}
+            className="input w-full py-2.5 text-sm font-semibold"
+          >
+            {JOB_STATUSES.map((s) => (
+              <option key={s.key} value={s.key}>
+                {t(s.label)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="mt-2.5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onView}
+            className="flex-1 rounded-lg border border-brand-200 bg-brand-50 py-2.5 text-sm font-bold text-brand-700"
+          >
+            👁 {t('Details')}
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={t('Edit')}
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600"
+          >
+            ✏️
+          </button>
+          {!installerOnly && (
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label={t('Delete')}
+              className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-500"
+            >
+              🗑️
+            </button>
           )}
         </div>
       </div>
