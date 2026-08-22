@@ -108,7 +108,7 @@ export default function Overview() {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-slate-900">{o.customerName}</p>
                     <p className="text-xs text-slate-500">
-                      {new Date(o.createdAt).toLocaleString()} · {o.lines.length} item(s)
+                      {new Date(o.createdAt).toLocaleString('en-GB')} · {o.lines.length} item(s)
                     </p>
                   </div>
                   <div className="text-right">
@@ -136,7 +136,7 @@ export default function Overview() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-semibold text-slate-900">{s.name}</p>
                     <p className="shrink-0 text-xs text-slate-500">
-                      {new Date(s.createdAt).toLocaleDateString()}
+                      {new Date(s.createdAt).toLocaleDateString('en-GB')}
                     </p>
                   </div>
                   <p className="truncate text-slate-600">{s.subject || s.message}</p>

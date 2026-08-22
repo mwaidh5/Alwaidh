@@ -122,7 +122,7 @@ export default function AdminFiles() {
                     {[
                       formatFileSize(f.size),
                       f.by ? `${t('Added by')} ${prettyHandle(f.by)}` : '',
-                      new Date(f.createdAt).toLocaleDateString(),
+                      new Date(f.createdAt).toLocaleDateString('en-GB'),
                     ]
                       .filter(Boolean)
                       .join(' · ')}

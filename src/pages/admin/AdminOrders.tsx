@@ -125,7 +125,7 @@ export default function AdminOrders() {
                     <p className="truncate font-extrabold text-slate-900">
                       {o.customerName}{' '}
                       <span className="text-xs font-medium text-slate-500">
-                        · {new Date(o.createdAt).toLocaleString()}
+                        · {new Date(o.createdAt).toLocaleString('en-GB')}
                       </span>
                     </p>
                     <p className="text-xs text-slate-500">

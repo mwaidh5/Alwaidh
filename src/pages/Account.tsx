@@ -447,7 +447,7 @@ function OrdersCard({ uid }: { uid: string }) {
                     Order <span className="font-mono text-slate-600">#{o.id.slice(0, 8)}</span>
                   </p>
                   <p className="text-xs text-slate-500">
-                    {new Date(o.createdAt).toLocaleDateString()} ·{' '}
+                    {new Date(o.createdAt).toLocaleDateString('en-GB')} ·{' '}
                     {o.lines.reduce((n, l) => n + l.quantity, 0)} item(s)
                   </p>
                 </div>
