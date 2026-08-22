@@ -819,6 +819,10 @@ const AR: Record<string, string> = {
   // ---- Phone tab bar ----
   Solar: 'الطاقة',
   Account: 'حسابي',
+  // ---- Pull to refresh ----
+  'Pull to refresh': 'اسحب للتحديث',
+  'Let go to refresh': 'أفلت للتحديث',
+  'Refreshing…': 'جاري التحديث…',
 };
 
 interface LanguageValue {

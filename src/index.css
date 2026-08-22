@@ -137,6 +137,20 @@
   .hpanel .from-brand-700 { --tw-gradient-from: var(--hp-dark); }
   .hpanel .to-brand-500 { --tw-gradient-to: var(--hp); }
 
+  /* Every page arrives with a short slide, the way a screen does in an
+     app rather than a document swapping in place. Kept to 180ms and a few
+     pixels: long enough to read as motion, short enough never to be in the
+     way. The transform is gone by the end, so it can't become a containing
+     block for anything sticky inside the page. */
+  .page-enter {
+    animation: page-enter 180ms ease-out both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter {
+      animation: none;
+    }
+  }
+
   /* Pushes the sticky header below the status bar / notch in the native app.
      env() is 0 in normal browsers, so this is a no-op on the web. */
   .safe-top {
@@ -150,7 +164,18 @@
   .marquee-pause:hover .marquee-track {
     animation-play-state: paused;
   }
-  @keyframes marquee-scroll {
+  @keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes marquee-scroll {
     from {
       transform: translateX(0);
     }

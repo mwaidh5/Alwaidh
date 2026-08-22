@@ -334,6 +334,14 @@ export default function Navbar() {
                 {dashboardLabel}
               </NavLink>
             )}
+            {/* The footer is hidden on phones, so its one link that isn't
+                in the tab bar lives here. */}
+            <Link
+              to="/privacy"
+              className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            >
+              {t('Privacy')}
+            </Link>
             {user ? (
               <Link
                 to="/account"
