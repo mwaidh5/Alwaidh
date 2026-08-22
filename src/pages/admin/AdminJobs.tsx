@@ -518,6 +518,10 @@ export default function AdminJobs() {
 function JobsTrashModal({ onClose }: { onClose: () => void }) {
   useScrollLock();
   const { t } = useLang();
+  // Restoring is safe, and anyone who can see the Trash may do it. Deleting
+  // for good is the admin's alone — the database enforces that either way,
+  // so this is about not offering a button that would be refused.
+  const { isAdmin } = useAuth();
   const [deleted, setDeleted] = useState<Job[] | null>(null);
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
@@ -588,21 +592,23 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
                   >
                     ♻️ {t('Restore')}
                   </button>
-                  <button
-                    type="button"
-                    disabled={busyId === job.id}
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `${t('Delete forever?')} ${job.customer || ''}\n${t('This cannot be undone.')}`,
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={busyId === job.id}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `${t('Delete forever?')} ${job.customer || ''}\n${t('This cannot be undone.')}`,
+                          )
                         )
-                      )
-                        act(job, destroyJob);
-                    }}
-                    className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    {t('Delete forever')}
-                  </button>
+                          act(job, destroyJob);
+                      }}
+                      className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {t('Delete forever')}
+                    </button>
+                  )}
                 </div>
               </div>
             ))
