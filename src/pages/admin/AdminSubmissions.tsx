@@ -98,7 +98,7 @@ export default function AdminSubmissions() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-500">
-                    {new Date(s.createdAt).toLocaleString()}
+                    {new Date(s.createdAt).toLocaleString('en-GB')}
                   </p>
                   <button
                     type="button"

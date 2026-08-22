@@ -76,7 +76,7 @@ export default function AdminAnalytics() {
         </div>
         {summary && (
           <p className="text-sm text-slate-500">
-            {summary.totalViews.toLocaleString()} {t('views in this period')}
+            {summary.totalViews.toLocaleString('en-GB')} {t('views in this period')}
           </p>
         )}
       </div>
@@ -136,7 +136,7 @@ export default function AdminAnalytics() {
                     {summary.recent.map((e) => (
                       <tr key={e.id}>
                         <td className="py-2 pr-4 text-slate-500">
-                          {e.at ? e.at.toLocaleString() : '—'}
+                          {e.at ? e.at.toLocaleString('en-GB') : '—'}
                         </td>
                         <td className="py-2 pr-4 font-medium text-slate-800">{e.path}</td>
                         <td className="py-2 text-slate-600">{e.source}</td>
@@ -158,7 +158,7 @@ function Stat({ label, value, caption }: { label: string; value: number; caption
   return (
     <div className="card p-5">
       <p className="text-sm text-slate-500">{t(label)}</p>
-      <p className="mt-1 text-3xl font-extrabold text-slate-900">{value.toLocaleString()}</p>
+      <p className="mt-1 text-3xl font-extrabold text-slate-900">{value.toLocaleString('en-GB')}</p>
       {caption && <p className="mt-0.5 text-xs font-medium text-slate-500">{caption}</p>}
     </div>
   );

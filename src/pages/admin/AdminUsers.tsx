@@ -456,7 +456,7 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {new Date(u.lastSeenAt).toLocaleDateString()}
+                    {new Date(u.lastSeenAt).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-4 py-3">
                     <span

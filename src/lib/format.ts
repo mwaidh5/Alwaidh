@@ -1,6 +1,6 @@
 export function formatPrice(amount: number, currency = 'IQD'): string {
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
