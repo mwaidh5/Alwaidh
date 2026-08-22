@@ -813,6 +813,9 @@ const AR: Record<string, string> = {
     'تم الإرسال. افتح أحدث رسالة — الرسائل الأقدم لم تعد تعمل.',
   'Could not send another email just now. Try again in a minute.':
     'تعذّر إرسال رسالة أخرى الآن. حاول بعد دقيقة.',
+  // ---- Solar jobs on a phone ----
+  'Nothing here.': 'لا يوجد شيء هنا.',
+  'Has an invoice': 'يحتوي على فاتورة',
 };
 
 interface LanguageValue {
