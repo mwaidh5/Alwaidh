@@ -30,6 +30,7 @@ import {
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
+import { useScrollLock } from '../../lib/useScrollLock';
 import { useAuth } from '../../context/AuthContext';
 import { subscribeSettings } from '../../lib/settingsStore';
 import { listUsers } from '../../lib/userStore';
@@ -515,6 +516,7 @@ export default function AdminJobs() {
 
 /** Deleted jobs: put one back on the board, or let it go for good. */
 function JobsTrashModal({ onClose }: { onClose: () => void }) {
+  useScrollLock();
   const { t } = useLang();
   const [deleted, setDeleted] = useState<Job[] | null>(null);
   const [busyId, setBusyId] = useState('');
@@ -537,7 +539,7 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
@@ -1046,6 +1048,7 @@ function JobDetailsModal({
   onEdit: () => void;
   onPreviewInvoice: (url: string) => void;
 }) {
+  useScrollLock();
   const { t } = useLang();
   const isRepair = job.type === 'repair';
   const statusMeta = JOB_STATUSES.find((s) => s.key === job.status);
@@ -1057,7 +1060,7 @@ function JobDetailsModal({
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
@@ -1193,6 +1196,7 @@ function JobDialog({
   onSave: () => void;
   onPreview: (url: string) => void;
 }) {
+  useScrollLock();
   const { t } = useLang();
   const installerName = (email: string) => installerNames[email] || prettyHandle(email);
   // Keep whoever is on the job listed even if their role was changed later,
@@ -1212,7 +1216,7 @@ function JobDialog({
   }
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
           <h2 className="font-bold text-slate-900">{state.id ? t('Edit job') : t('New job')}</h2>
           <button type="button" onClick={onCancel} className="text-slate-500 hover:text-slate-800">
@@ -1509,6 +1513,7 @@ function InvoiceField({
 }
 
 function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+  useScrollLock();
   const { t } = useLang();
   return (
     <div className="fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
