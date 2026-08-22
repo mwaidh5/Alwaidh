@@ -823,6 +823,11 @@ const AR: Record<string, string> = {
   'Pull to refresh': 'اسحب للتحديث',
   'Let go to refresh': 'أفلت للتحديث',
   'Refreshing…': 'جاري التحديث…',
+  // ---- Dashboard menu on a phone ----
+  Work: 'العمل',
+  Team: 'الفريق',
+  Manage: 'الإدارة',
+  'The shop': 'المتجر',
 };
 
 interface LanguageValue {
