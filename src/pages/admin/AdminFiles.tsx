@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
+import { useScrollLock } from '../../lib/useScrollLock';
 import {
   deleteLibraryFile,
   formatFileSize,
@@ -279,6 +280,7 @@ function UploadBox({ onError }: { onError: (message: string) => void }) {
 
 /** Opens a file where you are, instead of sending you to another tab. */
 function FilePreview({ item, onClose }: { item: LibraryFile; onClose: () => void }) {
+  useScrollLock();
   const { t } = useLang();
   const pdf = isPdf(item);
   const image = item.contentType.startsWith('image/');

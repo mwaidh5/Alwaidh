@@ -6,6 +6,7 @@ import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
+import { useAnyModalOpen } from '../lib/useScrollLock';
 
 const navLinks = [
   { to: '/', label: 'Home', end: true },
@@ -18,6 +19,10 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, hasAdminAccess, signOut } = useAuth();
   const { t, lang, setLang } = useLang();
+  // Out of the way while a pop-up is open — on phones only, where the
+  // screen is too small to share. Desktop dialogs sit in the middle of a
+  // page that is still clearly there behind them.
+  const modalOpen = useAnyModalOpen();
   const dashboardLabel = t(isAdmin ? 'Admin' : 'Dashboard');
   const { products } = useProducts();
   const settings = useSettings();
@@ -82,7 +87,9 @@ export default function Navbar() {
   }
 
   return (
-    <header className="safe-top sticky top-0 z-30 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
+    <header className={`safe-top sticky top-0 z-30 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl ${
+        modalOpen ? 'hidden md:block' : ''
+      }`}>
       <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <button

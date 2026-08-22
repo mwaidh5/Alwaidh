@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
+import { useAnyModalOpen } from '../lib/useScrollLock';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -17,6 +18,10 @@ export default function BottomNav() {
   const { itemCount } = useCart();
   const { user } = useAuth();
   const { t } = useLang();
+  // A pop-up is a screen of its own: leaving the bar floating over it
+  // makes the pop-up look like a card wedged between two bars, and puts
+  // navigation under a thumb that is trying to close something.
+  const modalOpen = useAnyModalOpen();
 
   const items = [
     { to: '/', end: true, label: 'Home', icon: HomeIcon },
@@ -25,6 +30,8 @@ export default function BottomNav() {
     { to: '/cart', label: 'Cart', icon: CartIcon, badge: itemCount },
     { to: user ? '/account' : '/login', label: user ? 'Account' : 'Sign in', icon: UserIcon },
   ];
+
+  if (modalOpen) return null;
 
   return (
     <nav

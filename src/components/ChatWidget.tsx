@@ -11,6 +11,7 @@ import {
 } from '../lib/chatStore';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
+import { useAnyModalOpen } from '../lib/useScrollLock';
 import ChatProductCard from './ChatProductCard';
 
 function timeText(ms: number | null): string {
@@ -25,6 +26,7 @@ function timeText(ms: number | null): string {
  */
 export default function ChatWidget() {
   const { t } = useLang();
+  const modalOpen = useAnyModalOpen();
   const location = useLocation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -56,7 +58,9 @@ export default function ChatWidget() {
 
   // Everyone gets the bubble on the public site (staff too — handy for
   // checking what customers see); it only stays out of the dashboard.
-  if (!chatReady() || location.pathname.startsWith('/admin')) return null;
+  // Nothing floats over a pop-up: the bubble would sit on top of whatever
+  // the person opened.
+  if (!chatReady() || location.pathname.startsWith('/admin') || modalOpen) return null;
 
   async function send() {
     const text = draft.trim();

@@ -7,6 +7,7 @@ import MediaPicker from './MediaPicker';
 import FilePicker from './FilePicker';
 import ImageEditor from './ImageEditor';
 import { useLang } from '../lib/i18n';
+import { useScrollLock } from '../lib/useScrollLock';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../lib/useSettings';
 import { discountPercent } from '../lib/format';
@@ -213,6 +214,7 @@ export function ProductDialog({
   onCancel: () => void;
   onSave: (asDraft: boolean) => void;
 }) {
+  useScrollLock();
   const { t } = useLang();
   const settings = useSettings();
   const isNew = !state.id;

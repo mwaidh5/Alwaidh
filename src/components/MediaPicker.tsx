@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { listAllMedia, storagePathFromUrl, type MediaItem } from '../lib/mediaStore';
 import { listProducts } from '../lib/productStore';
 import { loadSettings } from '../lib/settingsStore';
+import { useScrollLock } from '../lib/useScrollLock';
 
 /**
  * Pick images that are already on the site instead of uploading again.
@@ -24,6 +25,7 @@ export default function MediaPicker({
   onClose: () => void;
   onSelect: (urls: string[]) => void;
 }) {
+  useScrollLock(open);
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [error, setError] = useState('');
   const [limited, setLimited] = useState(false);

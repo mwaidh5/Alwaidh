@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { buildEdgeMap, snapToEdge, type Point } from '../lib/edgeSnap';
 import { useLang } from '../lib/i18n';
+import { useScrollLock } from '../lib/useScrollLock';
 
 type Tool = 'erase' | 'restore' | 'lasso' | 'magnet' | 'wand';
 
@@ -24,6 +25,7 @@ export default function ImageTouchUp({
   onCancel: () => void;
   onApply: (blob: Blob) => void;
 }) {
+  useScrollLock();
   const { t } = useLang();
   const [tool, setTool] = useState<Tool>('erase');
   const [brush, setBrush] = useState(40);
