@@ -183,7 +183,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // OS-level Google sign-in and hand its credential to Firebase.
         if (isNativeApp()) {
           const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-          const result = await FirebaseAuthentication.signInWithGoogle();
+          // Android's Credential Manager is the modern picker, but it can
+          // only offer accounts the phone already has: on a device with no
+          // Google account saved it fails outright with "no credentials
+          // available", and the person has no way forward. The older picker
+          // can add an account, so fall back to it rather than dead-end.
+          let result;
+          try {
+            result = await FirebaseAuthentication.signInWithGoogle();
+          } catch (e) {
+            const raw = e instanceof Error ? e.message : String(e);
+            // Only when there was nothing to choose from. Someone who
+            // closed the sheet meant to close it — a second dialog would
+            // be a fight, not a fallback.
+            if (!/no credential/i.test(raw)) throw e;
+            result = await FirebaseAuthentication.signInWithGoogle({
+              useCredentialManager: false,
+            });
+          }
           const idToken = result.credential?.idToken;
           if (!idToken) throw new Error('Google sign-in did not return a credential. Please try again.');
           const credential = GoogleAuthProvider.credential(idToken, result.credential?.nonce);
