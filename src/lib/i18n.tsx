@@ -816,6 +816,9 @@ const AR: Record<string, string> = {
   // ---- Solar jobs on a phone ----
   'Nothing here.': 'لا يوجد شيء هنا.',
   'Has an invoice': 'يحتوي على فاتورة',
+  // ---- Phone tab bar ----
+  Solar: 'الطاقة',
+  Account: 'حسابي',
 };
 
 interface LanguageValue {
