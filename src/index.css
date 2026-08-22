@@ -137,11 +137,13 @@
   .hpanel .from-brand-700 { --tw-gradient-from: var(--hp-dark); }
   .hpanel .to-brand-500 { --tw-gradient-to: var(--hp); }
 
-  /* Every page arrives with a short slide, the way a screen does in an
-     app rather than a document swapping in place. Kept to 180ms and a few
-     pixels: long enough to read as motion, short enough never to be in the
-     way. The transform is gone by the end, so it can't become a containing
-     block for anything sticky inside the page. */
+  /* Every page fades in, the way a screen arrives in an app rather than a
+     document swapping in place.
+     Opacity only, deliberately: this wrapper holds every page, and any
+     transform on it — even one animating to none — makes it the anchor for
+     `position: fixed` children. That sized the job pop-ups to the whole
+     page instead of the screen, so they opened somewhere above the top of
+     it. Opacity makes a stacking context, not a containing block. */
   .page-enter {
     animation: page-enter 180ms ease-out both;
   }
@@ -167,11 +169,9 @@
   @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
