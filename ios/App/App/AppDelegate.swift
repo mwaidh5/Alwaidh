@@ -27,6 +27,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+
+        // Swipe from the left edge to go back, the way every other iOS app
+        // works. The web view supports it but Capacitor leaves it off, and
+        // there is no setting for it in capacitor.config.ts — so it is set
+        // here, once the view controller exists. Optional chaining
+        // throughout: if the root controller is ever something else, this
+        // does nothing rather than crashing.
+        if let bridge = window?.rootViewController as? CAPBridgeViewController {
+            bridge.webView?.allowsBackForwardNavigationGestures = true
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
