@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
+import { setChatUnread, useChatOpenSignal } from '../lib/chatPanel';
 import ChatProductCard from './ChatProductCard';
 
 function timeText(ms: number | null): string {
@@ -33,7 +34,15 @@ export default function ChatWidget() {
   const [chatId, setChatId] = useState(existingChatId());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unread, setUnread] = useState(0);
+  // The tab bar opens this and shows its count, so both have to leave here.
+  const openSignal = useChatOpenSignal();
   const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    if (openSignal > 0) setOpen(true);
+  }, [openSignal]);
+
+  useEffect(() => setChatUnread(unread), [unread]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -81,7 +90,7 @@ export default function ChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-48 right-4 z-40 flex max-h-[70vh] md:bottom-24 w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed bottom-28 right-4 z-40 flex max-h-[70vh] md:bottom-24 w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-brand-700 px-4 py-3 text-white">
             <div>
               <p className="text-sm font-bold">{t('Chat with us')}</p>
@@ -173,7 +182,7 @@ export default function ChatWidget() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={t('Chat with us')}
-        className="fixed bottom-28 right-4 z-40 grid h-14 w-14 md:bottom-5 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-lg transition hover:scale-105 hover:bg-brand-600"
+        className="fixed bottom-5 right-4 z-40 hidden h-14 w-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-lg transition hover:scale-105 hover:bg-brand-600 md:grid"
       >
         {open ? '✕' : '💬'}
         {!open && unread > 0 && (

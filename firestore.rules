@@ -160,7 +160,12 @@ service cloud.firestore {
 
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
-      allow read, write: if isAdmin() || isSolarStaff();
+      allow read, create, update: if isAdmin() || isSolarStaff();
+      // Deleting for good is the admin's alone. Solar staff still move a
+      // job to the Trash — that writes a deletedAt field, which is an
+      // update — so nothing they do every day is affected, and a job can
+      // always be brought back.
+      allow delete: if isAdmin();
       // An installer may read only the jobs assigned to them. Firestore
       // applies this per document, so their query must carry the matching
       // installerEmails filter (see subscribeJobs). A job can have several

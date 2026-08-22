@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
+import { openChat, useChatUnread } from '../lib/chatPanel';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -15,19 +15,28 @@ import { useAnyModalOpen } from '../lib/useScrollLock';
  * the padding on <body>, so the safe area is added here.
  */
 export default function BottomNav() {
-  const { itemCount } = useCart();
-  const { user } = useAuth();
+  const { user, hasAdminAccess } = useAuth();
   const { t } = useLang();
   // A pop-up is a screen of its own: leaving the bar floating over it
   // makes the pop-up look like a card wedged between two bars, and puts
   // navigation under a thumb that is trying to close something.
   const modalOpen = useAnyModalOpen();
+  const chatUnread = useChatUnread();
 
-  const items = [
+  // No Cart: it already sits in the header on every screen, with its count,
+  // and five is where a bar of these stops being readable.
+  //
+  // The fourth slot goes to whoever is looking. Staff get the dashboard —
+  // the thing they open every day, and they answer customers from its
+  // inbox rather than this chat. Everyone else gets chat, which used to be
+  // a bubble floating over the page.
+  const items: Item[] = [
     { to: '/', end: true, label: 'Home', icon: HomeIcon },
     { to: '/shop', label: 'Shop', icon: ShopIcon },
     { to: '/solar-prices', label: 'Solar', icon: SunIcon },
-    { to: '/cart', label: 'Cart', icon: CartIcon, badge: itemCount },
+    hasAdminAccess
+      ? { to: '/admin', label: 'Dashboard', icon: GridIcon }
+      : { onClick: openChat, label: 'Chat', icon: ChatIcon, badge: chatUnread },
     { to: user ? '/account' : '/login', label: user ? 'Account' : 'Sign in', icon: UserIcon },
   ];
 
@@ -40,32 +49,58 @@ export default function BottomNav() {
       aria-label={t('Main')}
     >
       <div className="mx-auto flex max-w-md items-stretch justify-around gap-1 rounded-2xl border border-white/60 bg-white/80 p-1.5 shadow-[0_8px_30px_rgba(15,23,42,.18)] backdrop-blur-xl">
-        {items.map(({ to, end, label, icon: Icon, badge }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
-                isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-500 active:bg-slate-100'
-              }`
-            }
-          >
-            <span className="relative">
-              <Icon />
-              {!!badge && badge > 0 && (
-                <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                  {badge > 9 ? '9+' : badge}
-                </span>
-              )}
-            </span>
-            {t(label)}
-          </NavLink>
-        ))}
+        {items.map((item) => {
+          const { label, icon: Icon, badge } = item;
+          const inside = (
+            <>
+              <span className="relative">
+                <Icon />
+                {!!badge && badge > 0 && (
+                  <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </span>
+              {t(label)}
+            </>
+          );
+          const shape =
+            'relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition';
+          return 'to' in item ? (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `${shape} ${
+                  isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-500 active:bg-slate-100'
+                }`
+              }
+            >
+              {inside}
+            </NavLink>
+          ) : (
+            <button
+              key={label}
+              type="button"
+              onClick={item.onClick}
+              className={`${shape} text-slate-500 active:bg-slate-100`}
+            >
+              {inside}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
 }
+
+/** A tab is either somewhere to go or something to do. */
+type Item = {
+  label: string;
+  icon: () => JSX.Element;
+  badge?: number;
+} & ({ to: string; end?: boolean } | { onClick: () => void });
 
 /* Line icons rather than emoji: emoji are a different shape, weight and
    colour on every phone, which is exactly what a navigation bar shouldn't
@@ -108,12 +143,21 @@ function SunIcon() {
   );
 }
 
-function CartIcon() {
+function GridIcon() {
   return (
     <svg {...stroke} aria-hidden="true">
-      <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h6.7a2 2 0 0 0 2-1.5L20 7H6" />
-      <circle cx="10" cy="20" r="1.3" />
-      <circle cx="17" cy="20" r="1.3" />
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg {...stroke} aria-hidden="true">
+      <path d="M20 12a7.5 7.5 0 0 1-7.8 7.5c-1 0-2-.2-2.9-.5L4 20.5l1.5-4.6A7.5 7.5 0 1 1 20 12Z" />
     </svg>
   );
 }
