@@ -15,6 +15,7 @@ import {
   type PushState,
 } from '../../lib/push';
 import NotificationSettings from '../../components/NotificationSettings';
+import AdminMobileNav, { type NavItem } from './AdminMobileNav';
 import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -32,20 +33,22 @@ const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/team': 'team',
 };
 
-const navItems: { to: string; label: string; icon: string; end?: boolean; access: Access }[] = [
-  { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin' },
-  { to: '/admin/products', label: 'Products', icon: '📦', access: 'products' },
-  { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar' },
-  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs' },
-  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin' },
-  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin' },
-  { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff' },
-  { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team' },
-  { to: '/admin/files', label: 'Files', icon: '📁', access: 'team' },
-  { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin' },
-  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin' },
-  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin' },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️', access: 'admin' },
+// `group` is only used by the phone menu, which shows related pages
+// together rather than one long list.
+const navItems: (NavItem & { access: Access })[] = [
+  { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin', group: 'Work' },
+  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
+  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin', group: 'Work' },
+  { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
+  { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar', group: 'Shop' },
+  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin', group: 'Shop' },
+  { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff', group: 'Team' },
+  { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team', group: 'Team' },
+  { to: '/admin/files', label: 'Files', icon: '📁', access: 'team', group: 'Team' },
+  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin', group: 'Team' },
+  { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin', group: 'Manage' },
+  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin', group: 'Manage' },
+  { to: '/admin/settings', label: 'Settings', icon: '⚙️', access: 'admin', group: 'Manage' },
 ];
 
 export default function AdminLayout() {
@@ -79,7 +82,6 @@ export default function AdminLayout() {
     return () => cleanup?.();
   }, [navigate]);
   const location = useLocation();
-  const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   // Website notifications: while a dashboard tab is open (even in the
@@ -143,7 +145,6 @@ export default function AdminLayout() {
   }, [push, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, viewAs, user]);
 
   useEffect(() => subscribeSettings(setSettings), []);
-  useEffect(() => setOpen(false), [location.pathname]);
 
   // Opening a section marks it read on this device.
   useEffect(() => {
@@ -198,7 +199,18 @@ export default function AdminLayout() {
       <div className="w-full px-4 py-6 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[240px,minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-20 lg:self-start">
-            <div className="card overflow-hidden">
+            <AdminMobileNav
+              items={visibleItems}
+              alerts={alerts}
+              alertFor={ALERT_FOR}
+              storeName={settings?.storeName ?? 'Alwaidh'}
+              email={user.email}
+              language={lang}
+              onNotifications={() => setNotifOpen(true)}
+              onLanguage={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+              onSignOut={() => signOut()}
+            />
+            <div className="card hidden overflow-hidden lg:block">
               <div className="border-b border-slate-100 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   {t('Admin')}
@@ -207,16 +219,7 @@ export default function AdminLayout() {
                   {settings?.storeName ?? 'Alwaidh'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen((o) => !o)}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 lg:hidden"
-                aria-expanded={open}
-              >
-                {t('Menu')}
-                <span>{open ? '▴' : '▾'}</span>
-              </button>
-              <nav className={`${open ? 'block' : 'hidden'} lg:block`}>
+              <nav>
                 <ul className="space-y-0.5 p-2">
                   {visibleItems.map((item) => (
                     <li key={item.to}>
