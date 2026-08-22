@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { listAllMedia } from '../lib/mediaStore';
 import { subscribeLibrary, formatFileSize, type LibraryFile } from '../lib/libraryStore';
 import { useLang } from '../lib/i18n';
+import { useScrollLock } from '../lib/useScrollLock';
 
 interface Choice {
   url: string;
@@ -30,6 +31,7 @@ export default function FilePicker({
   onClose: () => void;
   onSelect: (url: string) => void;
 }) {
+  useScrollLock(open);
   const { t } = useLang();
   const [uploads, setUploads] = useState<Choice[] | null>(null);
   const [shelf, setShelf] = useState<LibraryFile[]>([]);

@@ -14,6 +14,7 @@ import {
   type Roles,
 } from '../lib/push';
 import { useLang } from '../lib/i18n';
+import { useScrollLock } from '../lib/useScrollLock';
 
 /**
  * Turn notifications on for this device and choose what they cover.
@@ -29,6 +30,7 @@ export default function NotificationSettings({
   email: string | null;
   onClose: () => void;
 }) {
+  useScrollLock();
   const { t } = useLang();
   const [state, setState] = useState<PushState>('unsupported');
   const [prefs, setPrefs] = useState<NotificationPrefs>(() => notificationPrefs());

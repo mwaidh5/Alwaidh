@@ -1,12 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 /**
- * How many modals are open. Only the outermost one touches the page, so a
+ * How many pop-ups are open. Only the outermost one touches the page, so a
  * dialog opened from inside another dialog can't restore the scroll
  * position while its parent is still up.
  */
 let depth = 0;
 let savedY = 0;
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  for (const fn of listeners) fn();
+}
 
 /**
  * Freeze the page while a pop-up is open, so only the pop-up scrolls.
@@ -17,6 +22,9 @@ let savedY = 0;
  * about while you read them. Pinning the body and offsetting it by the
  * current scroll holds it still on every browser; the offset is what stops
  * the page jumping to the top, and it is put back on close.
+ *
+ * Every pop-up calls this, which also makes it the one place that knows
+ * whether anything is open — see `useAnyModalOpen`.
  */
 export function useScrollLock(active = true): void {
   useEffect(() => {
@@ -31,8 +39,10 @@ export function useScrollLock(active = true): void {
       body.style.overflow = 'hidden';
     }
     depth += 1;
+    emit();
     return () => {
       depth -= 1;
+      emit();
       if (depth > 0) return;
       body.style.position = '';
       body.style.top = '';
@@ -45,4 +55,24 @@ export function useScrollLock(active = true): void {
       window.scrollTo({ top: savedY, left: 0, behavior: 'instant' as ScrollBehavior });
     };
   }, [active]);
+}
+
+function subscribe(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
+/**
+ * True while any pop-up is open. The phone's chrome — the header and the
+ * tab bar — gets out of the way when one is, so a pop-up reads as a screen
+ * of its own rather than a card floating between two bars.
+ */
+export function useAnyModalOpen(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => depth > 0,
+    () => false,
+  );
 }

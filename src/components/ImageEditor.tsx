@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
+import { useScrollLock } from '../lib/useScrollLock';
 import { hasOriginalBackup, restoreOriginal } from '../lib/mediaStore';
 import ImageTouchUp from './ImageTouchUp';
 
@@ -77,6 +78,7 @@ export default function ImageEditor({
    */
   restore?: { path: string; onRestored: (url: string) => void | Promise<void> };
 }) {
+  useScrollLock();
   const { t } = useLang();
   const [workUrl, setWorkUrl] = useState('');
   // PNG survives transparency (needed after background removal); everything
