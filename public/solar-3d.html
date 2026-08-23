@@ -48,6 +48,7 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
 wrap.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -55,14 +56,14 @@ scene.background = new THREE.Color(0x0b1220);
 // Metallic materials (the panel glass) reflect their surroundings; with no
 // environment they render black. This gives them something to reflect.
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.55;
+scene.environmentIntensity = 0.75;
 scene.fog = new THREE.Fog(0x0b1220, 34, 80);
 
 const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 200);
 
 // Light like a Baghdad afternoon: warm key from the sun side, cool fill.
-scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x2a3550, 1.25));
-const sun = new THREE.DirectionalLight(0xffdF9e, 2.1);
+scene.add(new THREE.HemisphereLight(0xdce8ff, 0x39435e, 1.7));
+const sun = new THREE.DirectionalLight(0xffdF9e, 2.7);
 sun.position.set(9, 14, 6);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -156,21 +157,24 @@ Promise.all(files.map(load)).then(([houseG, panelG, workerG]) => {
   state.roofRect = roof;
   state.houseTop = roof.houseBox.max.y;
 
-  // Slot grid: 3 × 2 inside the flat region, inset from the parapet.
-  const inX = (roof.maxX - roof.minX) * 0.16, inZ = (roof.maxZ - roof.minZ) * 0.16;
+  // Everything is sized off the worker: he is 1.75 m tall, which fixes
+  // how long a metre is in this scene, and a rack of six panels is about
+  // 3.4 m across — panels are 2.2 m things, not roof ornaments. Four
+  // racks of that size fill the roof, so the grid is 2 × 2.
+  const houseH = roof.houseBox.max.y - roof.houseBox.min.y;
+  const metre = (houseH * 0.33) / 1.75;
+  const inX = (roof.maxX - roof.minX) * 0.14, inZ = (roof.maxZ - roof.minZ) * 0.14;
   const x0 = roof.minX + inX, x1 = roof.maxX - inX;
   const z0 = roof.minZ + inZ, z1 = roof.maxZ - inZ;
-  const cellW = (x1 - x0) / 3, cellD = (z1 - z0) / 2;
+  const cellW = (x1 - x0) / 2, cellD = (z1 - z0) / 2;
 
   const panel = panelG.scene;
   shadows(panel);
-  // The rack is wide and shallow, so size it to the cell's width and let
-  // it breathe in depth; face it toward the sun (and the camera).
-  fit(panel, cellW * 1.14);
+  fit(panel, Math.min(3.4 * metre, cellW * 1.04));
   const pbox = new THREE.Box3().setFromObject(panel);
   const plift = -pbox.min.y;
 
-  for (let j = 0; j < 2; j++) for (let i = 0; i < 3; i++) {
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
     const p = panel.clone(true);
     p.position.set(x0 + (i + .5) * cellW, roof.y + plift, z0 + (j + .5) * cellD);
     p.rotation.y = Math.PI;
@@ -182,8 +186,7 @@ Promise.all(files.map(load)).then(([houseG, panelG, workerG]) => {
 
   const worker = workerG.scene;
   shadows(worker);
-  // A person is about 40% of a one-storey house.
-  const wTarget = (roof.houseBox.max.y - roof.houseBox.min.y) * 0.33;
+  const wTarget = 1.75 * metre;
   const wbox0 = new THREE.Box3().setFromObject(worker);
   const wsize = wbox0.getSize(new THREE.Vector3());
   worker.scale.setScalar(wTarget / wsize.y);
@@ -201,6 +204,13 @@ Promise.all(files.map(load)).then(([houseG, panelG, workerG]) => {
     state.mixer.update(0.25);
     state.clip = workerG.animations[0];
   }
+  // The rig's spine — all three links of it. One bone bows the torso a
+  // few degrees; bending the chain adds up to a real stoop over the rack.
+  state.spines = [];
+  worker.traverse(n => {
+    if (n.isBone && /spine/i.test(n.name)) state.spines.push({ b: n, base: n.rotation.x });
+  });
+  state.spine = state.spines.length > 0;
 
   // Camera: three-quarter view, slightly above roof height.
   const c = roof.houseBox.getCenter(new THREE.Vector3());
@@ -214,21 +224,39 @@ Promise.all(files.map(load)).then(([houseG, panelG, workerG]) => {
     clip: state.clip ? +state.clip.duration.toFixed(2) + 's' : 'none'
   }, null, 1);
 
+  // A job in progress: some racks are already done and never move.
+  for (let k = 0; k < 2; k++) {
+    const sl = state.slots[k];
+    sl.filled = true;
+    sl.mesh.visible = true;
+    state.filled++;
+  }
+  countEl.textContent = state.filled + ' / ' + state.slots.length;
+
   const qs = new URLSearchParams(location.search);
   // ?freeze=1 holds the auto loop, so a screenshot shows a chosen moment
   // instead of wherever the loop happened to be.
   if (qs.get('freeze')) state.busy = true;
   const pre = Number(qs.get('fill') || 0);
-  for (let k = 0; k < Math.min(pre, 6); k++) {
+  for (let k = 0; k < Math.min(pre, state.slots.length); k++) {
     const s = state.slots[k];
     s.filled = true; s.mesh.visible = true;
     state.filled++;
   }
-  countEl.textContent = state.filled + ' / 6';
+  countEl.textContent = state.filled + ' / ' + state.slots.length;
   if (pre) {
     const s = state.slots[Math.min(pre, 5)];
     state.worker.position.set(s.x + 0.9, state.roofY + state.worker.userData.footLift, s.z + 0.5);
     state.worker.lookAt(s.x, state.worker.position.y, s.z);
+  }
+
+  if (qs.get('pose') === 'work') {
+    const sl = state.slots[3];
+    state.worker.position.set(sl.x + 0.9 * metre, state.roofY + state.worker.userData.footLift, sl.z + 0.7 * metre);
+    state.worker.lookAt(sl.x, state.worker.position.y, sl.z);
+    if (state.spine) for (const sp of state.spines) sp.b.rotation.x = sp.base + 0.55;
+    else state.worker.rotation.x = 0.4;
+    state.busy = true;
   }
 
   window.__scene = { state, roof, camera, renderer, scene, THREE };
@@ -241,7 +269,7 @@ let walkFrom = null, walkTo = null, walkT = 0, targetSlot = -1;
 
 function walkToSlot(k) {
   const s = state.slots[k];
-  if (!s || s.filled || state.walking || state.dragging || state.busy) return;
+  if (!s || s.filled || state.walking || state.dragging || state.busy || state.workT > 0) return;
   targetSlot = k;
   state.walking = true;
   walkFrom = state.worker.position.clone();
@@ -254,27 +282,41 @@ function walkToSlot(k) {
 function arrive() {
   state.walking = false;
   const s = state.slots[targetSlot];
+  if (!s || s.filled) return;
+  // Don't drop the panel in from nowhere: he bends over the rack and
+  // fastens it — a slow bow with a small turning wiggle, like driving
+  // screws — and the rack appears mid-work, not on arrival.
+  state.worker.lookAt(s.x, state.worker.position.y, s.z);
+  state.workT = 0.0001;
+  state.workSlot = targetSlot;
+}
+
+function workDone() {
+  const s = state.slots[state.workSlot];
   if (s && !s.filled) {
     s.filled = true;
     s.mesh.visible = true;
     s.mesh.userData.pop = 0.001;
     state.filled++;
-    countEl.textContent = state.filled + ' / 6';
-    state.worker.lookAt(s.x, state.worker.position.y, s.z);
+    countEl.textContent = state.filled + ' / ' + state.slots.length;
   }
 }
 
 function tick() {
-  if (state.dragging || state.walking || state.busy || !state.worker) return;
-  const k = state.slots.findIndex(s => !s.filled);
+  if (state.dragging || state.walking || state.busy || state.workT > 0 || !state.worker) return;
+  const k = state.slots.findIndex(sl => !sl.filled);
   if (k >= 0) { walkToSlot(k); return; }
   state.busy = true;
-  msgEl.textContent = 'The lights are on — your house next?';
+  msgEl.textContent = 'Roof done — your house next?';
   msgEl.className = 'done';
   setTimeout(() => {
-    state.slots.forEach(s => { s.filled = false; s.mesh.visible = false; });
-    state.filled = 0;
-    countEl.textContent = '0 / 6';
+    state.slots.forEach((s, k) => {
+      if (k < 2) return; // the finished racks stay — the job was real
+      s.filled = false;
+      s.mesh.visible = false;
+    });
+    state.filled = 2;
+    countEl.textContent = state.filled + ' / ' + state.slots.length;
     msgEl.textContent = 'Drag the worker, or tap the roof';
     msgEl.className = '';
     state.busy = false;
@@ -297,7 +339,15 @@ addEventListener('pointerdown', e => {
   if (!state.worker || state.busy) return;
   cast(e);
   const hitWorker = ray.intersectObject(state.worker, true).length > 0;
-  if (hitWorker) { state.dragging = true; state.walking = false; return; }
+  if (hitWorker) {
+    state.dragging = true;
+    state.walking = false;
+    state.workT = 0;
+    state.workPlaced = false;
+    if (state.spine) for (const sp of state.spines) sp.b.rotation.x = sp.base;
+    else state.worker.rotation.x = 0;
+    return;
+  }
   const p = roofPoint();
   if (!p) return;
   const r = state.roofRect;
@@ -335,6 +385,25 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
+  if (state.workT > 0) {
+    // 0→1 over ~2.2s: bow in, hold with a fastening wiggle, bow out.
+    state.workT = Math.min(1, state.workT + dt / 2.2);
+    const t = state.workT;
+    const bowIn = Math.min(1, t / 0.3);
+    const bowOut = t > 0.78 ? (1 - t) / 0.22 : 1;
+    const depth = Math.min(bowIn, bowOut);
+    const wiggle = t > 0.3 && t < 0.78 ? Math.sin(t * 55) * 0.05 : 0;
+    const bend = depth * 0.55 + wiggle;
+    if (state.spine) for (const sp of state.spines) sp.b.rotation.x = sp.base + bend;
+    else state.worker.rotation.x = bend * 0.6;
+    if (t >= 0.55 && !state.workPlaced) { state.workPlaced = true; workDone(); }
+    if (t >= 1) {
+      state.workT = 0;
+      state.workPlaced = false;
+      if (state.spine) for (const sp of state.spines) sp.b.rotation.x = sp.base;
+      else state.worker.rotation.x = 0;
+    }
+  }
   if (state.walking && walkTo) {
     walkT = Math.min(1, walkT + dt / 0.9);
     const e = walkT < .5 ? 2 * walkT * walkT : 1 - (-2 * walkT + 2) ** 2 / 2;
