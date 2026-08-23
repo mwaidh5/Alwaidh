@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../lib/useProducts';
@@ -7,6 +7,7 @@ import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
+import { openDrawer } from '../lib/drawer';
 
 const navLinks = [
   { to: '/', label: 'Home', end: true },
@@ -27,14 +28,10 @@ export default function Navbar() {
   const { products } = useProducts();
   const settings = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Close the mobile menu whenever the route changes.
-  useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
@@ -94,12 +91,11 @@ export default function Navbar() {
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => setMobileOpen((o) => !o)}
+            onClick={openDrawer}
             aria-label={t('Menu')}
-            aria-expanded={mobileOpen}
             className="grid h-10 w-10 flex-none place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 md:hidden"
           >
-            {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+            <MenuIcon />
           </button>
           <Link to="/" className="flex min-w-0 items-center gap-2 font-extrabold text-brand-700">
             {settings.logoImage ? (
@@ -311,62 +307,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <nav className="border-t border-slate-200 bg-white md:hidden">
-          <div className="container-page space-y-1 py-3">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.end}
-                className={({ isActive }) =>
-                  `block rounded-md px-3 py-2.5 text-sm font-medium transition ${
-                    isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'
-                  }`
-                }
-              >
-                {t(link.label)}
-              </NavLink>
-            ))}
-            {hasAdminAccess && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `block rounded-md px-3 py-2.5 text-sm font-medium transition ${
-                    isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'
-                  }`
-                }
-              >
-                {dashboardLabel}
-              </NavLink>
-            )}
-            {/* The footer is hidden on phones, so its one link that isn't
-                in the tab bar lives here. */}
-            <Link
-              to="/privacy"
-              className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
-            >
-              {t('Privacy')}
-            </Link>
-            {user ? (
-              <Link
-                to="/account"
-                className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                {t('My account')}
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="block rounded-md bg-brand-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-700"
-              >
-                {t('Sign in')}
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
     </header>
   );
 }
@@ -390,23 +330,6 @@ function MenuIcon() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <line x1="6" y1="6" x2="18" y2="18" />
-      <line x1="18" y1="6" x2="6" y2="18" />
-    </svg>
-  );
-}
 
 function UserIcon() {
   return (

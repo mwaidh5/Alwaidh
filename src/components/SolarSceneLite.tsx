@@ -77,6 +77,8 @@ export default function SolarSceneLite() {
     target: -1,
     filled: SLOTS.map((s) => s.pre),
     timers: [] as number[],
+    pos: [0, 0] as [number, number],
+    raf: 0,
   });
 
   const later = (fn: () => void, ms: number) => {
@@ -92,16 +94,35 @@ export default function SolarSceneLite() {
     const s = m.current;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Position goes through the SVG transform ATTRIBUTE, never through the
+    // style attribute: React owns style and rewrites it on re-render, which
+    // could silently wipe a transform set by hand and leave the worker at
+    // the origin — outside the drawing, invisible. That happened.
     const place = (x: number, y: number) => {
-      worker.style.transform = `translate(${x}px, ${y}px)`;
+      s.pos = [x, y];
+      worker.setAttribute('transform', `translate(${x} ${y})`);
     };
     const start = pt(0.86, 0.2);
     place(start[0], start[1]);
 
+    // Walks are a small tween: SVG attribute changes aren't CSS-transitioned
+    // on iOS, so the easing is done by hand. If the tab stops rendering the
+    // tween pauses, and the arrival timer snaps him to the end.
+    function glide(to: [number, number], ms: number) {
+      cancelAnimationFrame(s.raf);
+      const from: [number, number] = [...s.pos];
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - t0) / ms);
+        const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+        place(from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e);
+        if (t < 1 && s.walking) s.raf = requestAnimationFrame(step);
+      };
+      s.raf = requestAnimationFrame(step);
+    }
+
     function face(towardX: number) {
-      const mtx = /translate\(([-\d.]+)px/.exec(worker!.style.transform);
-      const here = mtx ? Number(mtx[1]) : 0;
-      flipRef.current?.setAttribute('transform', towardX < here ? 'scale(1,1)' : 'scale(-1,1)');
+      flipRef.current?.setAttribute('transform', towardX < s.pos[0] ? 'scale(1,1)' : 'scale(-1,1)');
     }
 
     function install(k: number) {
@@ -134,7 +155,7 @@ export default function SolarSceneLite() {
       const stand = pt(slot.u + side, Math.min(0.9, slot.v + 0.05));
       face(slot.cx);
       worker!.classList.add('alw-walk');
-      place(stand[0], stand[1]);
+      glide(stand, reduced ? 1 : WALK_MS);
       // A timeout is the arrival signal — transitions are only the visuals.
       // transitionend never fires in a tab that isn't rendering, and a
       // stuck flag would freeze the whole scene.
@@ -142,6 +163,11 @@ export default function SolarSceneLite() {
         () => {
           worker!.classList.remove('alw-walk');
           s.walking = false;
+          cancelAnimationFrame(s.raf);
+          const slot2 = SLOTS[k];
+          const side2 = slot2.u > 0.66 ? -0.17 : 0.17;
+          const stand2 = pt(slot2.u + side2, Math.min(0.9, slot2.v + 0.05));
+          place(stand2[0], stand2[1]);
           if (!s.dragging) work(k);
         },
         reduced ? 60 : WALK_MS,
@@ -242,6 +268,7 @@ export default function SolarSceneLite() {
     window.addEventListener('pointercancel', onUp);
     return () => {
       clearInterval(interval);
+      cancelAnimationFrame(m.current.raf);
       m.current.timers.forEach(clearTimeout);
       svg.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
