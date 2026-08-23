@@ -325,13 +325,16 @@ export default function SolarSceneLite() {
             const j = k < 3 ? 0 : 1;
             const q = [pt(i / 3, j / 2), pt((i + 1) / 3, j / 2), pt((i + 1) / 3, (j + 1) / 2), pt(i / 3, (j + 1) / 2)];
             return (
-              <g key={k}>
+              <g key={k} transform={`translate(${slot.cx},${slot.cy})`}>
+                {/* Position on the outer group's ATTRIBUTE, animation on the
+                    inner group's CLASS. On one element the CSS transform
+                    replaces the attribute wholesale, and every panel lost
+                    its slot and rendered at the origin — off the drawing. */}
                 <g
                   ref={(el) => {
                     panelRefs.current[k] = el;
                   }}
                   className={`alw-panel ${filled[k] ? 'alw-on' : ''}`}
-                  transform={`translate(${slot.cx},${slot.cy})`}
                 >
                   <line x1="-9" y1="1" x2="-6" y2="-6" stroke="#7a7264" strokeWidth="1.6" />
                   <line x1="8" y1="3" x2="6" y2="-4" stroke="#7a7264" strokeWidth="1.6" />
