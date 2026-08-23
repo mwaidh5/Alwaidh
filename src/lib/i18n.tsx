@@ -864,6 +864,17 @@ const AR: Record<string, string> = {
   'IP and analog cameras and NVRs.': 'كاميرات IP وتناظرية وأجهزة NVR.',
   'Since 1992': 'منذ 1992',
   'Laptops, desktops and workstations.': 'حاسبات محمولة ومكتبية ومحطات عمل.',
+  // ---- The solar prices page (from the canvas design) ----
+  'System prices': 'أسعار المنظومات',
+  'Solar power systems': 'منظومات الطاقة الشمسية',
+  'Complete prices including panels, inverter, batteries and installation. Prices are in Iraqi dinar and can change with stock.':
+    'أسعار كاملة تشمل الألواح، العاكسة، البطاريات والتركيب. الأسعار بالدينار العراقي وقابلة للتغيير حسب توفر المواد.',
+  'Ask about this system': 'استفسر عن المنظومة',
+  'For enquiries and installation:': 'للاستفسار والتركيب:',
+  'Request a quote': 'اطلب عرض سعر',
+  ampere: 'أمبير',
+  'Download PDF': 'تنزيل PDF',
+  'Preparing…': 'جاري التحضير…',
 };
 
 interface LanguageValue {
