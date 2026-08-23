@@ -407,6 +407,15 @@ export async function logJobEvent(
       by: currentEmail(),
       at: serverTimestamp(),
     });
+    // Touch the job itself as well. A comment is a change to the job as far
+    // as anyone reading the board is concerned, but it is written to a
+    // sub-collection — so without this the card would never show that
+    // something had happened on it.
+    await setDoc(
+      doc(database, COLLECTION, jobId),
+      { updatedAt: serverTimestamp(), updatedBy: currentEmail() },
+      { merge: true },
+    ).catch(() => undefined);
   } catch (e) {
     console.warn('Could not record job activity:', e instanceof Error ? e.message : e);
   }
