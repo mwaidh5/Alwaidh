@@ -1,4 +1,5 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from './ChatWidget';
@@ -7,6 +8,17 @@ import PullToRefresh from './PullToRefresh';
 
 export default function Layout() {
   const location = useLocation();
+  const navType = useNavigationType();
+
+  // Open a new page and start at the top of it — otherwise tapping Shop
+  // halfway down the homepage drops you halfway down the shop. Going back
+  // is left alone: that is where a page restores the place you left, and
+  // the shop does exactly that.
+  useEffect(() => {
+    if (navType === 'POP') return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [location.pathname, navType]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <PullToRefresh />
