@@ -7,7 +7,6 @@ import { useSettings } from '../lib/useSettings';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { formatPrice } from '../lib/format';
-import { submitContact } from '../lib/contactSubmissions';
 import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
 
@@ -113,7 +112,17 @@ export default function Home() {
               className="absolute inset-0"
               style={{ background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, s.overlay)) / 100})` }}
             />
-            <div className="relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14">
+            {/* Phones: the wording sits at the bottom of the banner, so the
+                photo gets a floor of shade under it whatever the overlay
+                setting says. */}
+            <div
+              className="absolute inset-0 sm:hidden"
+              style={{
+                background:
+                  'linear-gradient(to top, rgba(2,6,23,.9) 0%, rgba(2,6,23,.62) 34%, rgba(2,6,23,.14) 66%, rgba(2,6,23,0) 100%)',
+              }}
+            />
+            <div className="relative flex h-full flex-col justify-end gap-3 p-6 pb-16 sm:justify-center sm:gap-4 sm:px-14 sm:pb-0">
               {s.eyebrow && (
                 <span
                   className="self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] ring-1 ring-inset"
@@ -123,14 +132,14 @@ export default function Home() {
                 </span>
               )}
               <h1
-                className="max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl"
+                className="max-w-2xl text-[28px] font-extrabold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.08]"
                 style={{ color: s.textColor }}
               >
                 {t(s.title)}
               </h1>
               {s.subtitle && (
                 <p
-                  className="max-w-xl text-base leading-relaxed sm:text-lg"
+                  className="max-w-xl text-[13px] leading-relaxed sm:text-lg"
                   style={{ color: s.textColor, opacity: 0.85 }}
                 >
                   {t(s.subtitle)}
@@ -156,7 +165,7 @@ export default function Home() {
               type="button"
               onClick={() => step(-1)}
               aria-label={t('Previous')}
-              className="grid h-7 w-7 place-items-center rounded-full text-base font-bold text-slate-900 hover:bg-slate-100"
+              className="hidden h-7 w-7 place-items-center rounded-full text-base font-bold text-slate-900 hover:bg-slate-100 sm:grid"
             >
               ‹
             </button>
@@ -180,7 +189,7 @@ export default function Home() {
               type="button"
               onClick={() => step(1)}
               aria-label={t('Next')}
-              className="grid h-7 w-7 place-items-center rounded-full text-base font-bold text-slate-900 hover:bg-slate-100"
+              className="hidden h-7 w-7 place-items-center rounded-full text-base font-bold text-slate-900 hover:bg-slate-100 sm:grid"
             >
               ›
             </button>
@@ -466,37 +475,6 @@ function ArrivalCard({ product }: { product: Product }) {
 /** "Tell us your bill" — a real enquiry, landing in Admin → Submissions. */
 function SolarQuote({ logo }: { logo?: string }) {
   const { t } = useLang();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [city, setCity] = useState('');
-  const [amps, setAmps] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim()) {
-      setError(t('Please add your name and phone number.'));
-      return;
-    }
-    setBusy(true);
-    setError('');
-    try {
-      await submitContact({
-        name: name.trim(),
-        email: '',
-        phone: phone.trim(),
-        subject: 'Solar quote request',
-        message: [`City: ${city || '—'}`, `Amperes needed: ${amps || '—'}`].join('\n'),
-      });
-      setDone(true);
-    } catch {
-      setError(t('Could not send — check your connection and try again.'));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <section
@@ -519,8 +497,8 @@ function SolarQuote({ logo }: { logo?: string }) {
             {t('Free site survey')}
           </span>
           <h2 className="mb-3 mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900">
-            <span className="block">{t('Tell us your bill —')}</span>
-            <span className="block text-brand-600">{t('we’ll size the system')}</span>
+            <span className="block">{t('Forget your electricity problems —')}</span>
+            <span className="block text-brand-600">{t('live without power cuts')}</span>
           </h2>
           <p className="mb-6 max-w-lg text-base leading-relaxed text-slate-600">
             {t(
@@ -541,92 +519,22 @@ function SolarQuote({ logo }: { logo?: string }) {
               </li>
             ))}
           </ul>
-
-          {/* The install, in miniature: he works whether or not anyone
-              watches, and watching is allowed to become playing. */}
-          <div className="mt-8 max-w-lg">
-            <SolarSceneLite />
-          </div>
         </div>
 
-        <div className="rounded-3xl border border-sky-100 bg-white p-6 shadow-xl shadow-sky-900/10">
-          {done ? (
-            <div className="flex flex-col items-center gap-3 px-2 py-10 text-center">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-green-100 text-xl font-extrabold text-green-700">
-                ✓
-              </span>
-              <p className="max-w-[15rem] font-bold text-slate-900">
-                {t('Thanks — we’ll call you within 24 hours.')}
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={submit} className="flex flex-col gap-3">
-              <div className="text-lg font-extrabold tracking-tight text-slate-900">
-                {t('Request a solar quote')}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Labelled label="Full name">
-                  <input
-                    className="input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('Your name')}
-                  />
-                </Labelled>
-                <Labelled label="Phone number">
-                  <input
-                    type="tel"
-                    dir="ltr"
-                    className="input"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="0770 000 0000"
-                  />
-                </Labelled>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Labelled label="City">
-                  <input
-                    className="input"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder={t('e.g. Baghdad — Karrada')}
-                  />
-                </Labelled>
-                <Labelled label="How many amperes do you need?">
-                  <input
-                    className="input"
-                    value={amps}
-                    onChange={(e) => setAmps(e.target.value)}
-                    placeholder={t('e.g. 20 A')}
-                  />
-                </Labelled>
-              </div>
-              {error && <p className="text-xs text-red-700">{error}</p>}
-              <button
-                type="submit"
-                disabled={busy}
-                className="mt-1 w-full rounded-xl bg-brand-600 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 disabled:opacity-60"
-              >
-                {busy ? t('Sending…') : t('Request a free site visit')}
-              </button>
-              <p className="text-center text-[11px] text-slate-500">
-                {t('We’ll call you within 24 hours. No obligation.')}
-              </p>
-            </form>
-          )}
+        {/* The install in miniature, and one plain door to the prices —
+            the quote form used to live here, and asked more questions than
+            a price list answers. */}
+        <div className="flex flex-col gap-5">
+          <SolarSceneLite />
+          <Link
+            to="/solar-prices"
+            className="block rounded-2xl bg-brand-600 py-4 text-center text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700"
+          >
+            {t('See solar prices')} →
+          </Link>
         </div>
       </div>
     </section>
   );
 }
 
-function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
-  const { t } = useLang();
-  return (
-    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-600">
-      <span>{t(label)}</span>
-      {children}
-    </label>
-  );
-}

@@ -838,6 +838,9 @@ const AR: Record<string, string> = {
   'Roof done — your house next?': 'اكتمل السطح — بيتك التالي؟',
   'An installer mounting solar panels on a flat roof':
     'فنّي يركّب ألواحاً شمسية على سطح منزل',
+  'Forget your electricity problems —': 'انسَ مشاكل الكهرباء —',
+  'live without power cuts': 'وعِش من دون انقطاع',
+  'See solar prices': 'اطّلع على أسعار الطاقة الشمسية',
 };
 
 interface LanguageValue {

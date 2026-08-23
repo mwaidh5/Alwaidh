@@ -155,11 +155,7 @@
 
   /* The homepage solar scene (SolarSceneLite): a hand-animated installer.
      Transitions do the movement; the component's timeouts are the clock. */
-  .alw-worker {
-    transition: transform 0.85s ease;
-  }
   .alw-worker.alw-drag {
-    transition: none;
     cursor: grabbing;
   }
   .alw-inner,
@@ -193,7 +189,6 @@
     fill: #fcd34d;
   }
   @media (prefers-reduced-motion: reduce) {
-    .alw-worker,
     .alw-panel {
       transition: none;
     }
