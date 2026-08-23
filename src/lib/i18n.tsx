@@ -828,6 +828,10 @@ const AR: Record<string, string> = {
   Team: 'الفريق',
   Manage: 'الإدارة',
   'The shop': 'المتجر',
+  // ---- What changed since you last looked ----
+  New: 'جديد',
+  'Changed since you last opened it': 'تغيّر منذ آخر مرة فتحته',
+  'Something here changed since you last looked': 'حدث تغيير هنا منذ آخر مرة نظرت',
 };
 
 interface LanguageValue {
