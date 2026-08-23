@@ -872,7 +872,7 @@ const AR: Record<string, string> = {
   'Ask about this system': 'استفسر عن المنظومة',
   'For enquiries and installation:': 'للاستفسار والتركيب:',
   'Request a quote': 'اطلب عرض سعر',
-  ampere: 'أمبير',
+  Amp: 'أمبير',
   'Download PDF': 'تنزيل PDF',
   'Preparing…': 'جاري التحضير…',
   'Choose your system': 'اختر منظومتك',

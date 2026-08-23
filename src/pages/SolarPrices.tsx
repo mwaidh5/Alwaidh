@@ -6,12 +6,53 @@ import { openChat } from '../lib/chatPanel';
 import { useLang } from '../lib/i18n';
 
 const COMPANY = 'شركة الواعظ للقدرة';
+
+/* The sheet's data lives in the admin dashboard as Arabic text. For the
+   English site we translate at display time: column names by key, and the
+   handful of phrases the cells are built from. Anything unrecognised
+   passes through unchanged, so custom admin edits still show up. */
+const EN_COLUMN_LABELS: Record<string, string> = {
+  capacity: 'Capacity',
+  inverter: 'Inverter',
+  panels: 'Panels',
+  batteries: 'Batteries',
+  backup: 'Backup hours',
+  price: 'Price',
+  priceWithInverter: 'Price with IP65 inverter',
+};
+const EN_PHRASES: Array<[RegExp, string]> = [
+  [/ثلاث بطاريات ليثيوم/g, '3× lithium batteries'],
+  [/بطاريتين ليثيوم/g, '2× lithium batteries'],
+  [/بطاريتين حامضية/g, '2× acid batteries'],
+  [/بطاريات ليثيوم/g, 'lithium batteries'],
+  [/بطارية ليثيوم/g, 'lithium battery'],
+  [/بطاريتين/g, '2 batteries'],
+  [/بطاريات/g, 'batteries'],
+  [/بطارية/g, 'battery'],
+  [/ليثيوم/g, 'lithium'],
+  [/حامضية/g, 'acid'],
+  [/كيلو واط/g, 'kW'],
+  [/واط/g, 'W'],
+  [/[أا]مبير/g, 'Amp'],
+  [/ساعات/g, 'hours'],
+  [/ساعة/g, 'hours'],
+];
 const PHONE = '0781 0150 876';
 const WEBSITE = 'www.alwaidhpower.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
 
 export default function SolarPrices() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const en = lang === 'en';
+  /** An Arabic sheet value, in the page's language. */
+  function localize(v: string): string {
+    if (!en || !v) return v;
+    let out = v;
+    for (const [re, to] of EN_PHRASES) out = out.replace(re, to);
+    return out.replace(/\s+/g, ' ').trim();
+  }
+  const columnLabel = (c: { key: string; label: string }) =>
+    en ? (EN_COLUMN_LABELS[c.key] ?? c.label) : c.label;
   const [live, setLive] = useState<PriceRow[]>([]);
   const [downloading, setDownloading] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -69,7 +110,7 @@ export default function SolarPrices() {
     const v = row.values[key];
     if (!v || v === '-') return null;
     const col = columns.find((c) => c.key === key);
-    return { value: v, label: col ? col.label : '' };
+    return { value: v, label: col ? columnLabel(col) : '' };
   }
   const specCols = columns.filter((c) => c.key !== 'capacity');
 
@@ -101,7 +142,7 @@ export default function SolarPrices() {
         {/* ---- the system cards, every screen size ---- */}
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => {
-            const cap = splitCapacity(row.values['capacity'] ?? '');
+            const cap = splitCapacity(localize(row.values['capacity'] ?? ''));
             const main = pickPrice(row, 'price');
             const other = pickPrice(row, 'priceWithInverter');
             return (
@@ -114,7 +155,7 @@ export default function SolarPrices() {
                     <span dir="ltr" className="text-4xl font-extrabold leading-none tracking-tight text-slate-900">
                       {cap.n}
                     </span>
-                    <span className="text-lg font-bold text-slate-700">{cap.unit || t('ampere')}</span>
+                    <span className="text-lg font-bold text-slate-700">{cap.unit || t('Amp')}</span>
                   </div>
                   {/* The shop's bread-and-butter size, badged like the
                       design. Move it by changing which capacity matches. */}
@@ -135,9 +176,9 @@ export default function SolarPrices() {
                           key={c.key}
                           className="flex items-start justify-between gap-3 border-b border-dashed border-slate-200 py-2.5 last:border-b-0"
                         >
-                          <dt className="text-[13px] text-slate-400">{c.label}</dt>
+                          <dt className="text-[13px] text-slate-400">{columnLabel(c)}</dt>
                           <dd className="max-w-[12rem] text-end text-[13px] font-bold leading-relaxed text-slate-800">
-                            {v}
+                            {localize(v)}
                           </dd>
                         </div>
                       );
