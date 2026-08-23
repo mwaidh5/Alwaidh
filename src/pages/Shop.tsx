@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigationType, useSearchParams } from 'react-router-dom';
 import type { Product } from '../types/product';
 import { categories } from '../data/categories';
 import { useProducts } from '../lib/useProducts';
@@ -13,17 +13,62 @@ type ViewMode = 'grid' | 'list';
 
 const PER_PAGE = 9;
 
+/**
+ * Where you were in the shop, so coming back from a product puts you
+ * there rather than at the top of page one.
+ *
+ * Only the category lives in the address, and everything else — the page
+ * you were on, the filters, the search, how far you had scrolled — was
+ * component state that died the moment you opened a product.
+ */
+const VIEW_KEY = 'alwaidh.shopView.v1';
+/** Old enough that you have moved on; a new visit should start clean. */
+const VIEW_MAX_AGE = 6 * 60 * 60 * 1000;
+
+interface ShopView {
+  category: string;
+  subs: string[];
+  brands: string[];
+  inStock: boolean;
+  query: string;
+  sort: SortKey;
+  view: ViewMode;
+  page: number;
+  maxPrice: number | null;
+  scrollY: number;
+  at: number;
+}
+
+function readView(): ShopView | null {
+  try {
+    const raw = sessionStorage.getItem(VIEW_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ShopView;
+    if (!parsed || Date.now() - Number(parsed.at) > VIEW_MAX_AGE) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+
 export default function Shop() {
   const { products, loading } = useProducts();
   const { add } = useCart();
+
+  // Only when arriving *back* — tapping Shop in the menu should be a fresh
+  // shop, not wherever you happened to leave off yesterday.
+  const navType = useNavigationType();
+  const [restored] = useState<ShopView | null>(() => (navType === 'POP' ? readView() : null));
 
   // /shop?category=tiandy-cameras opens straight into that category, so
   // links from the homepage tiles and product breadcrumbs land filtered.
   const [params, setParams] = useSearchParams();
   const paramCategory = params.get('category') ?? '';
-  const [activeCategory, setActiveCategory] = useState<'all' | string>(
-    categories.some((c) => c.slug === paramCategory) ? paramCategory : 'all',
-  );
+  const [activeCategory, setActiveCategory] = useState<'all' | string>(() => {
+    if (categories.some((c) => c.slug === paramCategory)) return paramCategory;
+    return restored?.category ?? 'all';
+  });
 
   // Follow later navigations to a different category link.
   useEffect(() => {
@@ -35,19 +80,19 @@ export default function Shop() {
     setActiveCategory(slug);
     setParams(slug === 'all' ? {} : { category: slug }, { replace: true });
   }
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortKey>('featured');
-  const [view, setView] = useState<ViewMode>('grid');
-  const [page, setPage] = useState(1);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(restored?.brands ?? []);
+  const [inStockOnly, setInStockOnly] = useState(restored?.inStock ?? false);
+  const [query, setQuery] = useState(restored?.query ?? '');
+  const [sort, setSort] = useState<SortKey>(restored?.sort ?? 'featured');
+  const [view, setView] = useState<ViewMode>(restored?.view ?? 'grid');
+  const [page, setPage] = useState(restored?.page ?? 1);
 
   // Price ceiling derived from the catalog.
   const maxCatalogPrice = useMemo(
     () => products.reduce((max, p) => Math.max(max, p.price), 0),
     [products],
   );
-  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(restored?.maxPrice ?? null);
   const priceCeiling = maxPrice ?? maxCatalogPrice;
 
   const brands = useMemo(() => {
@@ -67,7 +112,7 @@ export default function Shop() {
     [products],
   );
 
-  const [selectedSubs, setSelectedSubs] = useState<string[]>([]);
+  const [selectedSubs, setSelectedSubs] = useState<string[]>(restored?.subs ?? []);
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Shown on the Filters button so it's obvious something is narrowing the
   // list even while the panel is closed.
@@ -119,9 +164,137 @@ export default function Shop() {
   }, [products, activeCategory, selectedSubs, selectedBrands, inStockOnly, maxPrice, query, sort]);
 
   // Reset to the first page whenever the result set changes.
+  //
+  // Compared by value rather than by "is this the first run": the page we
+  // came back to is set before this ever runs, and any guard counting runs
+  // is wrong the moment React runs an effect twice — which it does in
+  // development, and did, throwing the restored page away.
+  const filterKey = JSON.stringify([
+    activeCategory,
+    selectedSubs,
+    selectedBrands,
+    inStockOnly,
+    maxPrice,
+    query,
+    sort,
+  ]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    if (lastFilterKey.current === filterKey) return;
+    lastFilterKey.current = filterKey;
     setPage(1);
-  }, [activeCategory, selectedSubs, selectedBrands, inStockOnly, maxPrice, query, sort]);
+  }, [filterKey]);
+
+  // Remember where we are, and write it down on the way out. Saving on
+  // unmount rather than on every change is what lets us record the scroll
+  // position: at that moment the page has not moved yet.
+  const latest = useRef<ShopView | null>(null);
+  latest.current = {
+    category: activeCategory,
+    subs: selectedSubs,
+    brands: selectedBrands,
+    inStock: inStockOnly,
+    query,
+    sort,
+    view,
+    page,
+    maxPrice,
+    scrollY: 0,
+    at: 0,
+  };
+  function save(scroll: number) {
+    try {
+      sessionStorage.setItem(
+        VIEW_KEY,
+        JSON.stringify({ ...latest.current, scrollY: scroll, at: Date.now() }),
+      );
+    } catch {
+      /* private mode — you just won't come back to the same spot */
+    }
+  }
+
+  /**
+   * Record the position when a product is opened, not when the shop
+   * unmounts.
+   *
+   * Neither the unmount nor a scroll listener can be trusted for this: the
+   * product page is shorter than a scrolled shop, so the browser clamps the
+   * scroll to the new page's height *before* the old page is torn down, and
+   * what gets saved is 0. Clicking is the one moment the number is still
+   * true — and it is caught on the way down, before the router acts.
+   */
+  const savedOnClick = useRef(false);
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      const link = (e.target as HTMLElement | null)?.closest?.('a[href^="/product/"]');
+      if (!link) return;
+      savedOnClick.current = true;
+      save(window.scrollY);
+    }
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  });
+
+  // Leaving any other way — the menu, the back button — still keeps the
+  // filters and the page, just not a scroll position worth trusting.
+  useEffect(
+    () => () => {
+      if (!savedOnClick.current) save(0);
+    },
+    [],
+  );
+
+  /**
+   * Put the scroll back.
+   *
+   * Not in one go: the grid arrives in pieces — products load, then images
+   * give the page its height — and scrolling to 700px on a page that is
+   * still 400px tall just lands at the bottom. So it keeps asking until
+   * the page is long enough to hold the position, and gives up after a
+   * second rather than fighting the person if they scroll themselves.
+   *
+   * On a timer rather than animation frames: frames are suspended while a
+   * tab isn't on screen, so a page restored in a background tab would
+   * quietly stay at the top.
+   */
+  const scrollRestored = useRef(false);
+  useEffect(() => {
+    if (!restored || scrollRestored.current || !products.length) return;
+    const target = restored.scrollY;
+    if (target <= 0) return;
+    const until = Date.now() + 1000;
+    let stop = false;
+    const cancel = () => {
+      stop = true;
+    };
+    // Any real scroll means they have taken over.
+    window.addEventListener('wheel', cancel, { passive: true, once: true });
+    window.addEventListener('touchstart', cancel, { passive: true, once: true });
+
+    const tick = () => {
+      if (stop) return;
+      const room = document.documentElement.scrollHeight - window.innerHeight;
+      if (room >= target) {
+        window.scrollTo({ top: target, left: 0, behavior: 'instant' as ScrollBehavior });
+        if (Math.abs(window.scrollY - target) < 2) {
+          // Marked done only once it has actually landed. Setting it up
+          // front looks equivalent and isn't: React runs an effect, undoes
+          // it, and runs it again in development, and a flag set before
+          // the work would leave the second run with nothing to do.
+          scrollRestored.current = true;
+          return;
+        }
+      }
+      if (Date.now() < until) timer = window.setTimeout(tick, 50);
+    };
+    let timer = window.setTimeout(tick, 0);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+      window.removeEventListener('wheel', cancel);
+      window.removeEventListener('touchstart', cancel);
+    };
+  }, [restored, products.length]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, pageCount);
