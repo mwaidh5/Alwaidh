@@ -872,9 +872,13 @@ const AR: Record<string, string> = {
   'Ask about this system': 'استفسر عن المنظومة',
   'For enquiries and installation:': 'للاستفسار والتركيب:',
   'Request a quote': 'اطلب عرض سعر',
-  ampere: 'أمبير',
+  Amp: 'أمبير',
   'Download PDF': 'تنزيل PDF',
   'Preparing…': 'جاري التحضير…',
+  'Choose your system': 'اختر منظومتك',
+  'Ready systems by consumption size — the price includes panels, inverter, batteries and installation.':
+    'أنظمة جاهزة بحسب حجم الاستهلاك — السعر يشمل الألواح والعاكسة والبطاريات والتركيب.',
+  'Most requested': 'الأكثر طلباً',
 };
 
 interface LanguageValue {
