@@ -840,6 +840,7 @@ const AR: Record<string, string> = {
     'فنّي يركّب ألواحاً شمسية على سطح منزل',
   'Forget your electricity problems —': 'انسَ مشاكل الكهرباء —',
   'live without power cuts': 'وعِش من دون انقطاع',
+  'See solar prices': 'اطّلع على أسعار الطاقة الشمسية',
 };
 
 interface LanguageValue {
