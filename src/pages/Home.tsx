@@ -19,6 +19,22 @@ const FALLBACK = {
     'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
 };
 
+/** The small print on each promo card, matched to where it links. */
+function tileFlavour(link: string): { eyebrow: string; blurb: string } {
+  if (/solar/.test(link)) return { eyebrow: 'Free site survey', blurb: 'Panels, inverters and batteries for clean, reliable power.' };
+  if (/tiandy|camera/.test(link)) return { eyebrow: 'Authorised reseller', blurb: 'IP and analog cameras and NVRs.' };
+  if (/computer/.test(link)) return { eyebrow: 'Since 1992', blurb: 'Laptops, desktops and workstations.' };
+  return { eyebrow: 'Alwaidh', blurb: '' };
+}
+
+/** The canvas design's use cases: a situation each, not a category. */
+const USE_CASES = [
+  { eyebrow: 'Home office', title: 'Setting up to work', blurb: 'A laptop, monitor and the cables that fit it.', cta: 'See bundles', to: '/shop?category=computers', accent: '#2563eb' },
+  { eyebrow: 'Power cuts', title: 'Keeping the lights on', blurb: 'Tell us what must stay running and we size it.', cta: 'Size my system', to: '/solar-prices', accent: '#f59e0b' },
+  { eyebrow: 'Security', title: 'Watching the shop', blurb: 'Cameras, recorder and cabling from your plan.', cta: 'Plan a system', to: '/shop?category=tiandy-cameras', accent: '#2ea830' },
+  { eyebrow: 'Business', title: 'Buying wholesale', blurb: 'Quantity pricing to every Iraqi province.', cta: 'Request pricing', to: '/about', accent: '#0f172a' },
+];
+
 export default function Home() {
   const { t } = useLang();
   const { products } = useProducts();
@@ -198,9 +214,87 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------------- Start here ---------------- */}
+      {/* The canvas design's use-case cards: people don't shop for a
+          category, they shop for a situation. Scrolls sideways on phones,
+          a row of four on desktop. */}
+      <section className="pt-12">
+        <div className="container-page mb-4">
+          <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">
+            {t('Start here')}
+          </div>
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+            {t('What do you need it for?')}
+          </h2>
+        </div>
+        <div className="scrollbar-none flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:px-6 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible xl:container-page">
+          {USE_CASES.map((c) => (
+            <Link
+              key={c.title}
+              to={c.to}
+              className="flex w-56 flex-none snap-start flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-4 transition hover:shadow-lg lg:w-auto"
+              style={{ borderTop: `3px solid ${c.accent}` }}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: c.accent }}>
+                {t(c.eyebrow)}
+              </div>
+              <div className="text-base font-extrabold leading-snug text-slate-900">{t(c.title)}</div>
+              <div className="text-xs leading-relaxed text-slate-500">{t(c.blurb)}</div>
+              <span className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs font-bold" style={{ color: c.accent }}>
+                <span>{t(c.cta)}</span>
+                <span>→</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ---------------- Promo banners ---------------- */}
       <section className="container-page pt-12">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        {/* Phones follow the canvas: the first tile is a tall card with
+            its wording on white below the photo, the rest are split rows.
+            The grid stays for larger screens. Photos and links come from
+            Settings as before; the small eyebrow/description lines are
+            matched to what each tile links to. */}
+        <div className="flex flex-col gap-3 sm:hidden">
+          {tiles.map((tile, i) => {
+            const flavour = tileFlavour(tile.buttonLink);
+            const img = tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length];
+            return i === 0 ? (
+              <TileLink key={i} to={tile.buttonLink} className="block overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div className="relative h-44 bg-slate-900">
+                  <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
+                </div>
+                <div className="border-t border-slate-200 p-4">
+                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">
+                    {t(flavour.eyebrow)}
+                  </div>
+                  <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
+                  <div className="mb-3.5 text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
+                    <span>{t(tile.buttonLabel || 'Explore now')}</span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[11px] font-extrabold text-slate-900">→</span>
+                  </span>
+                </div>
+              </TileLink>
+            ) : (
+              <TileLink key={i} to={tile.buttonLink} className="grid grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div className="relative min-h-[7.5rem] bg-slate-900">
+                  <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                </div>
+                <div className="flex min-w-0 flex-col justify-center gap-1 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-700">
+                    {t(flavour.eyebrow)}
+                  </div>
+                  <div className="text-base font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
+                  <div className="text-xs leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
+                </div>
+              </TileLink>
+            );
+          })}
+        </div>
+
+        <div className="hidden grid-cols-2 gap-3 sm:grid sm:gap-4 lg:grid-cols-3">
           {/* Written in Settings → Homepage tiles. */}
           {tiles.map((tile, i) => (
             <TileLink

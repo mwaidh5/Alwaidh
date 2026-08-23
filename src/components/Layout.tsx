@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -14,6 +14,20 @@ export default function Layout() {
   const navType = useNavigationType();
   const drawerOpen = useDrawerOpen();
   const { dir } = useLang();
+  // The card look has to OUTLIVE the open state: dropping the shadow,
+  // radius and stacking order the instant the drawer closes hides the
+  // page behind the menu for the whole return journey — which reads as a
+  // teleport. So the decoration stays until the slide back has finished.
+  const [settling, setSettling] = useState(false);
+  useEffect(() => {
+    if (drawerOpen) {
+      setSettling(false);
+      return;
+    }
+    setSettling(true);
+    const id = window.setTimeout(() => setSettling(false), 560);
+    return () => window.clearTimeout(id);
+  }, [drawerOpen]);
 
   // Open a new page and start at the top of it — otherwise tapping Shop
   // halfway down the homepage drops you halfway down the shop. Going back
@@ -35,12 +49,17 @@ export default function Layout() {
       <div
         className="flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,.28,1)]"
         style={
-          drawerOpen
+          drawerOpen || settling
             ? {
-                transform: `translateX(${slide}) scale(.86)`,
-                borderRadius: 24,
+                transform: drawerOpen ? `translateX(${slide}) scale(.86)` : 'translateX(0) scale(1)',
+                borderRadius: drawerOpen ? 24 : 0,
                 overflow: 'hidden',
-                boxShadow: '0 24px 70px rgba(2,6,23,.5)',
+                boxShadow: drawerOpen ? '0 24px 70px rgba(2,6,23,.5)' : '0 0 0 rgba(2,6,23,0)',
+                // Above the drawer layer, or the menu's full-screen
+                // background paints over the card and the page vanishes
+                // entirely — the whole point is the glimpse of it.
+                position: 'relative',
+                zIndex: 40,
               }
             : undefined
         }

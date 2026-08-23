@@ -153,6 +153,14 @@
     }
   }
 
+  /* A horizontal scroller that doesn't show its scrollbar. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* The homepage solar scene (SolarSceneLite): a hand-animated installer.
      Transitions do the movement; the component's timeouts are the clock. */
   .alw-worker.alw-drag {
