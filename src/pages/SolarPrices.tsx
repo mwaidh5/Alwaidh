@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { subscribePriceRows, SEED_PRICE_ROWS, type PriceRow } from '../lib/solarPricesStore';
 import { useSettings } from '../lib/useSettings';
+import { saveFile } from '../lib/savePdf';
 
 const COMPANY = 'شركة الواعظ للقدرة';
 const PHONE = '0781 0150 876';
@@ -10,6 +11,7 @@ const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة �
 export default function SolarPrices() {
   const [live, setLive] = useState<PriceRow[]>([]);
   const [downloading, setDownloading] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const settings = useSettings();
   const columns = settings.solarPriceColumns;
 
@@ -20,20 +22,31 @@ export default function SolarPrices() {
     const el = document.getElementById('price-sheet');
     if (!el) return;
     setDownloading(true);
+    setSaveError('');
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
+      // JPEG, not PNG: the sheet is mostly a photographic gradient, which
+      // PNG stores pixel by pixel — the file came out over 10 MB, too big
+      // to send anyone. At this resolution the difference is invisible.
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const pdf = new jsPDF({
         orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
         unit: 'px',
         format: [canvas.width, canvas.height],
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save('alwaidh-solar-prices.pdf');
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+      // Not pdf.save(): that is an <a download> click, which a web view
+      // has nothing to catch — in the app the button did nothing at all.
+      const result = await saveFile(pdf.output('blob'), 'alwaidh-solar-prices.pdf');
+      if (result === 'failed') {
+        setSaveError('Could not save the file on this device. Open alwaidh.com in a browser to download it.');
+      }
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Could not prepare the file.');
     } finally {
       setDownloading(false);
     }
@@ -168,6 +181,12 @@ export default function SolarPrices() {
             </div>
           </div>
         </div>
+
+        {saveError && (
+          <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-800">
+            {saveError}
+          </p>
+        )}
 
         <p className="mt-4 text-center text-sm text-slate-500">
           Prices are managed from the admin dashboard. Tap “Download PDF” to save or share this sheet.
