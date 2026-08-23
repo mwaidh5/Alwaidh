@@ -56,6 +56,9 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    open: true,
+    // Don't launch a browser. Starting the dev server used to throw open a
+    // Chrome window every time, which is a nuisance when the page is being
+    // looked at somewhere else.
+    open: false,
   },
 });
