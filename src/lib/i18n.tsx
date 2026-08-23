@@ -832,6 +832,12 @@ const AR: Record<string, string> = {
   New: 'جديد',
   'Changed since you last opened it': 'تغيّر منذ آخر مرة فتحته',
   'Something here changed since you last looked': 'حدث تغيير هنا منذ آخر مرة نظرت',
+  // ---- The homepage solar scene ----
+  panels: 'ألواح',
+  'Drag the worker, or tap the roof': 'اسحب العامل، أو اضغط على السطح',
+  'Roof done — your house next?': 'اكتمل السطح — بيتك التالي؟',
+  'An installer mounting solar panels on a flat roof':
+    'فنّي يركّب ألواحاً شمسية على سطح منزل',
 };
 
 interface LanguageValue {
