@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { formatPrice } from '../lib/format';
 import { submitContact } from '../lib/contactSubmissions';
+import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
 
 const FALLBACK = {
@@ -540,6 +541,12 @@ function SolarQuote({ logo }: { logo?: string }) {
               </li>
             ))}
           </ul>
+
+          {/* The install, in miniature: he works whether or not anyone
+              watches, and watching is allowed to become playing. */}
+          <div className="mt-8 max-w-lg">
+            <SolarSceneLite />
+          </div>
         </div>
 
         <div className="rounded-3xl border border-sky-100 bg-white p-6 shadow-xl shadow-sky-900/10">
