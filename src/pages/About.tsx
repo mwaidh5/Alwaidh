@@ -1,10 +1,106 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { submitContact, storageMode } from '../lib/contactSubmissions';
 import { allBrands } from '../data/brands';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
+
+const PHONE = '+964 770 539 7778';
+const EMAIL = 'info@alwaidhcomputers.com';
+
+/* The three identities, exactly as the canvas lays them out. Images come
+   from the homepage banner settings, falling back to the same stock
+   photos the homepage uses. */
+const STOCK = [
+  'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1100&q=80',
+  'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
+];
+
+interface Identity {
+  id: string;
+  accent: string;
+  eyebrowColor: string;
+  badge: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  rows: [string, string][];
+  cta: string;
+  ctaTo: string;
+  ctaClasses: string;
+}
+
+const IDENTITIES: Identity[] = [
+  {
+    id: 'identity-computers',
+    accent: '#2563eb',
+    eyebrowColor: '#2563eb',
+    badge: 'Since 1992',
+    eyebrow: '01 — Computers',
+    title: 'Machines that hold up at work',
+    body: "Laptops, desktops and all-in-ones with the accessories that go with them — printers, scanners and POS systems. Iraq's first Lenovo distributor since 2010.",
+    rows: [
+      ['Supply', 'Business laptops, workstations, POS'],
+      ['Install', 'Office roll-outs and networking'],
+      ['Service', 'Repairs in our own Baghdad lab'],
+    ],
+    cta: 'Shop computers',
+    ctaTo: '/shop?category=computers',
+    ctaClasses: 'bg-brand-600 text-white hover:bg-brand-700',
+  },
+  {
+    id: 'identity-solar',
+    accent: '#f59e0b',
+    eyebrowColor: '#b45309',
+    badge: 'Since 2017',
+    eyebrow: '02 — Solar energy',
+    title: 'Power that stays on',
+    body: 'Panels, hybrid inverters and batteries sized to your actual load — plus UPS from 1 kVA to 4 MVA and voltage stabilisers. We built the solar system at Al-Bilal station in Karbala.',
+    rows: [
+      ['Supply', 'Jinko panels, SolarMax & GE UPS'],
+      ['Install', 'Free survey, sized and fitted by us'],
+      ['Service', 'Inverter repair in-house'],
+    ],
+    cta: 'See solar prices',
+    ctaTo: '/solar-prices',
+    ctaClasses: 'bg-amber-500 text-amber-950 hover:bg-amber-400',
+  },
+  {
+    id: 'identity-cameras',
+    accent: '#2ea830',
+    eyebrowColor: '#248527',
+    badge: 'Authorised reseller',
+    eyebrow: '03 — Security cameras',
+    title: 'Eyes on the whole site',
+    body: 'Tiandy IP and analog cameras, NVRs and full-site coverage — planned from your floor plan, cabled and commissioned by our own crew.',
+    rows: [
+      ['Supply', 'Tiandy cameras, NVRs, PoE switches'],
+      ['Install', 'Camera plan, cabling, commissioning'],
+      ['Service', 'Remote setup and callouts'],
+    ],
+    cta: 'Shop cameras',
+    ctaTo: '/shop?category=tiandy-cameras',
+    ctaClasses: 'bg-tiandy-600 text-white hover:bg-tiandy-700',
+  },
+];
+
+const PILLS = [
+  { to: '#identity-computers', label: 'Computers', dot: '#60a5fa', bg: 'rgba(37,99,235,.16)', ring: 'rgba(96,165,250,.45)', color: '#bfdbfe' },
+  { to: '#identity-solar', label: 'Solar energy', dot: '#fbbf24', bg: 'rgba(245,158,11,.14)', ring: 'rgba(252,211,77,.45)', color: '#fde68a' },
+  { to: '#identity-cameras', label: 'Security cameras', dot: '#3cc63c', bg: 'rgba(46,168,48,.16)', ring: 'rgba(126,232,126,.42)', color: '#a7f3a7' },
+];
+
+const FACTS: [string, string][] = [
+  ['Three showrooms', 'Main one on Sinaa Street beside the University of Technology, plus two more in Baghdad.'],
+  ["Our own service lab", "Computers and solar inverters repaired in-house — we don't hand your kit to anyone else."],
+  ['600 m² warehouse', 'Stock held in Sufaraniya, so what you order is usually already in the country.'],
+  ['Wholesale across Iraq', 'Every province, Kurdistan to Basrah — and retail online with delivery.'],
+];
+
+const TOPICS = ['Computers', 'Solar quote', 'Camera install', 'Repair', 'Wholesale'];
 
 export default function About() {
   const [name, setName] = useState('');
@@ -15,6 +111,12 @@ export default function About() {
   const [status, setStatus] = useState<Status>('idle');
   const { t } = useLang();
   const [errorMsg, setErrorMsg] = useState('');
+  const settings = useSettings();
+
+  const cardImage = (i: number) =>
+    settings.heroSlides?.[i]?.image ||
+    (i === 0 ? settings.heroImage : i === 1 ? settings.solarBannerImage : '') ||
+    STOCK[i];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,202 +151,297 @@ export default function About() {
 
   return (
     <div>
-      <section className="bg-gradient-to-br from-brand-700 to-brand-500 text-white">
-        <div className="container-page py-12">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-100">
+      {/* ---------------- Hero ---------------- */}
+      <section className="relative overflow-hidden bg-[#020617] text-white">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(760px 420px at 14% -10%, rgba(37,99,235,.42), transparent 62%), radial-gradient(620px 380px at 92% 118%, rgba(46,168,48,.2), transparent 60%), radial-gradient(520px 340px at 62% -30%, rgba(245,158,11,.16), transparent 60%)',
+          }}
+        />
+        <div className="container-page relative py-14 sm:py-16">
+          <span className="inline-block rounded-full bg-white/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] shadow-[inset_0_0_0_1px_rgba(255,255,255,.16)]">
             {t('About us')}
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            {t('Computers since 1992. Powering homes since 2017.')}
+          </span>
+          <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            <span className="block">{t('One company,')}</span>
+            <span className="block">{t('three trades we know cold.')}</span>
           </h1>
-          <p className="mt-3 max-w-2xl text-white/90">
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
             {t(
-              'Al-Waidh Technology Trading Co. LLC — founded as Al-Waidh Computers Bureau in 1992 — is one of Iraq’s leading suppliers of computers, solar energy systems, and power protection. We supply, install, and service, from a single laptop to a complete solar plant.',
+              'Al-Waidh Technology Trading Co. LLC started as a computer bureau in Baghdad in 1992. Today we supply, install and service three things — and we do all three ourselves, from a single laptop to a complete solar plant.',
             )}
           </p>
 
-          <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            {PILLS.map((p) => (
+              <a
+                key={p.to}
+                href={p.to}
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-bold"
+                style={{ background: p.bg, boxShadow: `inset 0 0 0 1px ${p.ring}`, color: p.color }}
+              >
+                <span className="h-[7px] w-[7px] rounded-full" style={{ background: p.dot }} />
+                <span>{t(p.label)}</span>
+              </a>
+            ))}
+          </div>
+
+          <dl className="mt-10 grid grid-cols-2 gap-4 border-t border-white/10 pt-7 sm:grid-cols-4">
             {[
-              { k: t('In business since'), v: '1992' },
-              { k: t('Solar since'), v: '2017' },
-              { k: t('Showrooms in Baghdad'), v: '3' },
-              { k: t('Coverage'), v: t('All Iraq') },
-            ].map((s) => (
-              <div key={s.k} className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                <dd className="text-2xl font-extrabold leading-none">{s.v}</dd>
-                <dt className="mt-1 text-xs font-medium text-white/80">{s.k}</dt>
+              ['1992', 'In business since'],
+              ['2017', 'Solar since'],
+              ['3', 'Showrooms in Baghdad'],
+              ['18', 'Provinces we deliver to'],
+            ].map(([v, k]) => (
+              <div key={k}>
+                <dd className="text-3xl font-extrabold leading-none tracking-tight sm:text-4xl" dir="ltr">
+                  {v}
+                </dd>
+                <dt className="mt-1.5 text-xs font-semibold text-white/60">{t(k)}</dt>
               </div>
             ))}
           </dl>
         </div>
       </section>
 
-      <section className="container-page grid gap-10 py-12 lg:grid-cols-2">
-        <div className="space-y-6">
-          <Block
-            icon="🏢"
-            title="Who we are"
-            body="Formerly Al-Waidh Computers, today Al-Waidh Technology for Computers and Solar Systems Trading Co. LLC (Baghdad, licence no. 25460). Our main showroom is on Sinaa Street beside the University of Technology, with two further showrooms, our own service lab for computers and solar inverters, and a 600 m² warehouse in Sufaraniya."
-          />
-          <Block
-            icon="📦"
-            title="What we supply"
-            body="Laptops, desktops and all-in-ones with their accessories — printers, scanners and POS systems. Solar panels, inverters and batteries. UPS units from 1 kVA up to 4 MVA, voltage stabilisers, and Tiandy security cameras and NVRs."
-          />
-          <Block
-            icon="🔧"
-            title="We install and service"
-            body="We don't just sell boxes. We size and install complete solar systems and power protection, and repair what we supply in our own lab — including work such as the solar energy system at Al-Bilal station in Karbala."
-          />
-          <Block
-            icon="🚚"
-            title="Where we reach"
-            body="We wholesale computers and power equipment across every Iraqi province, from the Kurdistan Region in the north to Basrah in the south, and sell retail through our Baghdad showrooms and online with delivery."
-          />
-          <Block
-            icon="🤝"
-            title="Brands we represent"
-            body="Iraq's first Lenovo distributor, since 2010. Distributor for Jinko Solar panels and SolarMax inverters, exclusive distributor for GE UPS (Switzerland) and for Indian low-frequency inverters, and an authorised Tiandy reseller for security cameras."
-          />
+      {/* ---------------- Three identities ---------------- */}
+      <section className="container-page pt-14">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
+              {t('What we do')}
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+              {t('Three identities, one team')}
+            </h2>
+          </div>
+          <p className="max-w-md text-sm leading-relaxed text-slate-500">
+            {t(
+              'Each line has its own stock, its own engineers and its own warranty — and they all come out of the same showroom on Sinaa Street.',
+            )}
+          </p>
         </div>
 
-        <div className="card p-6 sm:p-8">
-          <h2 className="text-xl font-extrabold text-slate-900">{t('Contact us')}</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {t("Have a question or want a quote? Send us a message and we'll get back to you.")}
-          </p>
-
-          <dl className="mt-5 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-            <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">{t('Showroom')}</dt>
-              <dd className="text-slate-800">{t('Sinaa Street, Baghdad, Iraq')}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">{t('Hours')}</dt>
-              <dd className="text-slate-800">{t('Saturday – Thursday, 8:30 AM – 3:30 PM')}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">{t('Phone')}</dt>
-              <dd>
-                <a href="tel:+9647705397778" className="font-semibold text-brand-700 hover:underline">
-                  +964 770 539 7778
-                </a>
-              </dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="w-24 flex-none text-slate-500">{t('Email')}</dt>
-              <dd>
-                <a
-                  href="mailto:info@alwaidhcomputers.com"
-                  className="font-semibold text-brand-700 hover:underline"
-                >
-                  info@alwaidhcomputers.com
-                </a>
-              </dd>
-            </div>
-          </dl>
-
-          {status === 'success' ? (
-            <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-              <p className="font-semibold">{t('Thanks — we received your message.')}</p>
-              <p className="mt-1">{t("We'll be in touch shortly.")}</p>
-              <button
-                type="button"
-                onClick={() => setStatus('idle')}
-                className="mt-3 text-sm font-semibold text-green-900 underline"
-              >
-                {t('Send another message')}
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
-              <Field label="Name" required>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input"
-                  required
-                />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Email" required>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="input"
-                    required
-                  />
-                </Field>
-                <Field label="Phone (optional)">
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input"
-                  />
-                </Field>
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {IDENTITIES.map((c, i) => (
+            <article
+              key={c.id}
+              id={c.id}
+              className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10"
+            >
+              <div className="h-[5px]" style={{ background: c.accent }} />
+              <div className="relative aspect-[4/3] bg-slate-100">
+                <img src={cardImage(i)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                <span className="absolute top-3.5 rounded-full bg-slate-950/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur-sm ltr:left-3.5 rtl:right-3.5">
+                  {t(c.badge)}
+                </span>
               </div>
-              <Field label="Subject (optional)">
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="input"
-                  placeholder="e.g. Solar quote, camera install"
-                />
-              </Field>
-              <Field label="Message" required>
-                <textarea
-                  rows={5}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="input"
-                  required
-                />
-              </Field>
-
-              {status === 'error' && errorMsg && (
-                <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  {errorMsg}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={status === 'submitting'}
-                className="btn-primary w-full justify-center sm:w-auto"
-              >
-                {status === 'submitting' ? 'Sending…' : 'Send message'}
-              </button>
-
-              {mode === 'local' && (
-                <p className="text-xs text-slate-500">
-                  Note: Firebase isn't configured, so submissions are stored locally in this browser
-                  only. Add your Firebase config to <code>.env</code> to enable cross-device storage.
-                </p>
-              )}
-            </form>
-          )}
+              <div className="flex flex-1 flex-col gap-4 p-6">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: c.eyebrowColor }}>
+                    {t(c.eyebrow)}
+                  </div>
+                  <h3 className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">{t(c.title)}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-slate-600">{t(c.body)}</p>
+                <dl className="grid grid-cols-[64px_1fr] gap-x-3.5 gap-y-2 border-t border-slate-200 pt-4 text-[13px]">
+                  {c.rows.map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="pt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        {t(k)}
+                      </dt>
+                      <dd className="leading-relaxed text-slate-700">{t(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <Link
+                  to={c.ctaTo}
+                  className={`mt-auto flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-bold uppercase tracking-wide transition ${c.ctaClasses}`}
+                >
+                  <span>{t(c.cta)}</span>
+                  <span className="rtl:hidden">→</span>
+                  <span className="hidden rtl:inline">←</span>
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-slate-50">
-        <div className="py-12">
-          <div className="container-page">
-            <h2 className="text-2xl font-extrabold text-slate-900">{t('Brands we work with')}</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              {t('We supply and support these brands across Iraq.')}
-            </p>
+      {/* ---------------- Behind all three ---------------- */}
+      <section className="container-page pt-12">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-7 sm:p-9">
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.6fr)]">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
+                {t('Behind all three')}
+              </div>
+              <h2 className="mb-3 mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">
+                {t('The same company does the selling, the fitting and the fixing')}
+              </h2>
+              <p className="text-sm leading-relaxed text-slate-500">
+                {t('Al-Waidh Technology for Computers and Solar Systems Trading Co. LLC — Baghdad, licence no. 25460.')}
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 sm:gap-x-8">
+              {FACTS.map(([title, body]) => (
+                <div key={title}>
+                  <div className="mb-1.5 text-[15px] font-bold text-slate-900">{t(title)}</div>
+                  <div className="text-[13px] leading-relaxed text-slate-500">{t(body)}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <BrandCarousel />
+        </div>
+      </section>
+
+      {/* ---------------- Brands ---------------- */}
+      <section className="mt-14 border-y border-slate-200 bg-white py-10">
+        <div className="container-page pb-6">
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            {t('Partners')}
+          </div>
+          <h2 className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
+            {t('Brands we distribute and support')}
+          </h2>
+        </div>
+        <BrandCarousel />
+      </section>
+
+      {/* ---------------- Contact ---------------- */}
+      <section id="contact" className="container-page py-14">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.3fr)]">
+          <div className="rounded-3xl bg-slate-900 p-7 text-slate-300 sm:p-8">
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">
+              {t('Contact')}
+            </div>
+            <h2 className="mb-2.5 mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-[27px]">
+              {t('Come to the showroom, or tell us what you need')}
+            </h2>
+            <p className="mb-6 text-sm leading-relaxed text-white/70">
+              {t(
+                "Quotes for solar systems and camera installs are free — send a rough idea of the site and we'll come back with a size and a price.",
+              )}
+            </p>
+            <dl className="grid gap-4">
+              {(
+                [
+                  ['Showroom', t('Sinaa Street, Baghdad, Iraq'), null],
+                  ['Hours', t('Saturday – Thursday, 8:30 AM – 3:30 PM'), null],
+                  ['Phone', PHONE, `tel:${PHONE.replace(/\s/g, '')}`],
+                  ['Email', EMAIL, `mailto:${EMAIL}`],
+                ] as [string, string, string | null][]
+              ).map(([k, v, href], i, arr) => (
+                <div key={k} className={`grid gap-1 ${i < arr.length - 1 ? 'border-b border-white/10 pb-4' : ''}`}>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{t(k)}</dt>
+                  <dd>
+                    {href ? (
+                      <a href={href} dir="ltr" className={k === 'Phone' ? 'text-lg font-bold text-white' : 'text-sm font-semibold text-brand-300'}>
+                        {v}
+                      </a>
+                    ) : (
+                      <span className="text-sm leading-relaxed text-slate-200">{v}</span>
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+            <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{t('Send us a message')}</h2>
+            <p className="mb-5 mt-1 text-[13px] text-slate-500">
+              {t('We reply during showroom hours, usually the same day.')}
+            </p>
+
+            {status === 'success' ? (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                <p className="font-semibold">{t('Thanks — we received your message.')}</p>
+                <p className="mt-1">{t("We'll be in touch shortly.")}</p>
+                <button
+                  type="button"
+                  onClick={() => setStatus('idle')}
+                  className="mt-3 text-sm font-semibold text-green-900 underline"
+                >
+                  {t('Send another message')}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Name" required>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input" required />
+                  </Field>
+                  <Field label="Phone (optional)">
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input" dir="ltr" />
+                  </Field>
+                </div>
+                <Field label="Email" required>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" required />
+                </Field>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium text-slate-700">{t('What is it about?')}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {TOPICS.map((topic) => {
+                      const on = subject === topic;
+                      return (
+                        <button
+                          key={topic}
+                          type="button"
+                          onClick={() => setSubject(on ? '' : topic)}
+                          className={`rounded-full border px-4 py-2 text-[13px] font-semibold transition ${
+                            on
+                              ? 'border-brand-300 bg-brand-50 text-brand-700'
+                              : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                          }`}
+                        >
+                          {t(topic)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <Field label="Message" required>
+                  <textarea
+                    rows={5}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="input"
+                    placeholder={t('Tell us about the site, the load, or the spec you need.')}
+                    required
+                  />
+                </Field>
+
+                {status === 'error' && errorMsg && (
+                  <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{errorMsg}</p>
+                )}
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={status === 'submitting'}
+                    className="rounded-xl bg-brand-600 px-7 py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-lg shadow-brand-600/40 transition hover:bg-brand-700 disabled:opacity-60"
+                  >
+                    {status === 'submitting' ? t('Sending…') : t('Send message')}
+                  </button>
+                  <span className="text-xs text-slate-400">{t('Or call the showroom directly.')}</span>
+                </div>
+
+                {mode === 'local' && (
+                  <p className="text-xs text-slate-500">
+                    Note: Firebase isn't configured, so submissions are stored locally in this browser only.
+                  </p>
+                )}
+              </form>
+            )}
+          </div>
         </div>
       </section>
     </div>
   );
 }
-
 
 /**
  * Continuously scrolling brand strip. The track holds the list twice so the
@@ -255,47 +452,27 @@ function BrandCarousel() {
   const settings = useSettings();
   const loop = [...allBrands, ...allBrands];
   return (
-    <div className="marquee-pause relative mt-8 overflow-hidden">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-slate-50 to-transparent sm:w-24" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-slate-50 to-transparent sm:w-24" />
-      <ul className="marquee-track flex w-max items-center gap-4">
+    <div className="marquee-pause relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent sm:w-24" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent sm:w-24" />
+      <ul className="marquee-track flex w-max items-center gap-3.5">
         {loop.map((b, i) => {
           const logo = settings.brandLogos?.[b.slug];
           return (
             <li
               key={`${b.slug}-${i}`}
               aria-hidden={i >= allBrands.length}
-              className="flex h-20 w-40 flex-none items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 shadow-sm"
+              className="flex h-16 w-[150px] flex-none items-center justify-center rounded-xl border border-slate-200 bg-white px-5"
             >
               {logo ? (
-                <img
-                  src={logo}
-                  alt={b.name}
-                  loading="lazy"
-                  className="max-h-12 max-w-full object-contain"
-                />
+                <img src={logo} alt={b.name} loading="lazy" className="max-h-11 max-w-full object-contain" />
               ) : (
-                <span className="text-center text-base font-extrabold tracking-tight text-slate-800">
-                  {b.name}
-                </span>
+                <span className="text-center text-[15px] font-extrabold tracking-tight text-slate-700">{b.name}</span>
               )}
             </li>
           );
         })}
       </ul>
-    </div>
-  );
-}
-
-function Block({ icon, title, body }: { icon: string; title: string; body: string }) {
-  const { t } = useLang();
-  return (
-    <div className="card p-6">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{icon}</span>
-        <h3 className="text-lg font-extrabold text-slate-900">{t(title)}</h3>
-      </div>
-      <p className="mt-2 text-slate-600">{t(body)}</p>
     </div>
   );
 }
