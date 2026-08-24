@@ -879,6 +879,70 @@ const AR: Record<string, string> = {
   'Ready systems by consumption size — the price includes panels, inverter, batteries and installation.':
     'أنظمة جاهزة بحسب حجم الاستهلاك — السعر يشمل الألواح والعاكسة والبطاريات والتركيب.',
   'Most requested': 'الأكثر طلباً',
+  // ---- About page (from the canvas design) ----
+  'One company,': 'شركة واحدة،',
+  'three trades we know cold.': 'وثلاثة اختصاصات نتقنها.',
+  'Al-Waidh Technology Trading Co. LLC started as a computer bureau in Baghdad in 1992. Today we supply, install and service three things — and we do all three ourselves, from a single laptop to a complete solar plant.':
+    'بدأت شركة الواعظ للتجارة والتكنولوجيا كمكتب حاسبات في بغداد عام 1992. اليوم نوفّر ونركّب ونصون ثلاثة اختصاصات — وننفّذها كلها بأنفسنا، من حاسبة واحدة إلى محطة طاقة شمسية كاملة.',
+  'Provinces we deliver to': 'محافظة نوصل إليها',
+  'What we do': 'ماذا نعمل',
+  'Three identities, one team': 'ثلاث هويات، فريق واحد',
+  'Each line has its own stock, its own engineers and its own warranty — and they all come out of the same showroom on Sinaa Street.':
+    'لكل اختصاص مخزونه ومهندسوه وضمانه الخاص — وكلها تخرج من نفس الصالة في شارع الصناعة.',
+  'Since 2017': 'منذ 2017',
+  '01 — Computers': '01 — الحاسبات',
+  '02 — Solar energy': '02 — الطاقة الشمسية',
+  '03 — Security cameras': '03 — كاميرات المراقبة',
+  'Machines that hold up at work': 'أجهزة تصمد في العمل',
+  'Power that stays on': 'كهرباء لا تنقطع',
+  'Eyes on the whole site': 'عين على الموقع بالكامل',
+  "Laptops, desktops and all-in-ones with the accessories that go with them — printers, scanners and POS systems. Iraq's first Lenovo distributor since 2010.":
+    'حاسبات محمولة ومكتبية وأجهزة متكاملة مع ملحقاتها — طابعات وماسحات وأنظمة نقاط بيع. أول موزّع لِـ Lenovo في العراق منذ 2010.',
+  'Panels, hybrid inverters and batteries sized to your actual load — plus UPS from 1 kVA to 4 MVA and voltage stabilisers. We built the solar system at Al-Bilal station in Karbala.':
+    'ألواح وإنفرترات هجينة وبطاريات بحجم يناسب أحمالك الفعلية — إضافة إلى UPS من 1 كيلوفولت أمبير حتى 4 ميغا ومنظّمات فولتية. نفّذنا نظام الطاقة الشمسية في محطة البلال في كربلاء.',
+  'Tiandy IP and analog cameras, NVRs and full-site coverage — planned from your floor plan, cabled and commissioned by our own crew.':
+    'كاميرات Tiandy الشبكية والتناظرية وأجهزة NVR وتغطية كاملة للموقع — مخطّطة من مخطط موقعك، وتمديد وتشغيل بفريقنا.',
+  'Supply': 'توريد',
+  'Service': 'صيانة',
+  'Business laptops, workstations, POS': 'حاسبات أعمال ومحطات عمل وأنظمة بيع',
+  'Office roll-outs and networking': 'تجهيز المكاتب والشبكات',
+  'Repairs in our own Baghdad lab': 'صيانة في مختبرنا ببغداد',
+  'Jinko panels, SolarMax & GE UPS': 'ألواح Jinko وإنفرترات SolarMax و GE UPS',
+  'Free survey, sized and fitted by us': 'مسح مجاني، تحديد الحجم والتركيب علينا',
+  'Inverter repair in-house': 'صيانة الإنفرترات داخلياً',
+  'Tiandy cameras, NVRs, PoE switches': 'كاميرات Tiandy وأجهزة NVR ومبدّلات PoE',
+  'Camera plan, cabling, commissioning': 'مخطط الكاميرات والتمديد والتشغيل',
+  'Remote setup and callouts': 'إعداد عن بُعد وزيارات ميدانية',
+  'Behind all three': 'خلف الثلاثة',
+  'The same company does the selling, the fitting and the fixing':
+    'الشركة نفسها تبيع وتركّب وتصلّح',
+  'Al-Waidh Technology for Computers and Solar Systems Trading Co. LLC — Baghdad, licence no. 25460.':
+    'شركة الواعظ للتكنولوجيا للحاسبات وأنظمة الطاقة الشمسية المحدودة — بغداد، إجازة رقم 25460.',
+  'Three showrooms': 'ثلاث صالات عرض',
+  'Main one on Sinaa Street beside the University of Technology, plus two more in Baghdad.':
+    'الرئيسية في شارع الصناعة بجانب الجامعة التكنولوجية، بالإضافة إلى صالتين أخريين في بغداد.',
+  'Our own service lab': 'مختبر صيانة خاص بنا',
+  "Computers and solar inverters repaired in-house — we don't hand your kit to anyone else.":
+    'نصلّح الحاسبات والإنفرترات داخلياً — لا نسلّم أجهزتك لأي جهة أخرى.',
+  '600 m² warehouse': 'مخزن 600 م²',
+  'Stock held in Sufaraniya, so what you order is usually already in the country.':
+    'المخزون في السفارنية، فما تطلبه غالباً موجود في البلد.',
+  'Wholesale across Iraq': 'بيع بالجملة في عموم العراق',
+  'Every province, Kurdistan to Basrah — and retail online with delivery.':
+    'كل المحافظات، من كردستان إلى البصرة — وبيع مفرد أونلاين مع توصيل.',
+  'Brands we distribute and support': 'الماركات التي نوزّعها وندعمها',
+  'Contact': 'اتصل بنا',
+  'Come to the showroom, or tell us what you need': 'زرنا في الصالة، أو أخبرنا بما تحتاج',
+  "Quotes for solar systems and camera installs are free — send a rough idea of the site and we'll come back with a size and a price.":
+    'عروض أسعار أنظمة الطاقة الشمسية وتركيب الكاميرات مجانية — أرسل وصفاً مبدئياً للموقع ونعود إليك بالحجم والسعر.',
+  'Send us a message': 'أرسل لنا رسالة',
+  'We reply during showroom hours, usually the same day.': 'نرد خلال أوقات الدوام، عادةً في نفس اليوم.',
+  'What is it about?': 'ما موضوع الرسالة؟',
+  'Solar quote': 'عرض سعر طاقة شمسية',
+  'Camera install': 'تركيب كاميرات',
+  'Wholesale': 'بالجملة',
+  'Or call the showroom directly.': 'أو اتصل بالصالة مباشرة.',
+  'Tell us about the site, the load, or the spec you need.': 'أخبرنا عن الموقع أو حجم الأحمال أو المواصفات التي تريدها.',
 };
 
 interface LanguageValue {
