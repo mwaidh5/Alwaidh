@@ -81,6 +81,16 @@
   .input {
     @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
   }
+  /* iOS zooms the whole page when a focused field's text is under 16px,
+     and the zoom outlives the field — the "everything looks bigger after
+     search" bug. Phones therefore never render a field smaller. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
   /* ------------------------------------------------------------------ */
   /* hPanel: the admin dashboard's look — white cards on a cool grey     */
   /* canvas with a purple accent, in the style of Hostinger's panel.     */
