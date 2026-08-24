@@ -71,6 +71,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
     shortDescription: String(data.shortDescription ?? ''),
+    keywordsAr: String(data.keywordsAr ?? ''),
     specs: (data.specs as Record<string, string>) ?? {},
     specsList: Array.isArray(data.specsList)
       ? (data.specsList as Record<string, unknown>[])

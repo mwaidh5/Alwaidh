@@ -28,6 +28,9 @@ export interface Product {
   rating: number;       // 0..5
   inStock: boolean;
   shortDescription: string;
+  /** Hidden Arabic search words — never shown, only matched when someone
+      searches in Arabic. Space-separated words and synonyms. */
+  keywordsAr?: string;
   specs: Record<string, string>;
   /**
    * The same specs in the order they were typed. Firestore returns a map's
