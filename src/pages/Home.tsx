@@ -6,9 +6,11 @@ import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import { openChat } from '../lib/chatPanel';
 import { formatPrice } from '../lib/format';
 import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
+import type { PromoTile } from '../lib/settingsStore';
 
 const FALLBACK = {
   computers:
@@ -18,6 +20,15 @@ const FALLBACK = {
   cameras:
     'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
 };
+
+/** The hero's per-slide accent tints, matched to where the slide links. */
+function slideTheme(link: string) {
+  if (/solar/.test(link))
+    return { accent: '#fbbf24', chipBg: 'rgba(251,191,36,.18)', chipText: '#fcd34d', chipRing: 'rgba(252,211,77,.45)' };
+  if (/tiandy|camera/.test(link))
+    return { accent: '#4fd852', chipBg: 'rgba(46,168,48,.2)', chipText: '#7ee87e', chipRing: 'rgba(126,232,126,.45)' };
+  return { accent: '#60a5fa', chipBg: 'rgba(59,130,246,.2)', chipText: '#93c5fd', chipRing: 'rgba(147,197,253,.45)' };
+}
 
 /** The small print and accent on each promo card, matched to where it links. */
 interface TileFlavour {
@@ -29,11 +40,11 @@ interface TileFlavour {
 }
 function tileFlavour(link: string): TileFlavour {
   if (/solar/.test(link))
-    return { eyebrow: 'Free site survey', blurb: 'Panels, inverters and batteries for clean, reliable power.', color: '#b45309', chipBg: '#fbbf24', chipText: '#0f172a' };
+    return { eyebrow: 'Free site survey', blurb: 'Panels, inverters and batteries for clean, reliable power — sized, installed and serviced by us.', color: '#b45309', chipBg: '#fbbf24', chipText: '#0f172a' };
   if (/tiandy|camera/.test(link))
-    return { eyebrow: 'Authorised reseller', blurb: 'IP and analog cameras and NVRs.', color: '#248527', chipBg: '#2ea830', chipText: '#ffffff' };
+    return { eyebrow: 'Authorised reseller', blurb: 'Professional IP and analog cameras and NVRs.', color: '#248527', chipBg: '#2ea830', chipText: '#ffffff' };
   if (/computer/.test(link))
-    return { eyebrow: 'Since 1992', blurb: 'Laptops, desktops and workstations.', color: '#1d4ed8', chipBg: '#2563eb', chipText: '#ffffff' };
+    return { eyebrow: 'Since 1992', blurb: 'Laptops, desktops and workstations for work and play.', color: '#1d4ed8', chipBg: '#2563eb', chipText: '#ffffff' };
   return { eyebrow: 'Alwaidh', blurb: '', color: '#334155', chipBg: '#0f172a', chipText: '#ffffff' };
 }
 
@@ -102,6 +113,15 @@ export default function Home() {
   // without repeating what's already above it.
   const more = inStock.slice(4, 12);
 
+  // The canvas leads the promo section with the solar tile as the big
+  // card; the other tiles become the split rows beside it.
+  const solarIdx = tiles.findIndex((tl) => /solar/.test(tl.buttonLink));
+  const bigIdx = solarIdx >= 0 ? solarIdx : 0;
+  const bigTile = tiles[bigIdx];
+  const sideTiles = tiles.map((tl, i) => ({ tile: tl, i })).filter(({ i }) => i !== bigIdx);
+  const tileImg = (i: number) =>
+    tiles[i].image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length];
+
   return (
     <div className="bg-white">
       {/* ---------------- Hero banner ---------------- */}
@@ -148,38 +168,68 @@ export default function Home() {
                   'linear-gradient(to top, rgba(2,6,23,.9) 0%, rgba(2,6,23,.62) 34%, rgba(2,6,23,.14) 66%, rgba(2,6,23,0) 100%)',
               }}
             />
+            {/* Desktop: the design's shade comes in from the wording side,
+                leaving the photo clear on the other. */}
+            <div className="hero-shade absolute inset-0 hidden sm:block" />
             <div className="relative flex h-full flex-col justify-end gap-3 p-6 pb-16 sm:justify-center sm:gap-4 sm:px-14 sm:pb-0">
-              {s.eyebrow && (
-                <span
-                  className="self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] ring-1 ring-inset"
-                  style={{ color: s.textColor, borderColor: s.textColor, opacity: 0.95 }}
-                >
-                  {t(s.eyebrow)}
-                </span>
-              )}
-              <h1
-                className="max-w-2xl text-[28px] font-extrabold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.08]"
-                style={{ color: s.textColor }}
-              >
-                {t(s.title)}
-              </h1>
-              {s.subtitle && (
-                <p
-                  className="max-w-xl text-[13px] leading-relaxed sm:text-lg"
-                  style={{ color: s.textColor, opacity: 0.85 }}
-                >
-                  {t(s.subtitle)}
-                </p>
-              )}
-              {s.buttonLabel && (
-                <HeroLink
-                  to={s.buttonLink}
-                  style={{ background: s.buttonBg, color: s.buttonText }}
-                  className="mt-2 self-start shadow-lg"
-                >
-                  {t(s.buttonLabel)}
-                </HeroLink>
-              )}
+              {(() => {
+                const theme = slideTheme(s.buttonLink);
+                const words = t(s.title).split(' ');
+                const cut = Math.max(1, words.length - 2);
+                const head = words.slice(0, cut).join(' ');
+                const tail = words.slice(cut).join(' ');
+                return (
+                  <>
+                    {s.eyebrow && (
+                      <span
+                        className="self-start rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em]"
+                        style={{
+                          background: theme.chipBg,
+                          color: theme.chipText,
+                          boxShadow: `inset 0 0 0 1px ${theme.chipRing}`,
+                        }}
+                      >
+                        {t(s.eyebrow)}
+                      </span>
+                    )}
+                    <h1
+                      className="max-w-2xl text-[28px] font-extrabold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.08]"
+                      style={{ color: s.textColor }}
+                    >
+                      {head}{' '}
+                      <span className="sm:block" style={{ color: theme.accent }}>
+                        {tail}
+                      </span>
+                    </h1>
+                    {s.subtitle && (
+                      <p
+                        className="max-w-xl text-[13px] leading-relaxed sm:text-lg"
+                        style={{ color: s.textColor, opacity: 0.85 }}
+                      >
+                        {t(s.subtitle)}
+                      </p>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      {s.buttonLabel && (
+                        <HeroLink
+                          to={s.buttonLink}
+                          style={{ background: s.buttonBg, color: s.buttonText }}
+                          className="shadow-lg"
+                        >
+                          {t(s.buttonLabel)}
+                        </HeroLink>
+                      )}
+                      <button
+                        type="button"
+                        onClick={openChat}
+                        className="hidden rounded-full bg-white px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-900 transition hover:bg-slate-100 sm:inline-block"
+                      >
+                        {t('Talk to us')}
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         ))}
@@ -267,81 +317,22 @@ export default function Home() {
             Settings as before; the small eyebrow/description lines are
             matched to what each tile links to. */}
         <div className="flex flex-col gap-3 sm:hidden">
-          {tiles.map((tile, i) => {
-            const flavour = tileFlavour(tile.buttonLink);
-            const img = tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length];
-            return i === 0 ? (
-              <TileLink key={i} to={tile.buttonLink} className="block overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div className="relative h-44 bg-slate-900">
-                  <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
-                </div>
-                <div className="border-t border-slate-200 p-4">
-                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
-                    {t(flavour.eyebrow)}
-                  </div>
-                  <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
-                  <div className="mb-3.5 text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
-                    <span>{t(tile.buttonLabel || 'Explore now')}</span>
-                    <span className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-extrabold" style={{ background: flavour.chipBg, color: flavour.chipText }}>→</span>
-                  </span>
-                </div>
-              </TileLink>
-            ) : (
-              <TileLink key={i} to={tile.buttonLink} className="grid grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div className="relative min-h-[7.5rem] bg-slate-900">
-                  <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                </div>
-                <div className="flex min-w-0 flex-col justify-center gap-1 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-700">
-                    {t(flavour.eyebrow)}
-                  </div>
-                  <div className="text-base font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
-                  <div className="text-xs leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
-                </div>
-              </TileLink>
-            );
-          })}
+          {bigTile && <BigTileCard tile={bigTile} img={tileImg(bigIdx)} />}
+          {sideTiles.map(({ tile, i }) => (
+            <SplitTileCard key={i} tile={tile} img={tileImg(i)} />
+          ))}
         </div>
 
-        <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3">
+        <div className="hidden gap-4 sm:grid lg:grid-cols-2">
           {/* Written in Settings → Homepage tiles. */}
-          {tiles.map((tile, i) => {
-            const flavour = tileFlavour(tile.buttonLink);
-            const img = tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length];
-            return (
-              <TileLink
-                key={i}
-                to={tile.buttonLink}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10"
-              >
-                <div className="relative h-44 overflow-hidden bg-slate-900 lg:h-48">
-                  <img
-                    src={img}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col border-t border-slate-200 p-5">
-                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
-                    {t(flavour.eyebrow)}
-                  </div>
-                  <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
-                  <div className="mb-4 text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
-                  <span className="mt-auto inline-flex w-fit items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
-                    <span>{t(tile.buttonLabel || 'Explore now')}</span>
-                    <span
-                      className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-extrabold"
-                      style={{ background: flavour.chipBg, color: flavour.chipText }}
-                    >
-                      →
-                    </span>
-                  </span>
-                </div>
-              </TileLink>
-            );
-          })}
+          {bigTile && (
+            <div className="lg:row-span-2">
+              <BigTileCard tile={bigTile} img={tileImg(bigIdx)} tall />
+            </div>
+          )}
+          {sideTiles.map(({ tile, i }) => (
+            <SplitTileCard key={i} tile={tile} img={tileImg(i)} />
+          ))}
         </div>
       </section>
 
@@ -446,6 +437,79 @@ export default function Home() {
 }
 
 /** A tile's whole card is the link; it may point anywhere. */
+/** The canvas's big promo card: photo on top, wording and the dark
+    quote pill on white below. */
+function BigTileCard({ tile, img, tall }: { tile: PromoTile; img: string; tall?: boolean }) {
+  const { t } = useLang();
+  const flavour = tileFlavour(tile.buttonLink);
+  return (
+    <TileLink
+      to={tile.buttonLink}
+      className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 ${tall ? 'h-full' : ''}`}
+    >
+      <div className={`relative overflow-hidden bg-slate-900 ${tall ? 'min-h-[16rem] flex-1' : 'h-44'}`}>
+        <img
+          src={img}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 p-5 sm:p-6">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
+            {t(flavour.eyebrow)}
+          </div>
+          <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">{t(tile.title)}</div>
+          <div className="max-w-md text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
+        </div>
+        <span className="inline-flex flex-none items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
+          <span>{t(tile.buttonLabel || 'Explore now')}</span>
+          <span
+            className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-extrabold"
+            style={{ background: flavour.chipBg, color: flavour.chipText }}
+          >
+            →
+          </span>
+        </span>
+      </div>
+    </TileLink>
+  );
+}
+
+/** The canvas's split promo row: photo on the start side, wording on white. */
+function SplitTileCard({ tile, img }: { tile: PromoTile; img: string }) {
+  const { t } = useLang();
+  const flavour = tileFlavour(tile.buttonLink);
+  return (
+    <TileLink
+      to={tile.buttonLink}
+      className="group grid grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    >
+      <div className="relative min-h-[7.5rem] overflow-hidden bg-slate-900 sm:min-h-[10rem]">
+        <img
+          src={img}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+      </div>
+      <div className="flex min-w-0 flex-col justify-center gap-1 p-4 sm:gap-1.5 sm:p-6">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
+          {t(flavour.eyebrow)}
+        </div>
+        <div className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">{t(tile.title)}</div>
+        <div className="text-xs leading-relaxed text-slate-500 sm:text-[13px]">{t(flavour.blurb)}</div>
+        <span className="mt-1 flex items-center gap-1.5 text-xs font-bold sm:text-[13px]" style={{ color: flavour.color }}>
+          <span>{t('Browse')}</span>
+          <span className="rtl:hidden">→</span>
+          <span className="hidden rtl:inline">←</span>
+        </span>
+      </div>
+    </TileLink>
+  );
+}
+
 function TileLink({
   to,
   className,
