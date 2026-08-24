@@ -38,6 +38,7 @@ const EN_PHRASES: Array<[RegExp, string]> = [
 const PHONE = '0781 0150 876';
 const WEBSITE = 'www.alwaidhpower.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
+const ADDRESS_EN = 'Baghdad, Sinaa Street — opposite the University of Technology';
 
 export default function SolarPrices() {
   const { t, lang } = useLang();
@@ -113,6 +114,19 @@ export default function SolarPrices() {
     return { value: v, label: col.sub && !label.includes(col.sub) ? `${label} ${col.sub}` : label };
   }
   const specCols = columns.filter((c) => c.key !== 'capacity');
+  /** A cell for the photographed sheet, with each number pinned LTR so
+      html2canvas can't scatter its digits when the line wraps. */
+  function sheetCell(v: string) {
+    return v.split(/(\d[\d,.]*)/g).map((part, i) =>
+      /^\d/.test(part) ? (
+        <span key={i} dir="ltr" style={{ unicodeBidi: 'isolate' }}>
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    );
+  }
 
   return (
     <div className="bg-slate-50 py-8">
@@ -234,34 +248,43 @@ export default function SolarPrices() {
         {/* The poster itself. Kept in the page rather than hidden,
             because "Download PDF" photographs this element and
             display:none has nothing to photograph — so it is parked
-            off-screen instead. Same design as the page, brand colours. */}
+            off-screen instead. It follows the page's language, and it
+            never uses negative letter-spacing: html2canvas paints
+            spaced text letter by letter, which severs Arabic ligatures. */}
         <div aria-hidden className="fixed -left-[9999px] top-0">
           <div
             id="price-sheet"
-            dir="rtl"
-            style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
+            dir={en ? 'ltr' : 'rtl'}
+            style={{
+              fontFamily: en ? "'Inter', system-ui, sans-serif" : "'Janna LT', 'Tajawal', sans-serif",
+              letterSpacing: 0,
+            }}
             className="mx-auto w-[1100px] max-w-none bg-white p-12 text-slate-900"
           >
-            {/* Header: mark on one side, chip + title on the other */}
+            {/* Header: chip + title on one side, the logos on the other */}
             <div className="flex items-start justify-between gap-6">
-              <div className="text-end">
+              <div>
                 <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
-                  ⚡ أسعار المنظومات
+                  ⚡ {t('System prices')}
                 </span>
-                <h2 className="mb-2 mt-3 text-5xl font-black tracking-tight text-slate-900">
-                  منظومات الطاقة الشمسية
+                <h2 className="mb-2 mt-3 text-5xl font-black text-slate-900">
+                  {t('Solar power systems')}
                 </h2>
                 <p className="text-base leading-relaxed text-slate-500">
-                  أسعار كاملة تشمل الألواح، العاكسة، البطاريات والتركيب.
-                  <br />
-                  الأسعار بالدينار العراقي وقابلة للتغيير حسب توفر المواد.
+                  {t(
+                    'Complete prices including panels, inverter, batteries and installation. Prices are in Iraqi dinar and can change with stock.',
+                  )}
                 </p>
               </div>
-              <div className="flex items-center gap-3 pt-1">
-                <div className="text-start leading-tight">
-                  <p className="text-xl font-black text-slate-900">SolarMax®</p>
-                  <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
-                </div>
+              <div className="flex flex-none items-center gap-4 pt-1">
+                {settings.solarLogo ? (
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
+                ) : (
+                  <div dir="ltr" className="text-start leading-tight">
+                    <p className="text-xl font-black text-slate-900">SolarMax®</p>
+                    <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
+                  </div>
+                )}
                 {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
               </div>
             </div>
@@ -271,8 +294,10 @@ export default function SolarPrices() {
               <div className="grid items-center gap-3 bg-brand-600 px-6 py-4" style={gridStyle}>
                 {columns.map((c) => (
                   <div key={c.key} className="text-sm font-extrabold text-white">
-                    {c.label}
-                    {c.sub && <span className="block text-[10px] font-bold text-brand-100">{c.sub}</span>}
+                    {columnLabel(c)}
+                    {!en && c.sub && !columnLabel(c).includes(c.sub) && (
+                      <span className="block text-[10px] font-bold text-brand-100">{c.sub}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -286,7 +311,9 @@ export default function SolarPrices() {
                     c.key === 'capacity' ? (
                       <div key={c.key} className="flex items-center gap-2.5">
                         <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
-                        <span className="text-lg font-black text-slate-900">{row.values[c.key] || '—'}</span>
+                        <span className="text-lg font-black text-slate-900">
+                          {sheetCell(localize(row.values[c.key] ?? '') || '—')}
+                        </span>
                       </div>
                     ) : (
                       <div
@@ -294,13 +321,15 @@ export default function SolarPrices() {
                         dir={isPrice(c.key) ? 'ltr' : undefined}
                         className={
                           isPrice(c.key)
-                            ? `text-start text-lg font-extrabold tracking-tight ${
+                            ? `text-start text-lg font-extrabold ${
                                 c.key === 'priceWithInverter' ? 'text-brand-600' : 'text-slate-900'
                               }`
                             : 'text-sm leading-relaxed text-slate-600'
                         }
                       >
-                        {row.values[c.key] || '—'}
+                        {isPrice(c.key)
+                          ? row.values[c.key] || '—'
+                          : sheetCell(localize(row.values[c.key] ?? '') || '—')}
                       </div>
                     ),
                   )}
@@ -308,18 +337,19 @@ export default function SolarPrices() {
               ))}
             </div>
 
-            {/* Footer: where we are, and the door */}
+            {/* Footer: where we are — the door stays on the website */}
             <div className="mt-8 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
               <div className="leading-relaxed">
-                <p className="text-base font-bold text-slate-900">{ADDRESS}</p>
+                <p className="text-base font-bold text-slate-900">{en ? ADDRESS_EN : ADDRESS}</p>
                 <p className="text-sm text-slate-500">
-                  للاستفسار والتركيب: <span dir="ltr" className="font-bold text-slate-700">{PHONE}</span> ·{' '}
-                  <span className="font-bold text-brand-700">{WEBSITE}</span>
+                  {t('For enquiries and installation:')}{' '}
+                  <span dir="ltr" className="font-bold text-slate-700">
+                    {PHONE}
+                  </span>{' '}
+                  · <span className="font-bold text-brand-700">{WEBSITE}</span>
                 </p>
               </div>
-              <span className="rounded-full bg-brand-600 px-9 py-4 text-base font-bold text-white">
-                اطلب عرض سعر
-              </span>
+              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-12 w-auto opacity-90" />}
             </div>
           </div>
         </div>
