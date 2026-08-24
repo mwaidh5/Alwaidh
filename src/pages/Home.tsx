@@ -19,12 +19,22 @@ const FALLBACK = {
     'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
 };
 
-/** The small print on each promo card, matched to where it links. */
-function tileFlavour(link: string): { eyebrow: string; blurb: string } {
-  if (/solar/.test(link)) return { eyebrow: 'Free site survey', blurb: 'Panels, inverters and batteries for clean, reliable power.' };
-  if (/tiandy|camera/.test(link)) return { eyebrow: 'Authorised reseller', blurb: 'IP and analog cameras and NVRs.' };
-  if (/computer/.test(link)) return { eyebrow: 'Since 1992', blurb: 'Laptops, desktops and workstations.' };
-  return { eyebrow: 'Alwaidh', blurb: '' };
+/** The small print and accent on each promo card, matched to where it links. */
+interface TileFlavour {
+  eyebrow: string;
+  blurb: string;
+  color: string; // eyebrow text
+  chipBg: string; // the little arrow circle
+  chipText: string;
+}
+function tileFlavour(link: string): TileFlavour {
+  if (/solar/.test(link))
+    return { eyebrow: 'Free site survey', blurb: 'Panels, inverters and batteries for clean, reliable power.', color: '#b45309', chipBg: '#fbbf24', chipText: '#0f172a' };
+  if (/tiandy|camera/.test(link))
+    return { eyebrow: 'Authorised reseller', blurb: 'IP and analog cameras and NVRs.', color: '#248527', chipBg: '#2ea830', chipText: '#ffffff' };
+  if (/computer/.test(link))
+    return { eyebrow: 'Since 1992', blurb: 'Laptops, desktops and workstations.', color: '#1d4ed8', chipBg: '#2563eb', chipText: '#ffffff' };
+  return { eyebrow: 'Alwaidh', blurb: '', color: '#334155', chipBg: '#0f172a', chipText: '#ffffff' };
 }
 
 /** The canvas design's use cases: a situation each, not a category. */
@@ -266,14 +276,14 @@ export default function Home() {
                   <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
                 </div>
                 <div className="border-t border-slate-200 p-4">
-                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">
+                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
                     {t(flavour.eyebrow)}
                   </div>
                   <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
                   <div className="mb-3.5 text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
                   <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
                     <span>{t(tile.buttonLabel || 'Explore now')}</span>
-                    <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[11px] font-extrabold text-slate-900">→</span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-extrabold" style={{ background: flavour.chipBg, color: flavour.chipText }}>→</span>
                   </span>
                 </div>
               </TileLink>
@@ -294,48 +304,44 @@ export default function Home() {
           })}
         </div>
 
-        <div className="hidden grid-cols-2 gap-3 sm:grid sm:gap-4 lg:grid-cols-3">
+        <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3">
           {/* Written in Settings → Homepage tiles. */}
-          {tiles.map((tile, i) => (
-            <TileLink
-              key={i}
-              to={tile.buttonLink}
-              className="group relative block h-40 overflow-hidden rounded-2xl bg-slate-900 sm:h-60"
-            >
-              <img
-                src={tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length]}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, tile.overlay)) / 100})`,
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
-              <div className="absolute inset-0 flex flex-col justify-end gap-1.5 p-3 sm:gap-2 sm:p-6">
-                <p className="text-sm font-extrabold sm:text-lg" style={{ color: tile.textColor }}>
-                  {t(tile.title)}
-                </p>
-                {tile.buttonLabel && (
-                  <span
-                    className="inline-flex w-fit items-center gap-1.5 rounded-full py-1.5 pe-1.5 ps-3 text-[11px] font-bold shadow-lg sm:gap-2 sm:py-2 sm:pe-2 sm:ps-4 sm:text-sm"
-                    style={{ background: tile.buttonBg, color: tile.buttonText }}
-                  >
-                    {t(tile.buttonLabel)}
+          {tiles.map((tile, i) => {
+            const flavour = tileFlavour(tile.buttonLink);
+            const img = tile.image || imageFor(categories[i]?.slug) || stockImage[i % stockImage.length];
+            return (
+              <TileLink
+                key={i}
+                to={tile.buttonLink}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10"
+              >
+                <div className="relative h-44 overflow-hidden bg-slate-900 lg:h-48">
+                  <img
+                    src={img}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col border-t border-slate-200 p-5">
+                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>
+                    {t(flavour.eyebrow)}
+                  </div>
+                  <div className="mb-1 text-lg font-extrabold tracking-tight text-slate-900">{t(tile.title)}</div>
+                  <div className="mb-4 text-[13px] leading-relaxed text-slate-500">{t(flavour.blurb)}</div>
+                  <span className="mt-auto inline-flex w-fit items-center gap-2 rounded-full bg-slate-900 py-2.5 pe-2.5 ps-5 text-xs font-bold text-white">
+                    <span>{t(tile.buttonLabel || 'Explore now')}</span>
                     <span
-                      className="grid h-4 w-4 place-items-center rounded-full bg-white text-[10px] font-extrabold sm:h-5 sm:w-5 sm:text-xs"
-                      style={{ color: tile.buttonBg }}
+                      className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-extrabold"
+                      style={{ background: flavour.chipBg, color: flavour.chipText }}
                     >
                       →
                     </span>
                   </span>
-                )}
-              </div>
-            </TileLink>
-          ))}
+                </div>
+              </TileLink>
+            );
+          })}
         </div>
       </section>
 
