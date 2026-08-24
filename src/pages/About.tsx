@@ -88,7 +88,7 @@ const IDENTITIES: Identity[] = [
 ];
 
 const PILLS = [
-  { to: '#identity-computers', label: 'Computers', dot: '#60a5fa', bg: 'rgba(37,99,235,.16)', ring: 'rgba(96,165,250,.45)', color: '#bfdbfe' },
+  { to: '#identity-computers', label: 'Computers', dot: '#bfdbfe', bg: 'rgba(255,255,255,.12)', ring: 'rgba(255,255,255,.35)', color: '#eff6ff' },
   { to: '#identity-solar', label: 'Solar energy', dot: '#fbbf24', bg: 'rgba(245,158,11,.14)', ring: 'rgba(252,211,77,.45)', color: '#fde68a' },
   { to: '#identity-cameras', label: 'Security cameras', dot: '#3cc63c', bg: 'rgba(46,168,48,.16)', ring: 'rgba(126,232,126,.42)', color: '#a7f3a7' },
 ];
@@ -113,7 +113,11 @@ export default function About() {
   const [errorMsg, setErrorMsg] = useState('');
   const settings = useSettings();
 
+  // Each card's own photo from Settings first; the homepage banners and
+  // stock shots only fill in until those are uploaded.
+  const ABOUT_KEYS = ['computers', 'solar', 'cameras'];
   const cardImage = (i: number) =>
+    settings.aboutImages?.[ABOUT_KEYS[i]] ||
     settings.heroSlides?.[i]?.image ||
     (i === 0 ? settings.heroImage : i === 1 ? settings.solarBannerImage : '') ||
     STOCK[i];
@@ -152,12 +156,12 @@ export default function About() {
   return (
     <div>
       {/* ---------------- Hero ---------------- */}
-      <section className="relative overflow-hidden bg-[#020617] text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 text-white">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(760px 420px at 14% -10%, rgba(37,99,235,.42), transparent 62%), radial-gradient(620px 380px at 92% 118%, rgba(46,168,48,.2), transparent 60%), radial-gradient(520px 340px at 62% -30%, rgba(245,158,11,.16), transparent 60%)',
+              'radial-gradient(760px 420px at 14% -10%, rgba(255,255,255,.16), transparent 62%), radial-gradient(620px 380px at 92% 118%, rgba(46,168,48,.22), transparent 60%), radial-gradient(520px 340px at 62% -30%, rgba(245,158,11,.2), transparent 60%)',
           }}
         />
         <div className="container-page relative py-14 sm:py-16">
@@ -313,8 +317,8 @@ export default function About() {
       {/* ---------------- Contact ---------------- */}
       <section id="contact" className="container-page py-14">
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.3fr)]">
-          <div className="rounded-3xl bg-slate-900 p-7 text-slate-300 sm:p-8">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">
+          <div className="rounded-3xl bg-gradient-to-br from-brand-700 to-brand-600 p-7 text-brand-100 sm:p-8">
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-100">
               {t('Contact')}
             </div>
             <h2 className="mb-2.5 mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-[27px]">
@@ -335,14 +339,14 @@ export default function About() {
                 ] as [string, string, string | null][]
               ).map(([k, v, href], i, arr) => (
                 <div key={k} className={`grid gap-1 ${i < arr.length - 1 ? 'border-b border-white/10 pb-4' : ''}`}>
-                  <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{t(k)}</dt>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-200">{t(k)}</dt>
                   <dd>
                     {href ? (
-                      <a href={href} dir="ltr" className={k === 'Phone' ? 'text-lg font-bold text-white' : 'text-sm font-semibold text-brand-300'}>
+                      <a href={href} dir="ltr" className={k === 'Phone' ? 'text-lg font-bold text-white' : 'text-sm font-semibold text-white underline decoration-white/40'}>
                         {v}
                       </a>
                     ) : (
-                      <span className="text-sm leading-relaxed text-slate-200">{v}</span>
+                      <span className="text-sm leading-relaxed text-white/90">{v}</span>
                     )}
                   </dd>
                 </div>

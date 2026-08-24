@@ -94,6 +94,7 @@ export default function AdminMedia() {
     add(settings.heroImage, 'Homepage hero');
     add(settings.solarBannerImage, 'Solar banner');
     add(settings.tiandyLogo, 'Tiandy logo');
+    Object.entries(settings.aboutImages ?? {}).forEach(([k, u]) => add(u, `About page — ${k}`));
     add(settings.solarLogo, 'Solar logo');
     Object.entries(settings.categoryLogos ?? {}).forEach(([slug, u]) =>
       add(u, `Category tile — ${slug}`),
@@ -241,7 +242,7 @@ export default function AdminMedia() {
         updated++;
       }
     }
-    for (const key of ['categoryLogos', 'brandLogos'] as const) {
+    for (const key of ['categoryLogos', 'brandLogos', 'aboutImages'] as const) {
       const rec: SiteSettings[typeof key] = settings[key] ?? {};
       if (Object.values(rec).some((u) => matches(u))) {
         await updateSettingsField(
