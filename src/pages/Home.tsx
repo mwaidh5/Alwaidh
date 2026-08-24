@@ -57,7 +57,7 @@ const USE_CASES = [
 ];
 
 export default function Home() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { products } = useProducts();
   const settings = useSettings();
 
@@ -174,7 +174,11 @@ export default function Home() {
             <div className="relative flex h-full flex-col justify-end gap-3 p-6 pb-16 sm:justify-center sm:gap-4 sm:px-14 sm:pb-0">
               {(() => {
                 const theme = slideTheme(s.buttonLink);
-                const words = t(s.title).split(' ');
+                // Arabic banners come from the slide's own Arabic fields
+                // when the admin filled them; otherwise the English text
+                // runs through the dictionary like everything else.
+                const wd = (en: string, ar: string) => (lang === 'ar' && ar ? ar : t(en));
+                const words = wd(s.title, s.titleAr).split(' ');
                 const cut = Math.max(1, words.length - 2);
                 const head = words.slice(0, cut).join(' ');
                 const tail = words.slice(cut).join(' ');
@@ -189,7 +193,7 @@ export default function Home() {
                           boxShadow: `inset 0 0 0 1px ${theme.chipRing}`,
                         }}
                       >
-                        {t(s.eyebrow)}
+                        {wd(s.eyebrow, s.eyebrowAr)}
                       </span>
                     )}
                     <h1
@@ -206,7 +210,7 @@ export default function Home() {
                         className="max-w-xl text-[13px] leading-relaxed sm:text-lg"
                         style={{ color: s.textColor, opacity: 0.85 }}
                       >
-                        {t(s.subtitle)}
+                        {wd(s.subtitle, s.subtitleAr)}
                       </p>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -216,7 +220,7 @@ export default function Home() {
                           style={{ background: s.buttonBg, color: s.buttonText }}
                           className="shadow-lg"
                         >
-                          {t(s.buttonLabel)}
+                          {wd(s.buttonLabel, s.buttonLabelAr)}
                         </HeroLink>
                       )}
                       <button

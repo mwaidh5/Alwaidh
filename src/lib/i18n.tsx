@@ -946,6 +946,10 @@ const AR: Record<string, string> = {
   'Panels, inverters and batteries for clean, reliable power — sized, installed and serviced by us.': 'ألواح وإنفرترات وبطاريات لطاقة نظيفة وموثوقة — نحدّد الحجم ونركّب ونصون بأنفسنا.',
   'Professional IP and analog cameras and NVRs.': 'كاميرات IP وتناظرية احترافية وأجهزة NVR.',
   'Laptops, desktops and workstations for work and play.': 'حاسبات محمولة ومكتبية ومحطات عمل للعمل واللعب.',
+  'Small label (Arabic)': 'التسمية الصغيرة (بالعربية)',
+  'Headline (Arabic)': 'العنوان (بالعربية)',
+  'Sentence under the headline (Arabic)': 'الجملة تحت العنوان (بالعربية)',
+  'Button text (Arabic)': 'نص الزر (بالعربية)',
 };
 
 interface LanguageValue {

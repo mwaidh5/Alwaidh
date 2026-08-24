@@ -255,6 +255,10 @@ export default function AdminSettings() {
                   image: '',
                   mobileImage: '',
                   eyebrow: '',
+                  eyebrowAr: '',
+                  titleAr: '',
+                  subtitleAr: '',
+                  buttonLabelAr: '',
                   title: 'New banner',
                   subtitle: '',
                   buttonLabel: 'Shop now',
@@ -927,11 +931,27 @@ function HeroSlideEditor({
             placeholder={t('e.g. New arrivals')}
           />
         </Field>
+        <Field label="Small label (Arabic)">
+          <input
+            className="input"
+            dir="rtl"
+            value={slide.eyebrowAr}
+            onChange={(e) => set('eyebrowAr', e.target.value)}
+          />
+        </Field>
         <Field label="Headline">
           <input
             className="input"
             value={slide.title}
             onChange={(e) => set('title', e.target.value)}
+          />
+        </Field>
+        <Field label="Headline (Arabic)">
+          <input
+            className="input"
+            dir="rtl"
+            value={slide.titleAr}
+            onChange={(e) => set('titleAr', e.target.value)}
           />
         </Field>
       </div>
@@ -942,6 +962,14 @@ function HeroSlideEditor({
           onChange={(e) => set('subtitle', e.target.value)}
         />
       </Field>
+      <Field label="Sentence under the headline (Arabic)">
+        <input
+          className="input"
+          dir="rtl"
+          value={slide.subtitleAr}
+          onChange={(e) => set('subtitleAr', e.target.value)}
+        />
+      </Field>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Field label="Button text">
           <input
@@ -949,6 +977,14 @@ function HeroSlideEditor({
             value={slide.buttonLabel}
             onChange={(e) => set('buttonLabel', e.target.value)}
             placeholder={t('Leave empty to hide the button')}
+          />
+        </Field>
+        <Field label="Button text (Arabic)">
+          <input
+            className="input"
+            dir="rtl"
+            value={slide.buttonLabelAr}
+            onChange={(e) => set('buttonLabelAr', e.target.value)}
           />
         </Field>
         <Field label="Button goes to">

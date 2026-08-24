@@ -17,6 +17,12 @@ export interface HeroSlide {
   subtitle: string;
   buttonLabel: string;
   buttonLink: string;
+  /** Arabic wording for the same banner; empty falls back to the
+      English run through the dictionary. */
+  eyebrowAr: string;
+  titleAr: string;
+  subtitleAr: string;
+  buttonLabelAr: string;
   /** Colour of the wording over the photo. */
   textColor: string;
   buttonBg: string;
@@ -43,6 +49,10 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
       'Business machines, workstations and accessories — spec’d properly, warrantied locally, and in stock today.',
     buttonLabel: 'Shop computers',
     buttonLink: '/shop?category=computers',
+    eyebrowAr: 'وصل حديثاً',
+    titleAr: 'حاسبات مصنوعة للعمل الجاد',
+    subtitleAr: 'أجهزة أعمال ومحطات عمل وملحقات — بمواصفات مضبوطة وضمان محلي ومتوفرة اليوم.',
+    buttonLabelAr: 'تسوّق الحاسبات',
     ...HERO_DEFAULT_COLORS,
   },
   {
@@ -54,6 +64,10 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
       'Panels, inverters and batteries sized for your home or shop. Free site survey, installed by our own crew.',
     buttonLabel: 'Get a free solar quote',
     buttonLink: '#quote',
+    eyebrowAr: 'طاقة نظيفة',
+    titleAr: 'ودّع فاتورة الكهرباء',
+    subtitleAr: 'ألواح وإنفرترات وبطاريات بحجم يناسب بيتك أو محلك. كشف موقعي مجاني وتركيب بفريقنا.',
+    buttonLabelAr: 'اطلب عرض سعر مجاني',
     ...HERO_DEFAULT_COLORS,
   },
   {
@@ -64,6 +78,10 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'IP cameras, NVRs and full-site coverage from an authorised Tiandy reseller.',
     buttonLabel: 'Shop cameras',
     buttonLink: '/shop?category=tiandy-cameras',
+    eyebrowAr: 'مراقبة',
+    titleAr: 'كاميرات Tiandy بتركيب صحيح',
+    subtitleAr: 'كاميرات IP وأجهزة NVR وتغطية كاملة من موزّع معتمد لتياندي.',
+    buttonLabelAr: 'تسوّق الكاميرات',
     ...HERO_DEFAULT_COLORS,
   },
 ];
@@ -267,6 +285,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
           subtitle: String(h.subtitle ?? ''),
           buttonLabel: String(h.buttonLabel ?? ''),
           buttonLink: String(h.buttonLink ?? ''),
+          eyebrowAr: String(h.eyebrowAr ?? ''),
+          titleAr: String(h.titleAr ?? ''),
+          subtitleAr: String(h.subtitleAr ?? ''),
+          buttonLabelAr: String(h.buttonLabelAr ?? ''),
           textColor: String(h.textColor ?? HERO_DEFAULT_COLORS.textColor),
           buttonBg: String(h.buttonBg ?? HERO_DEFAULT_COLORS.buttonBg),
           buttonText: String(h.buttonText ?? HERO_DEFAULT_COLORS.buttonText),
