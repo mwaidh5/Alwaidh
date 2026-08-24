@@ -139,13 +139,14 @@ export default function Shop() {
     if (inStockOnly) list = list.filter((p) => p.inStock);
     if (maxPrice != null) list = list.filter((p) => p.price <= maxPrice);
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.shortDescription.toLowerCase().includes(q),
-      );
+      // Every word of the query must appear somewhere — so a two-word
+      // Arabic search like "كاميرا مراقبة" matches even though the hidden
+      // keywords list the words apart.
+      const words = query.trim().toLowerCase().split(/\s+/);
+      list = list.filter((p) => {
+        const hay = `${p.name} ${p.brand} ${p.shortDescription} ${p.keywordsAr ?? ''}`.toLowerCase();
+        return words.every((w) => hay.includes(w));
+      });
     }
     switch (sort) {
       case 'price-asc':

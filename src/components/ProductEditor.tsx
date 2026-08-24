@@ -108,6 +108,7 @@ export default function ProductEditor({
         inStock: state.inStock,
         imageFit: (state.imageFit === 'cover' ? 'cover' : 'contain') as 'contain' | 'cover',
         shortDescription: state.shortDescription.trim(),
+        keywordsAr: (state.keywordsAr ?? '').trim(),
         specs: parseSpecs(state.specsText),
         // Saved alongside the map so the order survives — Firestore hands
         // a map's keys back alphabetically.
@@ -760,6 +761,15 @@ export function ProductDialog({
               className="input"
               value={state.shortDescription}
               onChange={(e) => setState({ ...state, shortDescription: e.target.value })}
+            />
+          </Field>
+          <Field label="Arabic search words (hidden — helps Arabic search find this item)" full>
+            <textarea
+              className="input min-h-[64px]"
+              dir="rtl"
+              value={state.keywordsAr ?? ''}
+              onChange={(e) => setState({ ...state, keywordsAr: e.target.value })}
+              placeholder={'لابتوب حاسبة محمولة شاشة'}
             />
           </Field>
           <Field label="Specs (one per line, key: value)" full>

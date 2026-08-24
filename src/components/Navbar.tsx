@@ -55,10 +55,12 @@ export default function Navbar() {
   const results = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
+    const words = q.split(/\s+/);
     return products
-      .filter(
-        (p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q),
-      )
+      .filter((p) => {
+        const hay = `${p.name} ${p.brand} ${p.keywordsAr ?? ''}`.toLowerCase();
+        return words.every((w) => hay.includes(w));
+      })
       .slice(0, 6);
   }, [searchQuery, products]);
 

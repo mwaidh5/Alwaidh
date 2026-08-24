@@ -175,6 +175,7 @@ export default function AdminProducts() {
         rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
         inStock: editing.inStock,
         shortDescription: editing.shortDescription.trim(),
+        keywordsAr: (editing.keywordsAr ?? '').trim(),
         specs,
         deliveryFee:
           editing.deliveryFee === null || editing.deliveryFee === undefined
