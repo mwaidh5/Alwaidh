@@ -64,6 +64,7 @@ export default function SolarSceneLite() {
   const svgRef = useRef<SVGSVGElement>(null);
   const workerRef = useRef<SVGGElement>(null);
   const flipRef = useRef<SVGGElement>(null);
+  const badgeRef = useRef<SVGGElement>(null);
   const houseRef = useRef<SVGGElement>(null);
   const panelRefs = useRef<(SVGGElement | null)[]>([]);
   const [filled, setFilled] = useState(() => SLOTS.map((s) => s.pre));
@@ -177,7 +178,9 @@ export default function SolarSceneLite() {
     }
 
     function face(towardX: number) {
-      flipRef.current?.setAttribute('transform', towardX < s.pos[0] ? 'scale(1,1)' : 'scale(-1,1)');
+      const sc = towardX < s.pos[0] ? 'scale(1,1)' : 'scale(-1,1)';
+      flipRef.current?.setAttribute('transform', sc);
+      badgeRef.current?.setAttribute('transform', sc);
     }
 
     function install(k: number) {
@@ -415,14 +418,34 @@ export default function SolarSceneLite() {
                 <rect x="-5" y="-10" width="4" height="10" rx="1.5" fill="#334155" />
                 <rect x="1" y="-10" width="4" height="10" rx="1.5" fill="#334155" />
                 <g className="alw-torso">
-                  <rect x="-6" y="-23" width="12" height="14" rx="3" fill="#f97316" />
-                  <rect x="-6" y="-23" width="12" height="5" rx="2.5" fill="#fb923c" />
+                  <rect x="-6" y="-23" width="12" height="14" rx="3" fill="#2563eb" />
+                  <rect x="-6" y="-23" width="12" height="5" rx="2.5" fill="#3b82f6" />
+                  {/* The SolarMax badge on his vest. It sits inside the flip
+                      group, so face() flips it a second time to keep the
+                      lettering readable whichever way he turns. */}
+                  <g ref={badgeRef}>
+                    <rect x="-5" y="-20.6" width="10" height="6" rx="1.4" fill="#ffffff" />
+                    <rect x="-4" y="-19.7" width="2.6" height="1.9" rx="0.4" fill="#1d4ed8" />
+                    <circle cx="3.2" cy="-18.7" r="1" fill="#fbbf24" />
+                    <text
+                      x="0"
+                      y="-15.9"
+                      textAnchor="middle"
+                      fontSize="2.1"
+                      fontWeight="800"
+                      fill="#1d4ed8"
+                      fontFamily="Inter, system-ui, sans-serif"
+                      style={{ letterSpacing: '.02em' }}
+                    >
+                      SolarMax
+                    </text>
+                  </g>
                   <g className="alw-arm alw-arm-l">
-                    <rect x="-9.4" y="-22" width="3.2" height="5.5" rx="1.5" fill="#fb923c" />
+                    <rect x="-9.4" y="-22" width="3.2" height="5.5" rx="1.5" fill="#3b82f6" />
                     <rect x="-9" y="-17.5" width="2.6" height="6" rx="1.2" fill="#eab88e" />
                   </g>
                   <g className="alw-arm alw-arm-r">
-                    <rect x="6.2" y="-22" width="3.2" height="5.5" rx="1.5" fill="#fb923c" />
+                    <rect x="6.2" y="-22" width="3.2" height="5.5" rx="1.5" fill="#3b82f6" />
                     <rect x="6.4" y="-17.5" width="2.6" height="6" rx="1.2" fill="#eab88e" />
                   </g>
                   <circle cx="0" cy="-27.5" r="4.6" fill="#eab88e" />
