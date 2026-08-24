@@ -6,6 +6,7 @@ import { useProducts } from '../lib/useProducts';
 import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
+import LangSwitch from './LangSwitch';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { openDrawer } from '../lib/drawer';
 
@@ -19,7 +20,7 @@ const navLinks = [
 export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, hasAdminAccess, signOut } = useAuth();
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   // Out of the way while a pop-up is open — on phones only, where the
   // screen is too small to share. Desktop dialogs sit in the middle of a
   // page that is still clearly there behind them.
@@ -140,16 +141,8 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Language switch — label shows the language you'd switch TO. */}
-          <button
-            type="button"
-            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-            className="grid h-10 min-w-10 place-items-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            aria-label={lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
-            title={lang === 'ar' ? 'English' : 'العربية'}
-          >
-            {lang === 'ar' ? 'EN' : 'ع'}
-          </button>
+          {/* Language switch — the sliding EN | عربي capsule. */}
+          <LangSwitch />
 
           {/* Search (icon only) */}
           <div className="relative" ref={searchRef}>

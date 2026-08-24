@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import LangSwitch from './LangSwitch';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 
 /**
@@ -18,7 +19,7 @@ export default function MobileDrawer() {
   const open = useDrawerOpen();
   const { user, hasAdminAccess, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
-  const { t, lang, setLang, dir } = useLang();
+  const { t, dir } = useLang();
   const location = useLocation();
 
   // Going anywhere closes it, whichever link did the navigating.
@@ -128,13 +129,7 @@ export default function MobileDrawer() {
             {t(user ? 'My account' : 'Sign in')}
           </Link>
           <div className="flex items-center gap-2 px-3">
-            <button
-              type="button"
-              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-              className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-inset ring-white/20"
-            >
-              {lang === 'ar' ? 'English' : 'العربية'}
-            </button>
+            <LangSwitch frosted />
             {user && (
               <button
                 type="button"
