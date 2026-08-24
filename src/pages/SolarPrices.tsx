@@ -108,7 +108,9 @@ export default function SolarPrices() {
     const v = row.values[key];
     if (!v || v === '-') return null;
     const col = columns.find((c) => c.key === key);
-    return { value: v, label: col ? columnLabel(col) : '' };
+    if (!col) return { value: v, label: '' };
+    const label = columnLabel(col);
+    return { value: v, label: col.sub && !label.includes(col.sub) ? `${label} ${col.sub}` : label };
   }
   const specCols = columns.filter((c) => c.key !== 'capacity');
 
@@ -194,7 +196,7 @@ export default function SolarPrices() {
                   {other && (
                     <div className="text-xs text-slate-500">
                       {other.label}:{' '}
-                      <span dir="ltr" className="font-extrabold text-orange-600">
+                      <span dir="ltr" className="font-extrabold text-brand-600">
                         {other.value}
                       </span>
                     </div>
@@ -293,7 +295,7 @@ export default function SolarPrices() {
                         className={
                           isPrice(c.key)
                             ? `text-start text-lg font-extrabold tracking-tight ${
-                                c.key === 'priceWithInverter' ? 'text-orange-600' : 'text-slate-900'
+                                c.key === 'priceWithInverter' ? 'text-brand-600' : 'text-slate-900'
                               }`
                             : 'text-sm leading-relaxed text-slate-600'
                         }
