@@ -199,6 +199,31 @@
   .alw-worker.alw-walk .alw-inner {
     animation: alw-bob 0.32s ease-in-out infinite;
   }
+  .alw-arm {
+    transform-box: fill-box;
+    transform-origin: center top;
+  }
+  /* Picked up: he flails his hands, annoyed at being interrupted. */
+  .alw-worker.alw-drag .alw-arm-l {
+    animation: alw-twitch-l 0.24s ease-in-out infinite;
+  }
+  .alw-worker.alw-drag .alw-arm-r {
+    animation: alw-twitch-r 0.24s ease-in-out infinite 0.06s;
+  }
+  /* Fastening: the outer hand turns like it's driving a screw. */
+  .alw-worker.alw-working .alw-arm-r {
+    animation: alw-screwhand 0.35s ease-in-out infinite;
+  }
+  .alw-worker.alw-fall .alw-inner {
+    animation: alw-flail 0.28s linear infinite;
+  }
+  .alw-worker.alw-fall .alw-arm-l,
+  .alw-worker.alw-fall .alw-arm-r {
+    animation: alw-twitch-l 0.2s ease-in-out infinite;
+  }
+  .alw-worker.alw-jump .alw-inner {
+    animation: alw-leap 0.78s ease;
+  }
   /* Bending over the rack to fasten it: bow in, wiggle like driving
      screws, straighten. One keyframe run covers the whole gesture. */
   .alw-worker.alw-working .alw-torso {
@@ -226,7 +251,10 @@
       transition: none;
     }
     .alw-worker.alw-walk .alw-inner,
-    .alw-worker.alw-working .alw-torso {
+    .alw-worker.alw-working .alw-torso,
+    .alw-worker .alw-arm,
+    .alw-worker.alw-fall .alw-inner,
+    .alw-worker.alw-jump .alw-inner {
       animation: none;
     }
   }
@@ -256,6 +284,28 @@
 @keyframes alw-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
+}
+
+@keyframes alw-twitch-l {
+  0%, 100% { transform: rotate(12deg); }
+  50% { transform: rotate(-20deg); }
+}
+@keyframes alw-twitch-r {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(18deg); }
+}
+@keyframes alw-screwhand {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(10deg); }
+}
+@keyframes alw-flail {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+@keyframes alw-leap {
+  0% { transform: scaleY(0.8); }
+  35% { transform: scaleY(1.1); }
+  100% { transform: scaleY(1); }
 }
 
 @keyframes alw-screw {
