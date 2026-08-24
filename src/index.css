@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Janna LT, the site's Arabic face. Two files cover every weight the
+   site uses: anything up to 500 renders with Regular, 600 and heavier
+   with Bold, so nothing gets faux-bolded. */
+@font-face {
+  font-family: 'Janna LT';
+  src: url('/fonts/JannaLT-Regular.woff2') format('woff2');
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Janna LT';
+  src: url('/fonts/JannaLT-Bold.woff2') format('woff2');
+  font-weight: 600 900;
+  font-display: swap;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -11,9 +27,10 @@
     /* Keep content clear of the iPhone home indicator in the native app. */
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Arabic reads better in a naskh face than in Inter. */
+  /* Arabic reads in Janna LT; the rest of the stack is the fallback
+     while the font file loads. */
   html[lang='ar'] body {
-    font-family: 'Segoe UI', 'Noto Naskh Arabic', 'Geeza Pro', Tahoma, system-ui, sans-serif;
+    font-family: 'Janna LT', 'Segoe UI', 'Noto Naskh Arabic', 'Geeza Pro', Tahoma, system-ui, sans-serif;
   }
   /* Arabic (RTL): the layout is built with flex/grid + gap, which mirrors
      itself, so only these direction-specific utilities need flipping. */
