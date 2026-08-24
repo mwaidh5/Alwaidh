@@ -950,6 +950,9 @@ const AR: Record<string, string> = {
   'Headline (Arabic)': 'العنوان (بالعربية)',
   'Sentence under the headline (Arabic)': 'الجملة تحت العنوان (بالعربية)',
   'Button text (Arabic)': 'نص الزر (بالعربية)',
+  'About page — Computers photo': 'صفحة من نحن — صورة الحاسبات',
+  'About page — Solar photo': 'صفحة من نحن — صورة الطاقة الشمسية',
+  'About page — Cameras photo': 'صفحة من نحن — صورة الكاميرات',
 };
 
 interface LanguageValue {

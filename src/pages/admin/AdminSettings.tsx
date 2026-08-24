@@ -443,6 +443,24 @@ export default function AdminSettings() {
             onChange={(url) => update('solarBannerImage', url)}
           />
           <ImageField
+            label="About page — Computers photo"
+            value={settings.aboutImages?.['computers'] ?? ''}
+            folder="site"
+            onChange={(url) => update('aboutImages', { ...(settings.aboutImages ?? {}), computers: url })}
+          />
+          <ImageField
+            label="About page — Solar photo"
+            value={settings.aboutImages?.['solar'] ?? ''}
+            folder="site"
+            onChange={(url) => update('aboutImages', { ...(settings.aboutImages ?? {}), solar: url })}
+          />
+          <ImageField
+            label="About page — Cameras photo"
+            value={settings.aboutImages?.['cameras'] ?? ''}
+            folder="site"
+            onChange={(url) => update('aboutImages', { ...(settings.aboutImages ?? {}), cameras: url })}
+          />
+          <ImageField
             label="Logo (navbar)"
             value={settings.logoImage}
             folder="site"
@@ -495,6 +513,19 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
   const { t } = useLang();
   const [device, setDevice] = useState<'pc' | 'phone'>('pc');
   const phone = device === 'phone';
+  // Which language the preview speaks — so the Arabic wording can be
+  // checked while it's being written.
+  const [pvLang, setPvLang] = useState<'en' | 'ar'>('en');
+  const wd = (en: string, ar: string) => (pvLang === 'ar' && ar ? ar : en);
+  // Same accents the homepage picks per slide.
+  const theme = /solar/.test(slide.buttonLink)
+    ? { accent: '#fbbf24', chipBg: 'rgba(251,191,36,.18)', chipText: '#fcd34d', chipRing: 'rgba(252,211,77,.45)' }
+    : /tiandy|camera/.test(slide.buttonLink)
+      ? { accent: '#4fd852', chipBg: 'rgba(46,168,48,.2)', chipText: '#7ee87e', chipRing: 'rgba(126,232,126,.45)' }
+      : { accent: '#60a5fa', chipBg: 'rgba(59,130,246,.2)', chipText: '#93c5fd', chipRing: 'rgba(147,197,253,.45)' };
+  const pvTitle = wd(slide.title, slide.titleAr) || t('Your headline here');
+  const pvWords = pvTitle.split(' ');
+  const pvCut = Math.max(1, pvWords.length - 2);
   const photo = (phone && slide.mobileImage) || slide.image;
 
   return (
@@ -521,11 +552,24 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
               {t(d.label)}
             </button>
           ))}
+          {(['en', 'ar'] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setPvLang(l)}
+              className={`rounded-md px-2.5 py-1 transition ${
+                pvLang === l ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {l === 'en' ? 'EN' : 'عربي'}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className={`mx-auto ${phone ? 'w-[320px] max-w-full' : 'w-full'}`}>
         <div
+          dir={pvLang === 'ar' ? 'rtl' : 'ltr'}
           className="relative overflow-hidden rounded-xl bg-slate-800"
           // Same shapes the homepage uses: 1216×512 and 343×416.
           style={{ aspectRatio: phone ? '343 / 416' : '1216 / 512' }}
@@ -539,45 +583,68 @@ function HeroPreview({ slide }: { slide: HeroSlide }) {
               background: `rgba(2, 6, 23, ${Math.min(90, Math.max(0, slide.overlay)) / 100})`,
             }}
           />
+          {/* The same shades the homepage lays over the photo. */}
+          {phone ? (
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to top, rgba(2,6,23,.9) 0%, rgba(2,6,23,.62) 34%, rgba(2,6,23,.14) 66%, rgba(2,6,23,0) 100%)',
+              }}
+            />
+          ) : (
+            <div className="hero-shade absolute inset-0" />
+          )}
           <div
-            className={`relative flex h-full flex-col justify-center ${
-              phone ? 'gap-2 px-6' : 'gap-2.5 px-8'
+            className={`relative flex h-full flex-col ${
+              phone ? 'justify-end gap-2 px-5 pb-8' : 'justify-center gap-2.5 px-8'
             }`}
           >
             {slide.eyebrow && (
               <span
-                className={`w-fit rounded-full border px-2 py-0.5 font-bold uppercase tracking-[0.15em] ${
+                className={`w-fit rounded-full px-2.5 py-1 font-bold uppercase tracking-[0.15em] ${
                   phone ? 'text-[8px]' : 'text-[9px]'
                 }`}
-                style={{ color: slide.textColor, borderColor: slide.textColor }}
+                style={{
+                  background: theme.chipBg,
+                  color: theme.chipText,
+                  boxShadow: `inset 0 0 0 1px ${theme.chipRing}`,
+                }}
               >
-                {slide.eyebrow}
+                {wd(slide.eyebrow, slide.eyebrowAr)}
               </span>
             )}
-            <p
-              className={`font-extrabold leading-tight ${phone ? 'text-2xl' : 'text-2xl'}`}
-              style={{ color: slide.textColor }}
-            >
-              {slide.title || t('Your headline here')}
+            <p className="text-2xl font-extrabold leading-tight" style={{ color: slide.textColor }}>
+              {pvWords.slice(0, pvCut).join(' ')}{' '}
+              <span className={phone ? '' : 'block'} style={{ color: theme.accent }}>
+                {pvWords.slice(pvCut).join(' ')}
+              </span>
             </p>
             {slide.subtitle && (
               <p
                 className={`${phone ? 'line-clamp-3 text-[11px]' : 'max-w-md text-xs'} leading-snug`}
                 style={{ color: slide.textColor, opacity: 0.85 }}
               >
-                {slide.subtitle}
+                {wd(slide.subtitle, slide.subtitleAr)}
               </p>
             )}
-            {slide.buttonLabel && (
-              <span
-                className={`w-fit rounded-full font-bold uppercase ${
-                  phone ? 'px-3.5 py-1.5 text-[9px]' : 'px-4 py-2 text-[10px]'
-                }`}
-                style={{ background: slide.buttonBg, color: slide.buttonText }}
-              >
-                {slide.buttonLabel}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {slide.buttonLabel && (
+                <span
+                  className={`w-fit rounded-full font-bold uppercase ${
+                    phone ? 'px-3.5 py-1.5 text-[9px]' : 'px-4 py-2 text-[10px]'
+                  }`}
+                  style={{ background: slide.buttonBg, color: slide.buttonText }}
+                >
+                  {wd(slide.buttonLabel, slide.buttonLabelAr)}
+                </span>
+              )}
+              {!phone && (
+                <span className="w-fit rounded-full bg-white px-4 py-2 text-[10px] font-bold uppercase text-slate-900">
+                  {pvLang === 'ar' ? 'تحدث إلينا' : 'Talk to us'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

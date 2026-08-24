@@ -15,7 +15,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
       role="group"
       aria-label="Language"
       className={`relative flex rounded-full p-1 ${
-        frosted ? 'bg-white/10 ring-1 ring-inset ring-white/20' : 'bg-slate-900'
+        frosted ? 'bg-white/10 ring-1 ring-inset ring-white/20' : 'bg-brand-600'
       }`}
     >
       <span
@@ -28,7 +28,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
         className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-300 ${
-          lang === 'en' ? 'text-slate-900' : frosted ? 'text-white/80' : 'text-slate-400'
+          lang === 'en' ? 'text-slate-900' : 'text-white/80'
         }`}
       >
         EN
@@ -38,7 +38,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
         onClick={() => setLang('ar')}
         aria-pressed={lang === 'ar'}
         className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-300 ${
-          lang === 'ar' ? 'text-slate-900' : frosted ? 'text-white/80' : 'text-slate-400'
+          lang === 'ar' ? 'text-slate-900' : 'text-white/80'
         }`}
       >
         عربي

@@ -170,6 +170,8 @@ export interface SiteSettings {
   /** Sub-categories staff can pick from, keyed by main category slug. */
   subcategories: Record<string, string[]>;
   solarPriceColumns: PriceColumn[];
+  /** The three About-page identity photos, keyed computers/solar/cameras. */
+  aboutImages: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -200,6 +202,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   promoTiles: DEFAULT_PROMO_TILES,
   brands: [],
   solarPriceColumns: DEFAULT_COLUMNS,
+  aboutImages: {},
 };
 
 const SINGLETON_PATH = ['settings', 'site'] as const;
@@ -276,6 +279,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.subcategories && typeof data.subcategories === 'object'
         ? (data.subcategories as Record<string, string[]>)
         : DEFAULT_SETTINGS.subcategories,
+    aboutImages:
+      data.aboutImages && typeof data.aboutImages === 'object'
+        ? (data.aboutImages as Record<string, string>)
+        : DEFAULT_SETTINGS.aboutImages,
     heroSlides: Array.isArray(data.heroSlides)
       ? (data.heroSlides as Record<string, unknown>[]).map((h) => ({
           image: String(h.image ?? ''),
