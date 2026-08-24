@@ -5,8 +5,6 @@ import { saveFile } from '../lib/savePdf';
 import { openChat } from '../lib/chatPanel';
 import { useLang } from '../lib/i18n';
 
-const COMPANY = 'شركة الواعظ للقدرة';
-
 /* The sheet's data lives in the admin dashboard as Arabic text. For the
    English site we translate at display time: column names by key, and the
    handful of phrases the cells are built from. Anything unrecognised
@@ -231,86 +229,98 @@ export default function SolarPrices() {
           </p>
         )}
 
-        {/* The poster itself. Kept in the page on phones rather than
-            hidden, because "Download PDF" photographs this element and
+        {/* The poster itself. Kept in the page rather than hidden,
+            because "Download PDF" photographs this element and
             display:none has nothing to photograph — so it is parked
-            off-screen instead. */}
+            off-screen instead. Same design as the page, brand colours. */}
         <div aria-hidden className="fixed -left-[9999px] top-0">
           <div
             id="price-sheet"
             dir="rtl"
             style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
-            className="mx-auto w-[1100px] max-w-none bg-gradient-to-b from-sky-400 via-sky-300 to-sky-100 p-10 text-slate-900"
+            className="mx-auto w-[1100px] max-w-none bg-white p-12 text-slate-900"
           >
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                {settings.logoImage && (
-                  <img src={settings.logoImage} alt="" className="h-16 w-auto" />
-                )}
-                <div className="text-right leading-tight">
-                  <p className="text-xl font-black text-slate-800">SolarMax®</p>
-                  <p className="text-sm font-bold text-slate-700">الواعظ للقدرة</p>
+            {/* Header: mark on one side, chip + title on the other */}
+            <div className="flex items-start justify-between gap-6">
+              <div className="text-end">
+                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
+                  ⚡ أسعار المنظومات
+                </span>
+                <h2 className="mb-2 mt-3 text-5xl font-black tracking-tight text-slate-900">
+                  منظومات الطاقة الشمسية
+                </h2>
+                <p className="text-base leading-relaxed text-slate-500">
+                  أسعار كاملة تشمل الألواح، العاكسة، البطاريات والتركيب.
+                  <br />
+                  الأسعار بالدينار العراقي وقابلة للتغيير حسب توفر المواد.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <div className="text-start leading-tight">
+                  <p className="text-xl font-black text-slate-900">SolarMax®</p>
+                  <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
                 </div>
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
               </div>
-              <div className="text-center">
-                <h2 className="text-4xl font-black text-slate-900">{COMPANY}</h2>
-              </div>
-              <div className="w-24" />
             </div>
 
-            {/* Column headers */}
-            <div className="mt-8 grid gap-2 px-3 pb-2 text-center text-sm font-extrabold text-slate-800" style={gridStyle}>
-              {columns.map((c) => (
-                <div key={c.key}>
-                  {c.label}
-                  {c.sub && <span className="block text-[10px] font-bold text-slate-600">{c.sub}</span>}
-                </div>
-              ))}
-            </div>
-
-            {/* Rows */}
-            <div className="space-y-3">
+            {/* The table */}
+            <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
+              <div className="grid items-center gap-3 bg-brand-600 px-6 py-4" style={gridStyle}>
+                {columns.map((c) => (
+                  <div key={c.key} className="text-sm font-extrabold text-white">
+                    {c.label}
+                    {c.sub && <span className="block text-[10px] font-bold text-brand-100">{c.sub}</span>}
+                  </div>
+                ))}
+              </div>
               {rows.map((row) => (
                 <div
                   key={row.id}
-                  className="grid items-center gap-2 rounded-full bg-white/75 px-3 py-4 text-center text-sm shadow-sm"
+                  className="grid items-center gap-3 border-b border-slate-200 bg-white px-6 py-5 last:border-b-0"
                   style={gridStyle}
                 >
-                  {columns.map((c, i) => (
-                    <div
-                      key={c.key}
-                      className={
-                        i === 0 || c.key === 'price' || c.key === 'priceWithInverter'
-                          ? 'text-base font-black text-slate-900'
-                          : 'font-semibold text-slate-800'
-                      }
-                    >
-                      {row.values[c.key] || '-'}
-                    </div>
-                  ))}
+                  {columns.map((c) =>
+                    c.key === 'capacity' ? (
+                      <div key={c.key} className="flex items-center gap-2.5">
+                        <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
+                        <span className="text-lg font-black text-slate-900">{row.values[c.key] || '—'}</span>
+                      </div>
+                    ) : (
+                      <div
+                        key={c.key}
+                        dir={isPrice(c.key) ? 'ltr' : undefined}
+                        className={
+                          isPrice(c.key)
+                            ? `text-start text-lg font-extrabold tracking-tight ${
+                                c.key === 'priceWithInverter' ? 'text-orange-600' : 'text-slate-900'
+                              }`
+                            : 'text-sm leading-relaxed text-slate-600'
+                        }
+                      >
+                        {row.values[c.key] || '—'}
+                      </div>
+                    ),
+                  )}
                 </div>
               ))}
             </div>
 
-            {/* Footer */}
-            <div className="mt-8 flex items-end justify-between text-sm font-bold text-slate-800">
-              <div className="space-y-1 text-left">
-                <p dir="ltr">📞 {PHONE}</p>
-                <p dir="ltr">{WEBSITE}</p>
+            {/* Footer: where we are, and the door */}
+            <div className="mt-8 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
+              <div className="leading-relaxed">
+                <p className="text-base font-bold text-slate-900">{ADDRESS}</p>
+                <p className="text-sm text-slate-500">
+                  للاستفسار والتركيب: <span dir="ltr" className="font-bold text-slate-700">{PHONE}</span> ·{' '}
+                  <span className="font-bold text-brand-700">{WEBSITE}</span>
+                </p>
               </div>
-              <div className="text-left leading-snug">
-                <p>العنوان : {ADDRESS}</p>
-              </div>
+              <span className="rounded-full bg-brand-600 px-9 py-4 text-base font-bold text-white">
+                اطلب عرض سعر
+              </span>
             </div>
           </div>
         </div>
-
-        {saveError && (
-          <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-800">
-            {saveError}
-          </p>
-        )}
 
         <p className="mt-4 text-center text-sm text-slate-500">
           Prices are managed from the admin dashboard. Tap “Download PDF” to save or share this sheet.
