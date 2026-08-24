@@ -27,11 +27,15 @@ const pt = (u: number, v: number): [number, number] => [
 ];
 /** Screen point → (u,v), by inverting the 2×2 basis. det = UxVy − VxUy. */
 const DET = 9492;
-const uv = (x: number, y: number): [number, number] => {
+const uvRaw = (x: number, y: number): [number, number] => {
   const dx = x - O[0];
   const dy = y - O[1];
+  return [(42 * dx - 116 * dy) / DET, (42 * dx + 110 * dy) / DET];
+};
+const uv = (x: number, y: number): [number, number] => {
   const cl = (n: number) => Math.max(0.05, Math.min(0.95, n));
-  return [cl((42 * dx - 116 * dy) / DET), cl((42 * dx + 110 * dy) / DET)];
+  const [ru, rv] = uvRaw(x, y);
+  return [cl(ru), cl(rv)];
 };
 
 interface Slot {
@@ -79,6 +83,7 @@ export default function SolarSceneLite() {
     timers: [] as number[],
     pos: [0, 0] as [number, number],
     raf: 0,
+    flight: 0,
   });
 
   const later = (fn: () => void, ms: number) => {
@@ -119,6 +124,56 @@ export default function SolarSceneLite() {
         if (t < 1 && s.walking) s.raf = requestAnimationFrame(step);
       };
       s.raf = requestAnimationFrame(step);
+    }
+
+    function fly(to: [number, number], ms: number, arc: number, token: number) {
+      cancelAnimationFrame(s.raf);
+      const from: [number, number] = [...s.pos];
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - t0) / ms);
+        const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+        const y = from[1] + (to[1] - from[1]) * e - Math.sin(Math.PI * t) * arc;
+        place(from[0] + (to[0] - from[0]) * e, y);
+        if (t < 1 && s.flight === token) s.raf = requestAnimationFrame(step);
+      };
+      s.raf = requestAnimationFrame(step);
+    }
+
+    // Dropped off the roof: he falls to the ground, has a moment, and
+    // springs back up to his corner of the roof.
+    function tumble(x: number) {
+      s.busy = true;
+      const gx = Math.max(30, Math.min(370, x));
+      worker!.classList.add('alw-fall');
+      fly([gx, 224], reduced ? 1 : 420, 0, ++s.flight);
+      later(
+        () => {
+          cancelAnimationFrame(s.raf);
+          place(gx, 224);
+          worker!.classList.remove('alw-fall');
+        },
+        reduced ? 10 : 440,
+      );
+      later(
+        () => {
+          const home = pt(0.86, 0.2);
+          face(home[0]);
+          worker!.classList.add('alw-jump');
+          fly(home, reduced ? 1 : 760, 62, ++s.flight);
+          later(
+            () => {
+              cancelAnimationFrame(s.raf);
+              worker!.classList.remove('alw-jump');
+              const home2 = pt(0.86, 0.2);
+              place(home2[0], home2[1]);
+              s.busy = false;
+            },
+            reduced ? 20 : 790,
+          );
+        },
+        reduced ? 20 : 900,
+      );
     }
 
     function face(towardX: number) {
@@ -239,15 +294,18 @@ export default function SolarSceneLite() {
     function onMove(e: PointerEvent) {
       if (!s.dragging) return;
       const [x, y] = toSvg(e);
-      const [pu, pv] = uv(x, y);
-      const p = pt(pu, pv);
-      place(p[0], p[1]);
+      place(Math.max(14, Math.min(386, x)), Math.max(34, Math.min(236, y)));
     }
     function onUp(e: PointerEvent) {
       if (!s.dragging) return;
       s.dragging = false;
       worker!.classList.remove('alw-drag');
       const [x, y] = toSvg(e);
+      const [ru, rv] = uvRaw(x, y);
+      if (ru < -0.08 || ru > 1.08 || rv < -0.08 || rv > 1.08) {
+        tumble(x);
+        return;
+      }
       const [pu, pv] = uv(x, y);
       let best = -1;
       let bd = Infinity;
@@ -259,6 +317,8 @@ export default function SolarSceneLite() {
           best = k;
         }
       });
+      const foot = pt(pu, pv);
+      place(foot[0], foot[1]);
       if (best >= 0) walkTo(best);
     }
 
@@ -357,6 +417,14 @@ export default function SolarSceneLite() {
                 <g className="alw-torso">
                   <rect x="-6" y="-23" width="12" height="14" rx="3" fill="#f97316" />
                   <rect x="-6" y="-23" width="12" height="5" rx="2.5" fill="#fb923c" />
+                  <g className="alw-arm alw-arm-l">
+                    <rect x="-9.4" y="-22" width="3.2" height="5.5" rx="1.5" fill="#fb923c" />
+                    <rect x="-9" y="-17.5" width="2.6" height="6" rx="1.2" fill="#eab88e" />
+                  </g>
+                  <g className="alw-arm alw-arm-r">
+                    <rect x="6.2" y="-22" width="3.2" height="5.5" rx="1.5" fill="#fb923c" />
+                    <rect x="6.4" y="-17.5" width="2.6" height="6" rx="1.2" fill="#eab88e" />
+                  </g>
                   <circle cx="0" cy="-27.5" r="4.6" fill="#eab88e" />
                   <path d="M-6,-29.5 a6,5 0 0 1 12,0 Z" fill="#facc15" />
                   <rect x="-7" y="-30" width="14" height="2.2" rx="1.1" fill="#eab308" />
