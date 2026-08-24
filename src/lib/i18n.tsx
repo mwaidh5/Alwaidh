@@ -943,6 +943,9 @@ const AR: Record<string, string> = {
   'Wholesale': 'بالجملة',
   'Or call the showroom directly.': 'أو اتصل بالصالة مباشرة.',
   'Tell us about the site, the load, or the spec you need.': 'أخبرنا عن الموقع أو حجم الأحمال أو المواصفات التي تريدها.',
+  'Panels, inverters and batteries for clean, reliable power — sized, installed and serviced by us.': 'ألواح وإنفرترات وبطاريات لطاقة نظيفة وموثوقة — نحدّد الحجم ونركّب ونصون بأنفسنا.',
+  'Professional IP and analog cameras and NVRs.': 'كاميرات IP وتناظرية احترافية وأجهزة NVR.',
+  'Laptops, desktops and workstations for work and play.': 'حاسبات محمولة ومكتبية ومحطات عمل للعمل واللعب.',
 };
 
 interface LanguageValue {

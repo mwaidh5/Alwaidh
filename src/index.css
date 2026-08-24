@@ -18,6 +18,14 @@
   font-display: swap;
 }
 
+/* The hero banner's shade: dark on the wording side, clear on the photo. */
+.hero-shade {
+  background: linear-gradient(to right, rgba(2, 6, 23, 0.9) 0%, rgba(2, 6, 23, 0.6) 34%, rgba(2, 6, 23, 0.15) 62%, rgba(2, 6, 23, 0) 82%);
+}
+[dir='rtl'] .hero-shade {
+  background: linear-gradient(to left, rgba(2, 6, 23, 0.9) 0%, rgba(2, 6, 23, 0.6) 34%, rgba(2, 6, 23, 0.15) 62%, rgba(2, 6, 23, 0) 82%);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
