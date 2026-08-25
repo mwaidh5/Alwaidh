@@ -244,7 +244,13 @@ export default function SolarPrices() {
                         className="flex items-start justify-between gap-3 border-b border-dashed border-slate-200 py-2.5 last:border-b-0"
                       >
                         <dt className="text-[13px] text-slate-400">{k}</dt>
-                        <dd className="max-w-[12rem] text-end text-[13px] font-bold leading-relaxed text-slate-800">{v}</dd>
+                        <dd
+                          dir="ltr"
+                          style={{ unicodeBidi: 'isolate' }}
+                          className="max-w-[12rem] text-end text-[13px] font-bold leading-relaxed text-slate-800"
+                        >
+                          {v}
+                        </dd>
                       </div>
                     ))}
                   </dl>
