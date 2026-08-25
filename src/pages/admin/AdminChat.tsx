@@ -230,7 +230,7 @@ export default function AdminChat() {
                           m.from === 'staff' ? 'text-brand-100' : 'text-slate-400'
                         }`}
                       >
-                        {m.from === 'staff' && m.by ? `${m.by.split('@')[0]} · ` : ''}
+                        {m.from === 'staff' && (m.byName || m.by) ? `${m.byName || m.by.split('@')[0]} · ` : ''}
                         {timeText(m.atMs)}
                       </p>
                     </div>

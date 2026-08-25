@@ -133,7 +133,7 @@ export default function ChatWidget() {
                       m.from === 'guest' ? 'text-brand-100' : 'text-slate-400'
                     }`}
                   >
-                    {m.from === 'staff' ? `${t('Support')} · ` : ''}
+                    {m.from === 'staff' ? `${m.byName || m.by.split('@')[0] || t('Support')} · ` : ''}
                     {timeText(m.atMs)}
                   </p>
                 </div>
