@@ -10,7 +10,7 @@ import {
   type AppUser,
 } from '../../lib/userStore';
 import { ADMIN_EMAILS } from '../../firebase';
-import { loadSettings, saveSettings, type SiteSettings } from '../../lib/settingsStore';
+import { loadSettings, saveSettings, updateSettingsField, type SiteSettings } from '../../lib/settingsStore';
 
 const ROLES: AppUser['role'][] = [
   'admin',
@@ -454,6 +454,16 @@ export default function AdminUsers() {
                         </>
                       )}
                     </div>
+                    {effectiveRole(u.email, settings) === 'installer' && (
+                      <CrewEditor
+                        leader={u.email.toLowerCase()}
+                        settings={settings}
+                        nameOf={(e) =>
+                          users?.find((x) => x.email.toLowerCase() === e)?.displayName || e
+                        }
+                        onSaved={(next) => setSettings(next)}
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(u.lastSeenAt).toLocaleDateString('en-GB')}
@@ -487,6 +497,82 @@ export default function AdminUsers() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Which installers ride with this one. Ticking anyone makes them a team
+ * leader; a leader can put their own crew on a job from the job editor.
+ */
+function CrewEditor({
+  leader,
+  settings,
+  nameOf,
+  onSaved,
+}: {
+  leader: string;
+  settings: SiteSettings | null;
+  nameOf: (email: string) => string;
+  onSaved: (next: SiteSettings) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busyEmail, setBusyEmail] = useState('');
+  const others = (settings?.installerEmails ?? []).filter((e) => e !== leader);
+  const leaders = settings?.installerLeaders ?? {};
+  const crew = leaders[leader] ?? [];
+  if (!settings || others.length === 0) return null;
+
+  async function toggle(member: string) {
+    const next = crew.includes(member) ? crew.filter((e) => e !== member) : [...crew, member];
+    const map = { ...leaders };
+    if (next.length) map[leader] = next;
+    else delete map[leader];
+    setBusyEmail(member);
+    try {
+      await updateSettingsField('installerLeaders', map);
+      onSaved({ ...settings!, installerLeaders: map });
+    } finally {
+      setBusyEmail('');
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
+          crew.length
+            ? 'bg-amber-50 text-amber-800 ring-amber-200'
+            : 'bg-slate-50 text-slate-500 ring-slate-200'
+        }`}
+      >
+        {crew.length ? `\u{1F477} Team leader \u00B7 ${crew.length} crew` : '\u{1F477} Make team leader\u2026'}
+      </button>
+      {open && (
+        <div className="mt-2 max-w-xs space-y-0.5 rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+          <p className="px-1 pb-1 text-[11px] text-slate-500">
+            Installers under {nameOf(leader)} — the leader can put them on his own jobs from the job
+            editor.
+          </p>
+          {others.map((e) => (
+            <label
+              key={e}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50"
+            >
+              <input
+                type="checkbox"
+                checked={crew.includes(e)}
+                disabled={busyEmail === e}
+                onChange={() => toggle(e)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-600"
+              />
+              <span className="truncate">{nameOf(e)}</span>
+            </label>
+          ))}
         </div>
       )}
     </div>
