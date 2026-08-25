@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -168,4 +169,14 @@ export async function deleteOrder(id: string): Promise<void> {
     return;
   }
   writeLocal(readLocal().filter((o) => o.id !== id));
+}
+
+/** One order by id — the tracking page's read. */
+export async function getOrder(id: string): Promise<Order | null> {
+  const database = db;
+  if (!database) {
+    return readLocal().find((o) => o.id === id) ?? null;
+  }
+  const snap = await getDoc(doc(database, COLLECTION, id));
+  return snap.exists() ? normalize(snap.data() as Record<string, unknown>, snap.id) : null;
 }

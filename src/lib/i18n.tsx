@@ -999,6 +999,23 @@ const AR: Record<string, string> = {
     'مرحباً! أرغب بالاستفسار عن منظومة {system} — ممكن التفاصيل والسعر؟',
   'Hi! I am interested in the {system} installment system on a {years}-year plan — could you give me the details?':
     'مرحباً! أرغب بالاستفسار عن منظومة التقسيط {system} بخطة {years} سنوات — ممكن التفاصيل؟',
+  'Order tracking': 'تتبع الطلب',
+  'Hello': 'مرحباً',
+  'Order reference': 'رقم الطلب',
+  'Order not found': 'الطلب غير موجود',
+  'Check the link from your confirmation email, or ask us in the chat.': 'تأكد من الرابط في رسالة التأكيد، أو اسألنا في المحادثة.',
+  'This order was cancelled. If that is a surprise, talk to us and we will sort it out.':
+    'تم إلغاء هذا الطلب. إذا كان ذلك مفاجئاً لك، تحدث إلينا وسنحل الأمر.',
+  'Order received': 'تم استلام الطلب',
+  'Payment confirmed': 'تم تأكيد الدفع',
+  'On its way': 'في الطريق',
+  'Delivered': 'تم التوصيل',
+  'Your items': 'طلباتك',
+  'Ask about this order': 'استفسر عن هذا الطلب',
+  'Hi! I would like to ask about my order {ref}.': 'مرحباً! أرغب بالاستفسار عن طلبي رقم {ref}.',
+  'Track your order': 'تتبع طلبك',
+  "We'll be in touch shortly to confirm payment & shipping. A confirmation email with your tracking link is on its way.":
+    'سنتواصل معك قريباً لتأكيد الدفع والتوصيل. أرسلنا لك رسالة تأكيد فيها رابط تتبع الطلب.',
 };
 
 interface LanguageValue {

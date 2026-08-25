@@ -47,10 +47,17 @@ export default function Cart() {
         <p className="mt-2 text-slate-600">
           Order reference: <span className="font-mono">{confirmation.id.slice(0, 8)}</span>
         </p>
-        <p className="mt-1 text-slate-600">We'll be in touch shortly to confirm payment & shipping.</p>
-        <Link to="/shop" className="btn-primary mt-6 inline-flex">
-          {t('Continue shopping')}
-        </Link>
+        <p className="mt-1 text-slate-600">
+          {t("We'll be in touch shortly to confirm payment & shipping. A confirmation email with your tracking link is on its way.")}
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link to={`/track/${confirmation.id}`} className="btn-primary inline-flex">
+            {t('Track your order')}
+          </Link>
+          <Link to="/shop" className="btn-secondary inline-flex">
+            {t('Continue shopping')}
+          </Link>
+        </div>
       </div>
     );
   }

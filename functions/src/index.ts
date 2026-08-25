@@ -16,7 +16,7 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
-import { buildEmail, type EmailKind } from './emails';
+import { buildEmail, buildOrderEmail, type EmailKind } from './emails';
 
 initializeApp();
 
@@ -420,3 +420,55 @@ export const serveFile = onRequest({ invoker: 'public' }, async (req, res) => {
     })
     .pipe(res);
 });
+
+/**
+ * The buyer's receipt: sent once, when the order document lands. The
+ * tracking link is the order's own unguessable id — the same capability
+ * the confirmation screen shows. A failed send only logs: the order
+ * itself is already safely in the database.
+ */
+export const emailOrderConfirmation = onDocumentCreated(
+  { document: 'orders/{orderId}', secrets: [SMTP_PASSWORD] },
+  async (event) => {
+    const order = event.data?.data();
+    if (!order) return;
+    const to = String(order.customerEmail ?? '').trim();
+    if (!to || !to.includes('@')) return;
+    const lines = Array.isArray(order.lines)
+      ? (order.lines as { name?: unknown; quantity?: unknown; price?: unknown }[]).map((l) => ({
+          name: String(l.name ?? ''),
+          quantity: Number(l.quantity ?? 1),
+          price: Number(l.price ?? 0),
+        }))
+      : [];
+    const { subject, html, text } = buildOrderEmail(
+      {
+        id: event.params.orderId,
+        customerName: String(order.customerName ?? ''),
+        lines,
+        subtotal: Number(order.subtotal ?? 0),
+        currency: String(order.currency ?? 'IQD'),
+      },
+      `${SITE}/track/${event.params.orderId}`,
+    );
+    const transport = createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASSWORD.value() },
+    });
+    try {
+      await transport.sendMail({
+        from: `"Alwaidh" <${SMTP_USER}>`,
+        to,
+        replyTo: SMTP_REPLY_TO || undefined,
+        subject,
+        html,
+        text,
+      });
+      logger.info(`order confirmation sent to ${to} for ${event.params.orderId}`);
+    } catch (e) {
+      logger.error('order confirmation failed:', e);
+    }
+  },
+);
