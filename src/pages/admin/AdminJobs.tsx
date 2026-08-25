@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   closestCorners,
   DndContext,
@@ -140,6 +141,24 @@ export default function AdminJobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  // The mouse wheel pans the board sideways. A native listener, because
+  // React attaches wheel handlers passively and preventDefault would be
+  // ignored — the page would scroll as well.
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (el.scrollWidth - el.clientWidth <= 0) return;
+      const before = el.scrollLeft;
+      el.scrollLeft += e.deltaY;
+      if (el.scrollLeft !== before) e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -460,8 +479,40 @@ export default function AdminJobs() {
           />
 
           {/* Trello-style board: columns keep a readable width and the board
-              scrolls sideways instead of squeezing the cards. */}
-          <div className="-mx-1 hidden snap-x gap-4 overflow-x-auto px-1 pb-3 sm:flex">
+              scrolls sideways instead of squeezing the cards. The mouse
+              wheel pans it sideways, and empty board space drags like a
+              hand tool — nobody should have to hunt the scrollbar. */}
+          <div
+            ref={boardRef}
+            onMouseDown={(e) => {
+              const el = boardRef.current;
+              if (!el || e.button !== 0) return;
+              // Dragging a card, button or link must keep meaning that.
+              const t = e.target as HTMLElement;
+              if (t.closest('button, a, input, textarea, select, [draggable="true"]')) return;
+              const startX = e.clientX;
+              const startLeft = el.scrollLeft;
+              let moved = false;
+              const onMove = (ev: MouseEvent) => {
+                const dx = ev.clientX - startX;
+                if (Math.abs(dx) > 4) moved = true;
+                if (moved) {
+                  el.scrollLeft = startLeft - dx;
+                  el.style.cursor = 'grabbing';
+                  el.style.userSelect = 'none';
+                }
+              };
+              const onUp = () => {
+                el.style.cursor = '';
+                el.style.userSelect = '';
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+              };
+              window.addEventListener('mousemove', onMove);
+              window.addEventListener('mouseup', onUp);
+            }}
+            className="-mx-1 hidden gap-4 overflow-x-auto px-1 pb-3 sm:flex"
+          >
             {JOB_STATUSES.map((col) => (
               <div
                 key={col.key}
@@ -553,8 +604,8 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -629,7 +680,7 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 /**
@@ -1120,8 +1171,8 @@ function JobDetailsModal({
   // Only the link someone actually saved: a search built from the written
   // address sends drivers wherever Google guesses, which isn't navigation.
   const gmaps = job.mapUrl.trim();
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -1224,7 +1275,7 @@ function JobDetailsModal({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
@@ -1277,8 +1328,8 @@ function JobDialog({
       : [...state.installerEmails, email];
     setState({ ...state, installerEmails: next, installer: next.map(installerName).join(', ') });
   }
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
           <h2 className="font-bold text-slate-900">{state.id ? t('Edit job') : t('New job')}</h2>
@@ -1422,7 +1473,7 @@ function JobDialog({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 /**
@@ -1578,7 +1629,7 @@ function InvoiceField({
 function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
   useScrollLock();
   const { t } = useLang();
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
       <div
         className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white"
@@ -1611,7 +1662,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
         />
       </div>
     </div>
-  );
+  , document.body);
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
