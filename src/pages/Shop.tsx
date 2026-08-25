@@ -85,7 +85,16 @@ export default function Shop() {
   }
   const [selectedBrands, setSelectedBrands] = useState<string[]>(restored?.brands ?? []);
   const [inStockOnly, setInStockOnly] = useState(restored?.inStock ?? false);
-  const [query, setQuery] = useState(restored?.query ?? '');
+  const [query, setQuery] = useState(params.get('q') ?? restored?.query ?? '');
+  // Arriving with a new ?q= (say, from the navbar search) applies it.
+  const paramQ = params.get('q') ?? '';
+  useEffect(() => {
+    if (paramQ) {
+      setQuery(paramQ);
+      setPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramQ]);
   const [sort, setSort] = useState<SortKey>(restored?.sort ?? 'featured');
   const [view, setView] = useState<ViewMode>(restored?.view ?? 'grid');
   const [page, setPage] = useState(restored?.page ?? 1);
