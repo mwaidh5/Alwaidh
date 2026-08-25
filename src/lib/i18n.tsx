@@ -55,7 +55,7 @@ const AR: Record<string, string> = {
   'View all →': 'عرض الكل →',
   'New Season': 'موسم جديد',
   Collection: 'تشكيلة',
-  Computers: 'الحواسيب',
+  Computers: 'الحاسبات',
   'Solar Energy': 'الطاقة الشمسية',
   'Tiandy Cameras': 'كاميرات تياندي',
   'Security Cameras': 'كاميرات المراقبة',
@@ -93,7 +93,7 @@ const AR: Record<string, string> = {
   'Fresh in store': 'وصل حديثاً',
   'Latest Collection': 'أحدث التشكيلات',
   'Real help sizing solar systems, PCs, and CCTV — before and after you buy.':
-    'مساعدة حقيقية في اختيار أنظمة الطاقة والحواسيب والمراقبة — قبل الشراء وبعده.',
+    'مساعدة حقيقية في اختيار أنظمة الطاقة والحاسبات والمراقبة — قبل الشراء وبعده.',
 
   // ---- Homepage ----
   'New arrivals': 'وصل حديثاً',
@@ -114,7 +114,7 @@ const AR: Record<string, string> = {
     'ألواح وإنفرترات وبطاريات بمقاسات تناسب بيتك أو محلك. كشف موقعي مجاني وتركيب بفريقنا.',
   'IP cameras, NVRs and full-site coverage from an authorised Tiandy reseller.':
     'كاميرات IP وأجهزة تسجيل وتغطية كاملة للموقع من موزّع تياندي المعتمد.',
-  'Shop computers': 'تسوّق الحواسيب',
+  'Shop computers': 'تسوّق الحاسبات',
   'Talk to us': 'تحدث إلينا',
   'Get a free solar quote': 'احصل على عرض سعر مجاني',
   'See the price sheet': 'اطّلع على قائمة الأسعار',
@@ -660,7 +660,7 @@ const AR: Record<string, string> = {
   'Show a maintenance banner; checkout will be disabled.':
     'إظهار شريط الصيانة؛ سيتم تعطيل الشراء.',
   'Group products inside a category — for example Laptops, Desktops and Printers under Computers. One per line; staff pick from these when editing a product, and shoppers can filter by them.':
-    'قسّم المنتجات داخل الفئة — مثل اللابتوبات والحواسيب المكتبية والطابعات ضمن الحواسيب. واحدة في كل سطر؛ يختار منها الموظفون عند تعديل المنتج، ويستطيع الزبائن التصفية بها.',
+    'قسّم المنتجات داخل الفئة — مثل اللابتوبات والحاسبات المكتبية والطابعات ضمن الحاسبات. واحدة في كل سطر؛ يختار منها الموظفون عند تعديل المنتج، ويستطيع الزبائن التصفية بها.',
   'Replace the main images used across the website. Changes go live as soon as you save.':
     'استبدل الصور الرئيسية المستخدمة في الموقع. تظهر التغييرات فور الحفظ.',
   'Reset all settings to defaults?': 'إعادة كل الإعدادات إلى الوضع الافتراضي؟',
