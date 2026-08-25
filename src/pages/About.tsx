@@ -7,8 +7,8 @@ import { useLang } from '../lib/i18n';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
-const PHONE = '+964 770 539 7778';
-const EMAIL = 'info@alwaidhcomputers.com';
+const PHONE = '+964 774 420 5582';
+const EMAIL = 'support@alwaidh.com';
 
 /* The three identities, exactly as the canvas lays them out. Images come
    from the homepage banner settings, falling back to the same stock
