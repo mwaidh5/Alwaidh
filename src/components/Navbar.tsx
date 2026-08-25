@@ -205,11 +205,15 @@ export default function Navbar() {
                   )}
                 </div>
                 <Link
-                  to="/shop"
+                  to={
+                    searchQuery.trim()
+                      ? `/shop?q=${encodeURIComponent(searchQuery.trim())}`
+                      : '/shop'
+                  }
                   onClick={closeSearch}
                   className="mt-2 block rounded-md border-t border-slate-100 px-1 pt-3 text-center text-sm font-semibold text-brand-700 hover:underline"
                 >
-                  Browse all products →
+                  {searchQuery.trim() ? t('See everything matching your search') : t('Browse all products')} →
                 </Link>
               </div>
             )}

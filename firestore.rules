@@ -113,6 +113,12 @@ service cloud.firestore {
       allow write: if isAdmin() || isSolarStaff();
     }
 
+    // The Central Bank initiative installment systems — same keepers.
+    match /solarInstallments/{id} {
+      allow read: if true;
+      allow write: if isAdmin() || isSolarStaff();
+    }
+
     // Live chat with site visitors. A conversation's id is a random UUID
     // minted in the visitor's browser — knowing it is what grants access,
     // like an order confirmation link — so single-document reads and writes

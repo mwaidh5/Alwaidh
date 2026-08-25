@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import { subscribePriceRows, SEED_PRICE_ROWS, type PriceRow } from '../lib/solarPricesStore';
+import {
+  subscribeInstallmentRows,
+  SEED_INSTALLMENT_ROWS,
+  planTotal,
+  planMonthly,
+  cashPrice,
+  FULL_YEARS,
+  type InstallmentRow,
+} from '../lib/solarInstallmentsStore';
 import { useSettings } from '../lib/useSettings';
 import { saveFile } from '../lib/savePdf';
 import { openChat } from '../lib/chatPanel';
@@ -53,13 +62,20 @@ export default function SolarPrices() {
   const columnLabel = (c: { key: string; label: string }) =>
     en ? (EN_COLUMN_LABELS[c.key] ?? c.label) : c.label;
   const [live, setLive] = useState<PriceRow[]>([]);
+  const [instLive, setInstLive] = useState<InstallmentRow[]>([]);
+  // Which price list is showing, and how long the payment plan runs.
+  const [mode, setMode] = useState<'cash' | 'plan'>('cash');
+  const [years, setYears] = useState(FULL_YEARS);
   const [downloading, setDownloading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const settings = useSettings();
   const columns = settings.solarPriceColumns;
 
   useEffect(() => subscribePriceRows(setLive), []);
+  useEffect(() => subscribeInstallmentRows(setInstLive), []);
   const rows = live.length ? live : SEED_PRICE_ROWS;
+  const instRows = instLive.length ? instLive : SEED_INSTALLMENT_ROWS;
+  const money = (n: number) => n.toLocaleString('en-GB');
 
   async function downloadPdf() {
     const el = document.getElementById('price-sheet');
@@ -150,10 +166,129 @@ export default function SolarPrices() {
             <button type="button" onClick={downloadPdf} disabled={downloading} className="btn-secondary">
               {downloading ? t('Preparing…') : `⬇ ${t('Download PDF')}`}
             </button>
+            <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
+              {(
+                [
+                  { key: 'cash', label: 'Cash prices' },
+                  { key: 'plan', label: 'Installments' },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setMode(o.key)}
+                  className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
+                    mode === o.key ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500'
+                  }`}
+                >
+                  {t(o.label)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* ---- installments: the Central Bank initiative systems ---- */}
+        {mode === 'plan' && (
+          <div>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-bold text-slate-700">{t('Central Bank initiative — pay monthly')}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="me-1 text-xs font-semibold text-slate-500">{t('Plan length')}</span>
+                {Array.from({ length: FULL_YEARS }, (_, i) => i + 1).map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setYears(y)}
+                    className={`h-9 w-9 rounded-full text-sm font-bold transition ${
+                      years === y
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:ring-brand-300'
+                    }`}
+                  >
+                    {y}
+                  </button>
+                ))}
+                <span className="ms-1 text-xs font-semibold text-slate-500">
+                  {t(years === 1 ? 'year' : 'years')}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {instRows.map((row) => (
+                <article
+                  key={row.id}
+                  className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10"
+                >
+                  <div className="flex items-baseline gap-1.5">
+                    <span dir="ltr" className="text-4xl font-extrabold leading-none tracking-tight text-slate-900">
+                      {row.sizeAmp}
+                    </span>
+                    <span className="text-lg font-bold text-slate-700">{t('Amp')}</span>
+                    <span dir="ltr" className="ms-auto rounded-full bg-brand-50 px-3 py-1 text-xs font-extrabold text-brand-700">
+                      {row.sizeKw} KW
+                    </span>
+                  </div>
+                  <dl>
+                    {(
+                      [
+                        [t('Inverter'), `${row.inverterKw} KW IP65`],
+                        [t('Panels'), `${row.panelsCount} × Jinko 650W — ${row.panelsKwp} KWP`],
+                        [t('Batteries'), `${row.batteryKwh} KWh ${localize(row.batteryLabel)}`],
+                        [t('Backup hours'), `${row.backupHours} ${t('hours')}`],
+                      ] as [string, string][]
+                    ).map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="flex items-start justify-between gap-3 border-b border-dashed border-slate-200 py-2.5 last:border-b-0"
+                      >
+                        <dt className="text-[13px] text-slate-400">{k}</dt>
+                        <dd className="max-w-[12rem] text-end text-[13px] font-bold leading-relaxed text-slate-800">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-4">
+                    <div className="flex items-baseline gap-1.5">
+                      <span dir="ltr" className="text-[26px] font-extrabold tracking-tight text-brand-600">
+                        {money(planMonthly(row.price7, years))}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400">
+                        {t('IQD')} / {t('monthly')}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {t('Total price')}:{' '}
+                      <span dir="ltr" className="font-extrabold text-slate-800">
+                        {money(planTotal(row.price7, years))}
+                      </span>{' '}
+                      · {t('Cash price')}:{' '}
+                      <span dir="ltr" className="font-bold text-slate-600">
+                        {money(cashPrice(row.price7))}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={openChat}
+                      className="mt-2 w-full rounded-full border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-900 transition hover:border-brand-600 hover:bg-brand-600 hover:text-white"
+                    >
+                      {t('Ask about this system')}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <p className="mt-5 text-center text-xs leading-relaxed text-slate-500">
+              {t(
+                'Prices include installation and commissioning. IP65 inverter with internet monitoring and a 5-year warranty; 16 KWh IP20 lithium batteries, 8000 cycles, 5-year warranty; Jinko 650W panels with a 15-year warranty.',
+              )}
+            </p>
+          </div>
+        )}
+
         {/* ---- the system cards, every screen size ---- */}
+        {mode === 'cash' && (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => {
             const cap = splitCapacity(localize(row.values['capacity'] ?? ''));
@@ -227,6 +362,8 @@ export default function SolarPrices() {
             );
           })}
         </div>
+
+        )}
 
         {/* ---- the design's slim footer line ---- */}
         <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5 text-[13px] text-slate-500">
