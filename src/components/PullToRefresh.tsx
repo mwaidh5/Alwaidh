@@ -1,10 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
+import { useAnyModalOpen } from '../lib/useScrollLock';
 
-/** How far to pull before letting go does anything. */
-const THRESHOLD = 72;
+/** How far to pull before letting go does anything. Deliberately steep:
+    with the damping below it takes roughly a two-thirds-of-the-screen
+    drag, because an accidental refresh costs far more than a second
+    tug ever will. */
+const THRESHOLD = 110;
 /** Past this the rubber band stops giving, so it never feels broken. */
-const MAX = 110;
+const MAX = 150;
+
+/** True when the touch began inside something that scrolls on its own —
+    a pop-up, a picker, a sideways strip. Dragging those must never read
+    as pulling the page. */
+function insideScrollable(target: EventTarget | null): boolean {
+  let el = target instanceof Element ? target : null;
+  while (el && el !== document.body) {
+    const style = getComputedStyle(el);
+    if (
+      (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) ||
+      (/(auto|scroll)/.test(style.overflowX) && el.scrollWidth > el.clientWidth)
+    ) {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
 
 /**
  * Pull down at the top of a page to reload it — the gesture people already
@@ -21,16 +43,27 @@ export default function PullToRefresh() {
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const start = useRef<number | null>(null);
+  // While a pop-up is open (adding a job, editing a product), its inner
+  // scrolling was being read as a pull — the gesture is simply off then.
+  const modalOpen = useAnyModalOpen();
 
   useEffect(() => {
+    if (modalOpen) {
+      start.current = null;
+      setPull(0);
+      return;
+    }
     // Only where the gesture belongs: a mouse has a scrollbar and a
     // keyboard, and desktop browsers don't do this.
     if (!window.matchMedia('(pointer: coarse)').matches) return;
 
     function onStart(e: TouchEvent) {
-      // Only from a standing start at the very top, and only one finger —
-      // a pinch-zoom must not be read as a pull.
-      start.current = window.scrollY <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null;
+      // Only from a standing start at the very top, one finger, and not
+      // inside anything that scrolls by itself.
+      start.current =
+        window.scrollY <= 0 && e.touches.length === 1 && !insideScrollable(e.target)
+          ? e.touches[0].clientY
+          : null;
     }
 
     function onMove(e: TouchEvent) {
@@ -43,7 +76,7 @@ export default function PullToRefresh() {
         return;
       }
       // Resistance: the further it goes the less it gives.
-      setPull(Math.min(MAX, delta * 0.5));
+      setPull(Math.min(MAX, delta * 0.4));
     }
 
     function onEnd() {
@@ -70,7 +103,7 @@ export default function PullToRefresh() {
       window.removeEventListener('touchend', onEnd);
       window.removeEventListener('touchcancel', onEnd);
     };
-  }, [refreshing]);
+  }, [refreshing, modalOpen]);
 
   if (pull <= 0 && !refreshing) return null;
 
