@@ -132,6 +132,7 @@ export default function AdminJobs() {
   // Which jobs have changed since this device last opened them.
   const seen = useSeenJobs(user?.email ?? null);
   const [installerEmails, setInstallerEmails] = useState<string[] | null>(null);
+  const [installerLeaders, setInstallerLeaders] = useState<Record<string, string[]>>({});
   // A field installer sees only the jobs assigned to them. They can work
   // those jobs fully — edit, move, comment — but adding, reassigning and
   // deleting stay with the office. Read the list here rather than from the
@@ -177,7 +178,19 @@ export default function AdminJobs() {
   const [typeFilter, setTypeFilter] = useState<'all' | JobType>('all');
   const [trashOpen, setTrashOpen] = useState(false);
 
-  useEffect(() => subscribeSettings((s) => setInstallerEmails(s.installerEmails ?? [])), []);
+  useEffect(
+    () =>
+      subscribeSettings((s) => {
+        setInstallerEmails(s.installerEmails ?? []);
+        setInstallerLeaders(s.installerLeaders ?? {});
+      }),
+    [],
+  );
+  // A field installer who leads a crew may put that crew on their own
+  // jobs (and take them off) — nobody else, and never themselves off.
+  const myCrew = myEmail ? (installerLeaders[myEmail] ?? []) : [];
+  const leaderPool =
+    installerOnly && myCrew.length > 0 ? [...new Set([myEmail, ...myCrew])] : null;
 
   // Real names for the installer picker. Only admins may list the user
   // accounts, so this is best-effort: without it the picker falls back to
@@ -549,6 +562,17 @@ export default function AdminJobs() {
           installerEmails={installerEmails ?? []}
           installerNames={installerNames}
           canAssign={!installerOnly}
+          assignPool={leaderPool}
+          assignLocked={
+            leaderPool && editing
+              ? [
+                  ...new Set([
+                    myEmail,
+                    ...editing.installerEmails.filter((e) => !leaderPool.includes(e)),
+                  ]),
+                ]
+              : []
+          }
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
@@ -1294,6 +1318,8 @@ function JobDialog({
   installerEmails,
   installerNames,
   canAssign,
+  assignPool,
+  assignLocked,
   busy,
   onCancel,
   onSave,
@@ -1305,6 +1331,10 @@ function JobDialog({
   installerNames: Record<string, string>;
   /** Installers may edit their job but not hand it to someone else. */
   canAssign: boolean;
+  /** A crew-leader installer may still assign from this pool. */
+  assignPool?: string[] | null;
+  /** Shown but untogglable — people this editor may not remove. */
+  assignLocked?: string[];
   busy: boolean;
   onCancel: () => void;
   onSave: () => void;
@@ -1315,14 +1345,14 @@ function JobDialog({
   const installerName = (email: string) => installerNames[email] || prettyHandle(email);
   // Keep whoever is on the job listed even if their role was changed later,
   // so saving doesn't quietly unassign them.
-  const options = [
-    ...installerEmails,
-    ...state.installerEmails.filter((e) => !installerEmails.includes(e)),
-  ];
+  const pool = canAssign ? installerEmails : (assignPool ?? []);
+  const options = [...pool, ...state.installerEmails.filter((e) => !pool.includes(e))];
+  const locked = canAssign ? [] : (assignLocked ?? []);
   const keepsOldName = !state.installerEmails.length && !!state.installer.trim();
 
   /** Tick or untick one installer; the card's name line follows along. */
   function toggleInstaller(email: string) {
+    if (locked.includes(email)) return;
     const next = state.installerEmails.includes(email)
       ? state.installerEmails.filter((e) => e !== email)
       : [...state.installerEmails, email];
@@ -1415,7 +1445,7 @@ function JobDialog({
               />
             </Field>
             <Field label="Installers">
-              {!canAssign ? (
+              {!canAssign && !assignPool ? (
                 <p className="input bg-slate-50 text-slate-600">
                   {state.installer || 'Unassigned'}
                 </p>
@@ -1424,6 +1454,7 @@ function JobDialog({
                   options={options}
                   selected={state.installerEmails}
                   nameOf={installerName}
+                  locked={locked}
                   onToggle={toggleInstaller}
                 />
               ) : (
@@ -1485,11 +1516,14 @@ function InstallerPicker({
   selected,
   nameOf,
   onToggle,
+  locked = [],
 }: {
   options: string[];
   selected: string[];
   nameOf: (email: string) => string;
   onToggle: (email: string) => void;
+  /** Shown but not togglable — people this editor may not remove. */
+  locked?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const label = selected.length ? selected.map(nameOf).join(', ') : 'Unassigned';
@@ -1509,11 +1543,14 @@ function InstallerPicker({
           {options.map((email) => (
             <label
               key={email}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50"
+              className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm ${
+                locked.includes(email) ? 'opacity-60' : 'cursor-pointer hover:bg-slate-50'
+              }`}
             >
               <input
                 type="checkbox"
                 checked={selected.includes(email)}
+                disabled={locked.includes(email)}
                 onChange={() => onToggle(email)}
                 className="h-4 w-4 rounded border-slate-300 text-brand-600"
               />

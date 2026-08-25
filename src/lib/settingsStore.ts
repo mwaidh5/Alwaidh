@@ -155,6 +155,8 @@ export interface SiteSettings {
   shopManagerEmails: string[];
   /** Field installers: they only see the jobs assigned to them. */
   installerEmails: string[];
+  /** Installer team leads: leader email -> the installers under them. */
+  installerLeaders: Record<string, string[]>;
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -195,6 +197,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   solarStaffEmails: [],
   shopManagerEmails: [],
   installerEmails: [],
+  installerLeaders: {},
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
@@ -272,6 +275,15 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     installerEmails: Array.isArray(data.installerEmails)
       ? (data.installerEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.installerEmails,
+    installerLeaders:
+      data.installerLeaders && typeof data.installerLeaders === 'object'
+        ? Object.fromEntries(
+            Object.entries(data.installerLeaders as Record<string, unknown>).map(([k, v]) => [
+              k.toLowerCase(),
+              Array.isArray(v) ? v.map((e) => String(e).toLowerCase()) : [],
+            ]),
+          )
+        : DEFAULT_SETTINGS.installerLeaders,
     categoryLogos:
       data.categoryLogos && typeof data.categoryLogos === 'object'
         ? (data.categoryLogos as Record<string, string>)
@@ -389,6 +401,11 @@ export async function saveSettings(s: SiteSettings): Promise<void> {
     solarStaffEmails: cleanEmails(s.solarStaffEmails),
     shopManagerEmails: cleanEmails(s.shopManagerEmails),
     installerEmails: cleanEmails(s.installerEmails),
+    installerLeaders: Object.fromEntries(
+      Object.entries(s.installerLeaders ?? {})
+        .map(([k, v]) => [k.trim().toLowerCase(), cleanEmails(v)] as [string, string[]])
+        .filter(([, v]) => v.length > 0),
+    ),
   };
   if (database) {
     await setDoc(doc(database, SINGLETON_PATH[0], SINGLETON_PATH[1]), normalized, { merge: true });
