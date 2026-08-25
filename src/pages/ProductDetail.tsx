@@ -7,6 +7,7 @@ import { publicUrl, shareLink } from '../lib/share';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { pName, pDesc, specLabel } from '../lib/localizeProduct';
+import { brandedFileUrl } from '../lib/brandedFiles';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
 import PdfView from '../components/PdfView';
@@ -186,7 +187,7 @@ export default function ProductDetail() {
           {product.manual && (
             <div className="mt-6">
               <a
-                href={product.manual}
+                href={brandedFileUrl(product.manual)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-secondary inline-flex items-center gap-2"

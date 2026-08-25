@@ -8,6 +8,13 @@
     ],
     "rewrites": [
       {
+        "source": "/f/**",
+        "function": {
+          "functionId": "serveFile",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

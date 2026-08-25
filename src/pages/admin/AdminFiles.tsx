@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { brandedFileUrl } from '../../lib/brandedFiles';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
 import { useScrollLock } from '../../lib/useScrollLock';
@@ -62,7 +63,7 @@ export default function AdminFiles() {
 
   async function copyLink(item: LibraryFile) {
     try {
-      await navigator.clipboard.writeText(item.url);
+      await navigator.clipboard.writeText(brandedFileUrl(item.url));
       setCopied(item.id);
       setTimeout(() => setCopied(''), 1500);
     } catch {
