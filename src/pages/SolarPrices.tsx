@@ -562,7 +562,7 @@ export default function SolarPrices() {
                   `${t('Total price')} (${years} ${t(years === 1 ? 'year' : 'years')})`,
                   t('Monthly payment'),
                 ].map((h) => (
-                  <div key={h} className="text-sm font-extrabold text-white">
+                  <div key={h} className="text-center text-sm font-extrabold text-white">
                     {h}
                   </div>
                 ))}
@@ -573,26 +573,26 @@ export default function SolarPrices() {
                   className="grid items-center gap-3 border-b border-slate-200 bg-white px-6 py-5 last:border-b-0"
                   style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-center gap-2.5">
                     <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
                     <span dir="ltr" className="text-base font-black text-slate-900">
                       {row.sizeKw} KW / {row.sizeAmp} A
                     </span>
                   </div>
-                  <div dir="ltr" className="text-start text-sm text-slate-600">{row.inverterKw} KW IP65</div>
-                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-sm text-slate-600">{row.inverterKw} KW IP65</div>
+                  <div dir="ltr" className="text-center text-sm text-slate-600">
                     {row.panelsCount} × 650W ({row.panelsKwp} KWP)
                   </div>
-                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-sm text-slate-600">
                     {row.batteryKwh} KWh {localize(row.batteryLabel)}
                   </div>
-                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-sm text-slate-600">
                     {row.backupHours} {t('hours')}
                   </div>
-                  <div dir="ltr" className="text-start text-lg font-extrabold tracking-tight text-slate-900">
+                  <div dir="ltr" className="text-center text-lg font-extrabold tracking-tight text-slate-900">
                     {money(planTotal(row.price7, years))}
                   </div>
-                  <div dir="ltr" className="text-start text-lg font-extrabold tracking-tight text-brand-600">
+                  <div dir="ltr" className="text-center text-lg font-extrabold tracking-tight text-brand-600">
                     {money(planMonthly(row.price7, years))}
                   </div>
                 </div>
