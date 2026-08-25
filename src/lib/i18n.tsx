@@ -993,6 +993,8 @@ const AR: Record<string, string> = {
   'The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.':
     'الألواح المستخدمة من نوع Jinko (اللوح رقم واحد عالمياً) بقدرة 650 واط وبضمان 15 سنة.',
   'AC cabling is included up to 20 metres; any extra length is charged.': 'كيبلات التيار المتناوب (AC) مشمولة حتى طول 20 متراً، وأي زيادة تكون مقابل ثمن.',
+  'Every plan is calculated from the published 7-year total.':
+    'كل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
 };
 
 interface LanguageValue {

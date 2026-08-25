@@ -5,7 +5,6 @@ import {
   SEED_INSTALLMENT_ROWS,
   planTotal,
   planMonthly,
-  cashPrice,
   FULL_YEARS,
   type InstallmentRow,
 } from '../lib/solarInstallmentsStore';
@@ -272,10 +271,6 @@ export default function SolarPrices() {
                       {t('Total price')}:{' '}
                       <span dir="ltr" className="font-extrabold text-slate-800">
                         {money(planTotal(row.price7, years))}
-                      </span>{' '}
-                      · {t('Cash price')}:{' '}
-                      <span dir="ltr" className="font-bold text-slate-600">
-                        {money(cashPrice(row.price7))}
                       </span>
                     </div>
                     <button
@@ -515,21 +510,11 @@ export default function SolarPrices() {
             }}
             className="mx-auto w-[1240px] max-w-none bg-white p-12 text-slate-900"
           >
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
-                  ⚡ {t('Installments')}
-                </span>
-                <h2 className="mb-2 mt-3 text-4xl font-black text-slate-900">
-                  {t('Installment systems — Central Bank initiative')}
-                </h2>
-                <p className="text-base leading-relaxed text-slate-500">
-                  {t('Plan length')}: <span dir="ltr" className="font-bold text-slate-700">{years}</span>{' '}
-                  {t(years === 1 ? 'year' : 'years')} · {t('Cash prices')}{' '}
-                  {t('and every plan derive from the published 7-year total.')}
-                </p>
-              </div>
-              <div className="flex flex-none items-center gap-4 pt-1">
+            <div className="flex items-center justify-between gap-6">
+              <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
+                ⚡ {t('Installments')}
+              </span>
+              <div className="flex flex-none items-center gap-4">
                 {settings.solarLogo ? (
                   <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
                 ) : (
@@ -541,6 +526,14 @@ export default function SolarPrices() {
                 {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
               </div>
             </div>
+            <h2 className="mb-2 mt-5 text-4xl font-black leading-snug text-slate-900">
+              {t('Installment systems — Central Bank initiative')}
+            </h2>
+            <p className="text-base leading-relaxed text-slate-500">
+              {t('Plan length')}: <span dir="ltr" className="font-bold text-slate-700">{years}</span>{' '}
+              {t(years === 1 ? 'year' : 'years')} ·{' '}
+              {t('Every plan is calculated from the published 7-year total.')}
+            </p>
 
             <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
               <div
