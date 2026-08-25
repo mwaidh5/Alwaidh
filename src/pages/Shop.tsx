@@ -9,6 +9,7 @@ import StarRating from '../components/StarRating';
 import { StaffProductEdit } from '../components/ProductEditor';
 import { useLang } from '../lib/i18n';
 import { pName, pDesc } from '../lib/localizeProduct';
+import { useSeo } from '../lib/seo';
 
 type SortKey = 'featured' | 'price-asc' | 'price-desc' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -56,6 +57,17 @@ function readView(): ShopView | null {
 
 export default function Shop() {
   const { lang } = useLang();
+  useSeo({
+    title:
+      lang === 'ar'
+        ? 'المتجر — حاسبات، طاقة شمسية وكاميرات مراقبة | الواعظ Alwaidh'
+        : 'Shop — Computers, Solar & Security Cameras | Alwaidh Iraq',
+    description:
+      lang === 'ar'
+        ? 'تسوق حاسبات ولابتوبات، انفيرترات وألواح وبطاريات طاقة شمسية، وكاميرات مراقبة Tiandy — أسعار واضحة وتوصيل داخل العراق.'
+        : 'Shop laptops and computers, solar inverters, panels and batteries, and Tiandy security cameras — clear prices and delivery across Iraq.',
+    path: '/shop',
+  });
   const { products, loading } = useProducts();
   const { add } = useCart();
 

@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { pName, pDesc, specLabel } from '../lib/localizeProduct';
 import { brandedFileUrl } from '../lib/brandedFiles';
+import { useSeo } from '../lib/seo';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
 import PdfView from '../components/PdfView';
@@ -19,6 +20,35 @@ export default function ProductDetail() {
   const product = products.find((p) => p.id === id);
   const { add } = useCart();
   const { t, lang } = useLang();
+
+  useSeo({
+    title: product
+      ? `${pName(product, lang)} — ${lang === 'ar' ? 'الواعظ' : 'Alwaidh'}`
+      : 'Alwaidh',
+    description: product ? pDesc(product, lang) || pName(product, lang) : undefined,
+    path: product ? `/product/${product.id}` : undefined,
+    image: product?.image || undefined,
+    type: 'product',
+    jsonLd: product
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: pName(product, lang),
+          image: product.images?.length ? product.images : product.image,
+          description: pDesc(product, lang) || undefined,
+          brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+          offers: {
+            '@type': 'Offer',
+            price: product.price,
+            priceCurrency: product.currency || 'IQD',
+            availability: product.inStock
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+            url: `https://alwaidh.com/product/${product.id}`,
+          },
+        }
+      : undefined,
+  });
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(0);

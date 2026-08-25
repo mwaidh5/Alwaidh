@@ -4,6 +4,7 @@ import { submitContact, storageMode } from '../lib/contactSubmissions';
 import { allBrands } from '../data/brands';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
+import { useSeo, organizationJsonLd } from '../lib/seo';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -109,7 +110,7 @@ export default function About() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [errorMsg, setErrorMsg] = useState('');
   const settings = useSettings();
 
@@ -150,6 +151,19 @@ export default function About() {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to send your message. Please try again.');
     }
   }
+
+  useSeo({
+    title:
+      lang === 'ar'
+        ? 'من نحن — شركة الواعظ للحاسبات والطاقة الشمسية، بغداد | Alwaidh'
+        : 'About Alwaidh — Computers, Solar & Cameras in Baghdad since 1992',
+    description:
+      lang === 'ar'
+        ? 'شركة الواعظ للتكنولوجيا في بغداد منذ 1992: حاسبات، منظومات طاقة شمسية وكاميرات مراقبة — ثلاث صالات عرض ومختبر صيانة خاص وتوصيل لكل المحافظات.'
+        : 'Al-Waidh Technology, Baghdad, since 1992: computers, solar energy systems and security cameras — three showrooms, an in-house service lab, delivery to every province.',
+    path: '/about',
+    jsonLd: organizationJsonLd(),
+  });
 
   const mode = storageMode();
 

@@ -45,6 +45,7 @@ export default function MobileDrawer() {
     { to: '/', label: 'Home', icon: <HomeIcon /> },
     { to: '/shop', label: 'Shop', icon: <ShopIcon /> },
     { to: '/solar-prices', label: 'Solar Prices', icon: <SunIcon /> },
+    { to: '/blog', label: 'Articles', icon: <span className="text-base">📝</span> },
     { to: '/cart', label: 'Cart', icon: <CartIcon />, badge: itemCount },
     ...(hasAdminAccess
       ? [{ to: '/admin', label: isAdmin ? 'Admin' : 'Dashboard', icon: <GridIcon /> }]

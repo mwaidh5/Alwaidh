@@ -15,6 +15,7 @@ const navLinks = [
   { to: '/', label: 'Home', end: true },
   { to: '/shop', label: 'Shop' },
   { to: '/solar-prices', label: 'Solar Prices' },
+  { to: '/blog', label: 'Articles' },
   { to: '/about', label: 'About' },
 ];
 

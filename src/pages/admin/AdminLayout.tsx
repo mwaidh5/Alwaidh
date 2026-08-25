@@ -42,6 +42,7 @@ const navItems: (NavItem & { access: Access })[] = [
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
   { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar', group: 'Shop' },
   { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin', group: 'Shop' },
+  { to: '/admin/blog', label: 'Blog', icon: '📝', access: 'products', group: 'Shop' },
   { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff', group: 'Team' },
   { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team', group: 'Team' },
   { to: '/admin/files', label: 'Files', icon: '📁', access: 'team', group: 'Team' },
