@@ -442,6 +442,27 @@ export default function Home() {
 }
 
 /** A tile's whole card is the link; it may point anywhere. */
+/** The brand chip pinned to a tile photo's top corner — the logo lives
+    on a white pad so it reads on any picture, and stays put whatever the
+    photo's crop does. */
+function TileLogo({ logo, small }: { logo: string; small?: boolean }) {
+  if (!logo) return null;
+  return (
+    <span
+      className={`absolute top-2.5 rounded-lg bg-white/95 shadow-sm ltr:left-2.5 rtl:right-2.5 ${
+        small ? 'p-1' : 'p-1.5'
+      }`}
+    >
+      <img
+        src={logo}
+        alt=""
+        loading="lazy"
+        className={`w-auto object-contain ${small ? 'h-6 max-w-[5.5rem]' : 'h-8 max-w-[8rem]'}`}
+      />
+    </span>
+  );
+}
+
 /** The canvas's big promo card: photo on top, wording and the dark
     quote pill on white below. */
 function BigTileCard({ tile, img, tall }: { tile: PromoTile; img: string; tall?: boolean }) {
@@ -459,6 +480,7 @@ function BigTileCard({ tile, img, tall }: { tile: PromoTile; img: string; tall?:
           loading="lazy"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
+        <TileLogo logo={tile.logo} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 p-5 sm:p-6">
         <div className="min-w-0 flex-1">
@@ -498,6 +520,7 @@ function SplitTileCard({ tile, img }: { tile: PromoTile; img: string }) {
           loading="lazy"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
+        <TileLogo logo={tile.logo} small />
       </div>
       <div className="flex min-w-0 flex-col justify-center gap-1 p-4 sm:gap-1.5 sm:p-6">
         <div className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: flavour.color }}>

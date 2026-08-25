@@ -314,6 +314,7 @@ export default function AdminSettings() {
                 ...(settings.promoTiles ?? []),
                 {
                   image: '',
+                  logo: '',
                   title: 'New tile',
                   buttonLabel: 'Explore now',
                   buttonLink: '/shop',
@@ -797,6 +798,11 @@ function PromoTileEditor({
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+            {tile.logo && (
+              <span className="absolute left-3 top-3 rounded-lg bg-white/95 p-1.5 shadow-sm">
+                <img src={tile.logo} alt="" className="h-7 w-auto max-w-[7rem] object-contain" />
+              </span>
+            )}
             <div className="absolute inset-0 flex flex-col justify-end gap-2 p-5">
               <p className="text-lg font-extrabold" style={{ color: tile.textColor }}>
                 {tile.title || t('Untitled')}
@@ -818,6 +824,24 @@ function PromoTileEditor({
             folder="site"
             onChange={(url) => set('image', url)}
           />
+          <p className="mt-1 text-xs text-slate-500">
+            {t(
+              'Best sizes: about 1200 × 520 for the big solar tile, about 600 × 500 for the two side tiles. The photo fills the box, so anything extra is cropped from the edges.',
+            )}
+          </p>
+          <div className="mt-3">
+            <ImageField
+              label="Logo on the photo (top corner — optional)"
+              value={tile.logo}
+              folder="site"
+              onChange={(url) => set('logo', url)}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              {t(
+                'Shown in a small white chip pinned to the top corner of the photo, so use a clean photo without a logo baked in. A wide transparent PNG works best.',
+              )}
+            </p>
+          </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Field label="Title">

@@ -89,6 +89,8 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
 /** One of the smaller tiles under the main banner. */
 export interface PromoTile {
   image: string;
+  /** Shown in a white chip pinned to the photo's top corner. */
+  logo: string;
   title: string;
   buttonLabel: string;
   buttonLink: string;
@@ -101,6 +103,7 @@ export interface PromoTile {
 export const DEFAULT_PROMO_TILES: PromoTile[] = [
   {
     image: '',
+    logo: '',
     title: 'Computers',
     buttonLabel: 'Explore now',
     buttonLink: '/shop?category=computers',
@@ -109,6 +112,7 @@ export const DEFAULT_PROMO_TILES: PromoTile[] = [
   },
   {
     image: '',
+    logo: '',
     title: 'Solar Energy',
     buttonLabel: 'Explore now',
     buttonLink: '/shop?category=solar',
@@ -117,6 +121,7 @@ export const DEFAULT_PROMO_TILES: PromoTile[] = [
   },
   {
     image: '',
+    logo: '',
     title: 'Tiandy Cameras',
     buttonLabel: 'Explore now',
     buttonLink: '/shop?category=tiandy-cameras',
@@ -307,6 +312,7 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     promoTiles: Array.isArray(data.promoTiles)
       ? (data.promoTiles as Record<string, unknown>[]).map((tile) => ({
           image: String(tile.image ?? ''),
+          logo: String(tile.logo ?? ''),
           title: String(tile.title ?? ''),
           buttonLabel: String(tile.buttonLabel ?? ''),
           buttonLink: String(tile.buttonLink ?? ''),

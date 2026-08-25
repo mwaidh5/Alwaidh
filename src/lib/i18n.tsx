@@ -953,6 +953,11 @@ const AR: Record<string, string> = {
   'About page — Computers photo': 'صفحة من نحن — صورة الحاسبات',
   'About page — Solar photo': 'صفحة من نحن — صورة الطاقة الشمسية',
   'About page — Cameras photo': 'صفحة من نحن — صورة الكاميرات',
+  'Best sizes: about 1200 × 520 for the big solar tile, about 600 × 500 for the two side tiles. The photo fills the box, so anything extra is cropped from the edges.':
+    'أفضل الأحجام: حوالي 1200 × 520 للبطاقة الشمسية الكبيرة، وحوالي 600 × 500 للبطاقتين الجانبيتين. الصورة تملأ الإطار، وما يزيد يُقص من الأطراف.',
+  'Logo on the photo (top corner — optional)': 'الشعار على الصورة (الزاوية العلوية — اختياري)',
+  'Shown in a small white chip pinned to the top corner of the photo, so use a clean photo without a logo baked in. A wide transparent PNG works best.':
+    'يظهر داخل شارة بيضاء صغيرة مثبتة في زاوية الصورة العلوية، لذا استخدم صورة نظيفة بدون شعار مطبوع فيها. الأفضل ملف PNG عريض بخلفية شفافة.',
 };
 
 interface LanguageValue {
