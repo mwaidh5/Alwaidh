@@ -269,6 +269,13 @@ export async function addTeamMembers(chatId: string, emails: string[]): Promise<
   await setDoc(doc(database, COLLECTION, chatId), { members: next, isGroup: true }, { merge: true });
 }
 
+/** Rename a group. */
+export async function renameTeamChat(chatId: string, name: string): Promise<void> {
+  const database = db;
+  if (!database) return;
+  await setDoc(doc(database, COLLECTION, chatId), { name: name.trim(), isGroup: true }, { merge: true });
+}
+
 /** Delete a conversation (its creator, or an admin). */
 export async function deleteTeamChat(chatId: string): Promise<void> {
   const database = db;

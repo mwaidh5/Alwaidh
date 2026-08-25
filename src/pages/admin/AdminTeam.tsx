@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   createTeamChat,
+  addTeamMembers,
+  renameTeamChat,
   deleteTeamChat,
   hasUnread,
   markTeamRead,
@@ -51,6 +53,7 @@ export default function AdminTeam() {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [productPicker, setProductPicker] = useState(false);
   const [jobPicker, setJobPicker] = useState(false);
   const [attachedProduct, setAttachedProduct] = useState<ProductCard | null>(null);
@@ -237,16 +240,43 @@ export default function AdminTeam() {
                     </p>
                   </div>
                 </div>
-                {(isAdmin || active.createdBy === me) && (
+                <div className="flex flex-none items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => removeChat(active)}
-                    title={t('Delete conversation')}
-                    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => setAddOpen(true)}
+                    title={t('Add people')}
+                    className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                   >
-                    🗑️
+                    ➕👤
                   </button>
-                )}
+                  {active.isGroup && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = prompt(t('Group name'), active.name);
+                        if (next !== null && next.trim()) {
+                          renameTeamChat(active.id, next).catch((e) =>
+                            setError(e instanceof Error ? e.message : 'Could not rename.'),
+                          );
+                        }
+                      }}
+                      title={t('Rename group')}
+                      className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                  {(isAdmin || active.createdBy === me) && (
+                    <button
+                      type="button"
+                      onClick={() => removeChat(active)}
+                      title={t('Delete conversation')}
+                      className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div ref={scroller} className="flex-1 space-y-2 overflow-y-auto bg-slate-50 p-4">
@@ -382,6 +412,22 @@ export default function AdminTeam() {
         </div>
       </div>
 
+      {addOpen && active && (
+        <NewChatDialog
+          title={t('Add people')}
+          confirmLabel={t('Add to conversation')}
+          staff={staff.filter((p) => p.email !== me && !active.members.includes(p.email))}
+          onClose={() => setAddOpen(false)}
+          onCreate={async (emails) => {
+            try {
+              await addTeamMembers(active.id, emails);
+              setAddOpen(false);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not add them.');
+            }
+          }}
+        />
+      )}
       {newOpen && (
         <NewChatDialog
           staff={staff.filter((p) => p.email !== me)}
@@ -447,10 +493,15 @@ function NewChatDialog({
   staff,
   onClose,
   onCreate,
+  title,
+  confirmLabel,
 }: {
   staff: { email: string; name: string; role: string }[];
   onClose: () => void;
   onCreate: (emails: string[], name: string) => void;
+  /** Reused as the "add people" picker: these override its words. */
+  title?: string;
+  confirmLabel?: string;
 }) {
   const { t } = useLang();
   const [picked, setPicked] = useState<string[]>([]);
@@ -466,7 +517,7 @@ function NewChatDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-          <h2 className="font-bold text-slate-900">{t('New chat')}</h2>
+          <h2 className="font-bold text-slate-900">{title ?? t('New chat')}</h2>
           <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
             ✕
           </button>
@@ -498,7 +549,7 @@ function NewChatDialog({
             ))
           )}
         </div>
-        {picked.length > 1 && (
+        {picked.length > 1 && !confirmLabel && (
           <div className="border-t border-slate-100 px-5 py-3">
             <input
               value={name}
@@ -518,7 +569,7 @@ function NewChatDialog({
             disabled={picked.length === 0}
             className="btn-primary disabled:opacity-50"
           >
-            {picked.length > 1 ? t('Create group') : t('Start chat')}
+            {confirmLabel ?? (picked.length > 1 ? t('Create group') : t('Start chat'))}
           </button>
         </div>
       </div>
