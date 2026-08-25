@@ -198,14 +198,14 @@ export default function SolarPrices() {
           <div>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-bold text-slate-700">{t('Central Bank initiative — pay monthly')}</p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="me-1 text-xs font-semibold text-slate-500">{t('Plan length')}</span>
                 {Array.from({ length: FULL_YEARS }, (_, i) => i + 1).map((y) => (
                   <button
                     key={y}
                     type="button"
                     onClick={() => setYears(y)}
-                    className={`h-9 w-9 rounded-full text-sm font-bold transition ${
+                    className={`h-8 w-8 rounded-full text-[13px] font-bold transition sm:h-9 sm:w-9 sm:text-sm ${
                       years === y
                         ? 'bg-brand-600 text-white shadow-sm'
                         : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:ring-brand-300'
