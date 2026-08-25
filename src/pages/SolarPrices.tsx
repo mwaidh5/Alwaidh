@@ -31,6 +31,8 @@ const EN_PHRASES: Array<[RegExp, string]> = [
   [/ثلاث بطاريات ليثيوم/g, '3× lithium batteries'],
   [/بطاريتين ليثيوم/g, '2× lithium batteries'],
   [/بطاريتين حامضية/g, '2× acid batteries'],
+  [/بطارية واحدة/g, 'one battery'],
+  [/ثلاث بطاريات/g, '3 batteries'],
   [/بطاريات ليثيوم/g, 'lithium batteries'],
   [/بطارية ليثيوم/g, 'lithium battery'],
   [/بطاريتين/g, '2 batteries'],
@@ -78,7 +80,7 @@ export default function SolarPrices() {
   const money = (n: number) => n.toLocaleString('en-GB');
 
   async function downloadPdf() {
-    const el = document.getElementById('price-sheet');
+    const el = document.getElementById(mode === 'plan' ? 'installments-sheet' : 'price-sheet');
     if (!el) return;
     setDownloading(true);
     setSaveError('');
@@ -100,7 +102,10 @@ export default function SolarPrices() {
       pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
       // Not pdf.save(): that is an <a download> click, which a web view
       // has nothing to catch — in the app the button did nothing at all.
-      const result = await saveFile(pdf.output('blob'), 'alwaidh-solar-prices.pdf');
+      const result = await saveFile(
+        pdf.output('blob'),
+        mode === 'plan' ? 'alwaidh-solar-installments.pdf' : 'alwaidh-solar-prices.pdf',
+      );
       if (result === 'failed') {
         setSaveError('Could not save the file on this device. Open alwaidh.com in a browser to download it.');
       }
@@ -482,6 +487,133 @@ export default function SolarPrices() {
 
             {/* Footer: where we are — the door stays on the website */}
             <div className="mt-8 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
+              <div className="leading-relaxed">
+                <p className="text-base font-bold text-slate-900">{en ? ADDRESS_EN : ADDRESS}</p>
+                <p className="text-sm text-slate-500">
+                  {t('For enquiries and installation:')}{' '}
+                  <span dir="ltr" className="font-bold text-slate-700">
+                    {PHONE}
+                  </span>{' '}
+                  · <span className="font-bold text-brand-700">{WEBSITE}</span>
+                </p>
+              </div>
+              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-12 w-auto opacity-90" />}
+            </div>
+          </div>
+        </div>
+
+        {/* The installments sheet, photographed when the installments
+            view is open. Same rules as its sibling: parked off-screen,
+            no letter-spacing, digits pinned LTR. */}
+        <div aria-hidden className="fixed -left-[9999px] top-0">
+          <div
+            id="installments-sheet"
+            dir={en ? 'ltr' : 'rtl'}
+            style={{
+              fontFamily: en ? "'Inter', system-ui, sans-serif" : "'Janna LT', 'Tajawal', sans-serif",
+              letterSpacing: 0,
+            }}
+            className="mx-auto w-[1240px] max-w-none bg-white p-12 text-slate-900"
+          >
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
+                  ⚡ {t('Installments')}
+                </span>
+                <h2 className="mb-2 mt-3 text-4xl font-black text-slate-900">
+                  {t('Installment systems — Central Bank initiative')}
+                </h2>
+                <p className="text-base leading-relaxed text-slate-500">
+                  {t('Plan length')}: <span dir="ltr" className="font-bold text-slate-700">{years}</span>{' '}
+                  {t(years === 1 ? 'year' : 'years')} · {t('Cash prices')}{' '}
+                  {t('and every plan derive from the published 7-year total.')}
+                </p>
+              </div>
+              <div className="flex flex-none items-center gap-4 pt-1">
+                {settings.solarLogo ? (
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
+                ) : (
+                  <div dir="ltr" className="text-start leading-tight">
+                    <p className="text-xl font-black text-slate-900">SolarMax®</p>
+                    <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
+                  </div>
+                )}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
+              </div>
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
+              <div
+                className="grid items-center gap-3 bg-brand-600 px-6 py-4"
+                style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+              >
+                {[
+                  t('System'),
+                  t('Inverter'),
+                  t('Panels'),
+                  t('Batteries'),
+                  t('Backup hours'),
+                  `${t('Total price')} (${years} ${t(years === 1 ? 'year' : 'years')})`,
+                  t('Monthly payment'),
+                ].map((h) => (
+                  <div key={h} className="text-sm font-extrabold text-white">
+                    {h}
+                  </div>
+                ))}
+              </div>
+              {instRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="grid items-center gap-3 border-b border-slate-200 bg-white px-6 py-5 last:border-b-0"
+                  style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
+                    <span dir="ltr" className="text-base font-black text-slate-900">
+                      {row.sizeKw} KW / {row.sizeAmp} A
+                    </span>
+                  </div>
+                  <div dir="ltr" className="text-start text-sm text-slate-600">{row.inverterKw} KW IP65</div>
+                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                    {row.panelsCount} × 650W ({row.panelsKwp} KWP)
+                  </div>
+                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                    {row.batteryKwh} KWh {localize(row.batteryLabel)}
+                  </div>
+                  <div dir="ltr" className="text-start text-sm text-slate-600">
+                    {row.backupHours} {t('hours')}
+                  </div>
+                  <div dir="ltr" className="text-start text-lg font-extrabold tracking-tight text-slate-900">
+                    {money(planTotal(row.price7, years))}
+                  </div>
+                  <div dir="ltr" className="text-start text-lg font-extrabold tracking-tight text-brand-600">
+                    {money(planMonthly(row.price7, years))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-7 rounded-2xl bg-slate-50 p-6">
+              <p className="mb-2 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
+              {/* Hand-drawn bullets: html2canvas puts list markers on the
+                  wrong side in RTL. */}
+              <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-600">
+                {[
+                  t('These prices include installation and commissioning; installation costs can vary by 10% depending on the site.'),
+                  t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
+                  t('The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.'),
+                  t('The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.'),
+                  t('AC cabling is included up to 20 metres; any extra length is charged.'),
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-600" />
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-7 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
               <div className="leading-relaxed">
                 <p className="text-base font-bold text-slate-900">{en ? ADDRESS_EN : ADDRESS}</p>
                 <p className="text-sm text-slate-500">

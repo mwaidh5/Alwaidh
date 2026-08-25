@@ -980,6 +980,19 @@ const AR: Record<string, string> = {
   'Add to conversation': 'أضفهم إلى المحادثة',
   'Rename group': 'إعادة تسمية المجموعة',
   'Group name': 'اسم المجموعة',
+  'Installment systems — Central Bank initiative': 'منظومات التقسيط — مبادرة البنك المركزي',
+  'and every plan derive from the published 7-year total.': 'وكل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
+  'System': 'المنظومة',
+  'Monthly payment': 'القسط الشهري',
+  'These prices include installation and commissioning; installation costs can vary by 10% depending on the site.':
+    'هذه الأسعار تتضمن تكاليف التنصيب والتشغيل للمنظومة، ويمكن لتكاليف النصب أن تتغير بنسبة 10% حسب مكان التنصيب.',
+  'The inverter is IP65-rated with internet monitoring and a 5-year warranty.':
+    'الانفيرتر المستخدم من فئة IP65 ويحتوي على خاصية المراقبة عن طريق الإنترنت وبضمان 5 سنوات.',
+  'The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.':
+    'البطاريات المستخدمة من فئة IP20 سعة 16 كيلو واط بعدد 8000 دورة شحن وتفريغ وبعمق تفريغ 90% وبضمان 5 سنوات.',
+  'The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.':
+    'الألواح المستخدمة من نوع Jinko (اللوح رقم واحد عالمياً) بقدرة 650 واط وبضمان 15 سنة.',
+  'AC cabling is included up to 20 metres; any extra length is charged.': 'كيبلات التيار المتناوب (AC) مشمولة حتى طول 20 متراً، وأي زيادة تكون مقابل ثمن.',
 };
 
 interface LanguageValue {
