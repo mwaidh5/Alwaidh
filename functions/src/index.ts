@@ -6,7 +6,7 @@
  * the web app). Topics avoid storing and expiring device tokens.
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
@@ -14,6 +14,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
 import { buildEmail, type EmailKind } from './emails';
 
@@ -371,4 +372,50 @@ export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD] }, async (requ
   }
   logger.info(`sent ${kind} email to ${email}`);
   return { ok: true };
+});
+
+/**
+ * Serves Storage files under the site's own address: alwaidh.com/f/<path>
+ * instead of the firebasestorage URL with its token soup. Only the
+ * folders whose files are meant to leave the building are reachable —
+ * the library, product sheets and site imagery, all of which are
+ * publicly readable through token URLs anyway. Clean .pdf-ending links
+ * with inline Content-Disposition also give messaging apps something
+ * they can preview.
+ */
+const SERVABLE_PREFIXES = ['library/', 'products/', 'site/'];
+
+export const serveFile = onRequest({ invoker: 'public' }, async (req, res) => {
+  const raw = req.path.replace(/^\/f\//, '').replace(/^\/+/, '');
+  let path = '';
+  try {
+    path = decodeURIComponent(raw);
+  } catch {
+    res.status(400).send('Bad path');
+    return;
+  }
+  if (!path || path.includes('..') || !SERVABLE_PREFIXES.some((p) => path.startsWith(p))) {
+    res.status(404).send('Not found');
+    return;
+  }
+  const file = getStorage().bucket('alwaidh-baeb5.firebasestorage.app').file(path);
+  const [exists] = await file.exists();
+  if (!exists) {
+    res.status(404).send('Not found');
+    return;
+  }
+  const [meta] = await file.getMetadata();
+  const filename = path.split('/').pop() ?? 'file';
+  res.setHeader('Content-Type', String(meta.contentType ?? 'application/octet-stream'));
+  res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  if (meta.size) res.setHeader('Content-Length', String(meta.size));
+  file
+    .createReadStream()
+    .on('error', (e) => {
+      logger.error('serveFile stream failed', e);
+      if (!res.headersSent) res.status(500);
+      res.end();
+    })
+    .pipe(res);
 });
