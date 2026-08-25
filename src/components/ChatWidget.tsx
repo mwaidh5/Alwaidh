@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useSettings } from '../lib/useSettings';
 import { useAnyModalOpen } from '../lib/useScrollLock';
-import { setChatUnread, useChatOpenSignal } from '../lib/chatPanel';
+import { consumeChatDraft, setChatUnread, useChatOpenSignal } from '../lib/chatPanel';
 import ChatProductCard from './ChatProductCard';
 
 function timeText(ms: number | null): string {
@@ -41,7 +41,11 @@ export default function ChatWidget() {
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
-    if (openSignal > 0) setOpen(true);
+    if (openSignal > 0) {
+      setOpen(true);
+      const prefilled = consumeChatDraft();
+      if (prefilled) setDraft(prefilled);
+    }
   }, [openSignal]);
 
   useEffect(() => setChatUnread(unread), [unread]);

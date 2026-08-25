@@ -23,10 +23,22 @@ function subscribe(fn: () => void): () => void {
   };
 }
 
-/** Ask the chat panel to open. */
-export function openChat(): void {
+let pendingDraft = '';
+
+/** Ask the chat panel to open, optionally with words already typed in —
+ *  "I'm interested in the 20 Amp system" — so the visitor only has to
+ *  press send. The draft is consumed once. */
+export function openChat(draft = ''): void {
+  pendingDraft = draft;
   openTicks += 1;
   emit();
+}
+
+/** The panel collects the prefilled words, at most once per open. */
+export function consumeChatDraft(): string {
+  const d = pendingDraft;
+  pendingDraft = '';
+  return d;
 }
 
 /** Counts up every time something asks the panel to open; the panel opens

@@ -245,7 +245,7 @@ export default function Home() {
                       )}
                       <button
                         type="button"
-                        onClick={openChat}
+                        onClick={() => openChat()}
                         className="hidden rounded-full bg-white px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-900 transition hover:bg-slate-100 sm:inline-block"
                       >
                         {t('Talk to us')}
