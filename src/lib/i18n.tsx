@@ -976,6 +976,10 @@ const AR: Record<string, string> = {
     'الأسعار تشمل التنصيب والتشغيل. العاكسة فئة IP65 مع مراقبة عبر الإنترنت وضمان 5 سنوات؛ بطاريات ليثيوم IP20 سعة 16 كيلو واط بعدد 8000 دورة وضمان 5 سنوات؛ ألواح Jinko قدرة 650 واط بضمان 15 سنة.',
   'See everything matching your search': 'عرض كل النتائج المطابقة لبحثك',
   'Browse all products': 'تصفح جميع المنتجات',
+  'Add people': 'إضافة أشخاص',
+  'Add to conversation': 'أضفهم إلى المحادثة',
+  'Rename group': 'إعادة تسمية المجموعة',
+  'Group name': 'اسم المجموعة',
 };
 
 interface LanguageValue {
