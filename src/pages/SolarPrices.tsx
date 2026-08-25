@@ -275,7 +275,13 @@ export default function SolarPrices() {
                     </div>
                     <button
                       type="button"
-                      onClick={openChat}
+                      onClick={() =>
+                        openChat(
+                          t('Hi! I am interested in the {system} installment system on a {years}-year plan — could you give me the details?')
+                            .replace('{system}', `${row.sizeKw} KW / ${row.sizeAmp} A`)
+                            .replace('{years}', String(years)),
+                        )
+                      }
                       className="mt-2 w-full rounded-full border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-900 transition hover:border-brand-600 hover:bg-brand-600 hover:text-white"
                     >
                       {t('Ask about this system')}
@@ -358,7 +364,14 @@ export default function SolarPrices() {
                   )}
                   <button
                     type="button"
-                    onClick={openChat}
+                    onClick={() =>
+                      openChat(
+                        t('Hi! I am interested in the {system} system — could you give me the details?').replace(
+                          '{system}',
+                          `${cap.n} ${cap.unit || t('Amp')}`,
+                        ),
+                      )
+                    }
                     className="mt-1.5 w-full rounded-full border border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-900 transition hover:border-brand-600 hover:bg-brand-600 hover:text-white"
                   >
                     {t('Ask about this system')}

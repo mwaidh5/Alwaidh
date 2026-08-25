@@ -995,6 +995,10 @@ const AR: Record<string, string> = {
   'AC cabling is included up to 20 metres; any extra length is charged.': 'كيبلات التيار المتناوب (AC) مشمولة حتى طول 20 متراً، وأي زيادة تكون مقابل ثمن.',
   'Every plan is calculated from the published 7-year total.':
     'كل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
+  'Hi! I am interested in the {system} system — could you give me the details?':
+    'مرحباً! أرغب بالاستفسار عن منظومة {system} — ممكن التفاصيل والسعر؟',
+  'Hi! I am interested in the {system} installment system on a {years}-year plan — could you give me the details?':
+    'مرحباً! أرغب بالاستفسار عن منظومة التقسيط {system} بخطة {years} سنوات — ممكن التفاصيل؟',
 };
 
 interface LanguageValue {
