@@ -1016,6 +1016,16 @@ const AR: Record<string, string> = {
   'Track your order': 'تتبع طلبك',
   "We'll be in touch shortly to confirm payment & shipping. A confirmation email with your tracking link is on its way.":
     'سنتواصل معك قريباً لتأكيد الدفع والتوصيل. أرسلنا لك رسالة تأكيد فيها رابط تتبع الطلب.',
+  'Articles': 'المقالات',
+  'Solar energy, explained properly': 'الطاقة الشمسية، مشروحة بشكل صحيح',
+  'Prices, sizing, inverters, batteries — written by the people who install them across Iraq.':
+    'الأسعار، اختيار الحجم، الانفيرترات، البطاريات — بقلم الفريق الذي يركّبها في عموم العراق.',
+  'Read the article': 'اقرأ المقال',
+  'Articles are on their way — check back soon.': 'المقالات في الطريق — عد قريباً.',
+  'Article not found': 'المقال غير موجود',
+  'All articles': 'جميع المقالات',
+  'Thinking about solar for your home or business?': 'تفكر بالطاقة الشمسية لبيتك أو محلك؟',
+  'See our system prices, or ask us anything — the survey is free.': 'اطلع على أسعار منظوماتنا، أو اسألنا أي شيء — الكشف مجاني.',
 };
 
 interface LanguageValue {

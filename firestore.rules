@@ -116,6 +116,14 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // Blog articles: the world reads what's published; staff see and
+    // write everything, drafts included.
+    match /blogPosts/{id} {
+      allow get, list: if resource.data.published == true
+        || isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+      allow write: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+    }
+
     // Solar system price list: public read; admins and solar staff write.
     match /solarPrices/{id} {
       allow read: if true;

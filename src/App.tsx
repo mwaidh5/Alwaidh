@@ -8,6 +8,8 @@ import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Track from './pages/Track';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
@@ -26,6 +28,7 @@ import AdminSolarPrices from './pages/admin/AdminSolarPrices';
 import AdminMedia from './pages/admin/AdminMedia';
 import AdminChat from './pages/admin/AdminChat';
 import AdminTeam from './pages/admin/AdminTeam';
+import AdminBlog from './pages/admin/AdminBlog';
 import AdminJobs from './pages/admin/AdminJobs';
 import AdminFiles from './pages/admin/AdminFiles';
 import NotFound from './pages/NotFound';
@@ -48,6 +51,8 @@ export default function App() {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
           <Route path="/track/:id" element={<Track />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
@@ -68,6 +73,7 @@ export default function App() {
           <Route path="media" element={<AdminMedia />} />
           <Route path="chat" element={<AdminChat />} />
           <Route path="team" element={<AdminTeam />} />
+          <Route path="blog" element={<AdminBlog />} />
           <Route path="files" element={<AdminFiles />} />
         </Route>
         <Route path="*" element={<NotFound />} />

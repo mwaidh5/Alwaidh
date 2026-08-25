@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /track/
+Disallow: /account
+Disallow: /cart
+
+Sitemap: https://alwaidh.com/sitemap.xml

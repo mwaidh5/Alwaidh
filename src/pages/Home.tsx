@@ -12,6 +12,7 @@ import { formatPrice } from '../lib/format';
 import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
 import type { PromoTile } from '../lib/settingsStore';
+import { useSeo, organizationJsonLd } from '../lib/seo';
 
 const FALLBACK = {
   computers:
@@ -130,6 +131,19 @@ export default function Home() {
   // A second strip further down, so the page shows more of the shop
   // without repeating what's already above it.
   const more = inStock.slice(4, 12);
+
+  useSeo({
+    title:
+      lang === 'ar'
+        ? 'الواعظ للقدرة — منظومات الطاقة الشمسية والحاسبات في العراق | Alwaidh'
+        : 'Alwaidh — Solar Energy Systems, Computers & Tiandy Cameras in Iraq',
+    description:
+      lang === 'ar'
+        ? 'شركة الواعظ في بغداد: منظومات طاقة شمسية كاملة بأسعار معلنة، حاسبات ولابتوبات، وكاميرات مراقبة Tiandy — تجهيز وتركيب وصيانة في عموم العراق منذ 1992.'
+        : 'Alwaidh, Baghdad: complete solar energy systems with published prices, computers and laptops, and Tiandy security cameras — supplied, installed and serviced across Iraq since 1992.',
+    path: '/',
+    jsonLd: organizationJsonLd(),
+  });
 
   // The canvas leads the promo section with the solar tile as the big
   // card; the other tiles become the split rows beside it.

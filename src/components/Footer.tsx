@@ -50,6 +50,7 @@ export default function Footer() {
           <h4 className="font-semibold text-slate-900">{t('Company')}</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
             <li><Link className="hover:text-brand-700" to="/about">{t('About')}</Link></li>
+            <li><Link className="hover:text-brand-700" to="/blog">{t('Articles')}</Link></li>
             <li><Link className="hover:text-brand-700" to="/privacy">{t('Privacy')}</Link></li>
             <li>{t('Terms')}</li>
           </ul>

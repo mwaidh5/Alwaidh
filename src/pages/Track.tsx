@@ -4,6 +4,7 @@ import { getOrder, ORDER_STATUSES, type Order, type OrderStatus } from '../lib/o
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
 import { openChat } from '../lib/chatPanel';
+import { useSeo } from '../lib/seo';
 
 /**
  * Where an order stands, for the person who placed it. The link is a
@@ -22,6 +23,7 @@ export default function Track() {
   const { id = '' } = useParams();
   const { t, lang } = useLang();
   const [order, setOrder] = useState<Order | null | 'missing'>(null);
+  useSeo({ title: 'Order tracking — Alwaidh', noindex: true });
 
   useEffect(() => {
     let cancelled = false;

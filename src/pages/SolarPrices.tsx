@@ -11,6 +11,7 @@ import {
 import { useSettings } from '../lib/useSettings';
 import { saveFile } from '../lib/savePdf';
 import { openChat } from '../lib/chatPanel';
+import { useSeo, organizationJsonLd } from '../lib/seo';
 import { useLang } from '../lib/i18n';
 
 /* The sheet's data lives in the admin dashboard as Arabic text. For the
@@ -71,6 +72,19 @@ export default function SolarPrices() {
   const [saveError, setSaveError] = useState('');
   const settings = useSettings();
   const columns = settings.solarPriceColumns;
+
+  useSeo({
+    title:
+      lang === 'ar'
+        ? 'أسعار منظومات الطاقة الشمسية في العراق — نقداً وبالتقسيط | الواعظ للقدرة'
+        : 'Solar Energy System Prices in Iraq — Cash & Installments | Alwaidh',
+    description:
+      lang === 'ar'
+        ? 'أسعار منظومات الطاقة الشمسية الكاملة في العراق: ألواح Jinko، انفيرترات IP65، بطاريات ليثيوم — تشمل التركيب. نقداً أو بالتقسيط ضمن مبادرة البنك المركزي حتى 7 سنوات.'
+        : 'Complete solar system prices for Iraq: Jinko panels, IP65 inverters, lithium batteries — installation included. Cash or Central Bank initiative installments up to 7 years.',
+    path: '/solar-prices',
+    jsonLd: organizationJsonLd(),
+  });
 
   useEffect(() => subscribePriceRows(setLive), []);
   useEffect(() => subscribeInstallmentRows(setInstLive), []);
