@@ -7,6 +7,8 @@ import { useCart } from '../context/CartContext';
 import { discountPercent, formatPrice } from '../lib/format';
 import StarRating from '../components/StarRating';
 import { StaffProductEdit } from '../components/ProductEditor';
+import { useLang } from '../lib/i18n';
+import { pName, pDesc } from '../lib/localizeProduct';
 
 type SortKey = 'featured' | 'price-asc' | 'price-desc' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -53,6 +55,7 @@ function readView(): ShopView | null {
 
 
 export default function Shop() {
+  const { lang } = useLang();
   const { products, loading } = useProducts();
   const { add } = useCart();
 
@@ -144,7 +147,7 @@ export default function Shop() {
       // keywords list the words apart.
       const words = query.trim().toLowerCase().split(/\s+/);
       list = list.filter((p) => {
-        const hay = `${p.name} ${p.brand} ${p.shortDescription} ${p.keywordsAr ?? ''}`.toLowerCase();
+        const hay = `${p.name} ${p.brand} ${p.shortDescription} ${p.nameAr ?? ''} ${p.shortDescriptionAr ?? ''} ${p.keywordsAr ?? ''}`.toLowerCase();
         return words.every((w) => hay.includes(w));
       });
     }
@@ -356,7 +359,7 @@ export default function Shop() {
                     />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-800 group-hover:text-brand-700">
-                        {p.name}
+                        {pName(p, lang)}
                       </p>
                       <StarRating rating={p.rating} className="mt-0.5" />
                       <p className="mt-0.5 text-sm font-semibold text-brand-700">
@@ -704,6 +707,7 @@ function PageButton({
 }
 
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
+  const { lang } = useLang();
   const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col overflow-hidden text-center">
@@ -730,7 +734,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
           to={`/product/${product.id}`}
           className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 hover:text-brand-700 sm:text-base"
         >
-          {product.name}
+          {pName(product, lang)}
         </Link>
         <div className="flex flex-wrap items-baseline justify-center gap-x-2">
           <span className="text-base font-bold text-brand-700 sm:text-lg">
@@ -756,6 +760,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
 }
 
 function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
+  const { lang } = useLang();
   const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
@@ -780,10 +785,10 @@ function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
           to={`/product/${product.id}`}
           className="font-semibold text-slate-900 hover:text-brand-700"
         >
-          {product.name}
+          {pName(product, lang)}
         </Link>
         <StarRating rating={product.rating} showValue className="mt-1" />
-        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{product.shortDescription}</p>
+        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{pDesc(product, lang)}</p>
         <div className="mt-auto flex items-center justify-between pt-3">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-lg font-bold text-brand-700">

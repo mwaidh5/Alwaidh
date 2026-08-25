@@ -108,6 +108,8 @@ export default function ProductEditor({
         inStock: state.inStock,
         imageFit: (state.imageFit === 'cover' ? 'cover' : 'contain') as 'contain' | 'cover',
         shortDescription: state.shortDescription.trim(),
+        nameAr: (state.nameAr ?? '').trim(),
+        shortDescriptionAr: (state.shortDescriptionAr ?? '').trim(),
         keywordsAr: (state.keywordsAr ?? '').trim(),
         specs: parseSpecs(state.specsText),
         // Saved alongside the map so the order survives — Firestore hands
@@ -416,6 +418,14 @@ export function ProductDialog({
               className="input"
               value={state.name}
               onChange={(e) => setState({ ...state, name: e.target.value })}
+            />
+          </Field>
+          <Field label="Name (Arabic)" full>
+            <input
+              className="input"
+              dir="rtl"
+              value={state.nameAr ?? ''}
+              onChange={(e) => setState({ ...state, nameAr: e.target.value })}
             />
           </Field>
           <Field label="Brand">
@@ -761,6 +771,14 @@ export function ProductDialog({
               className="input"
               value={state.shortDescription}
               onChange={(e) => setState({ ...state, shortDescription: e.target.value })}
+            />
+          </Field>
+          <Field label="Short description (Arabic)" full>
+            <input
+              className="input"
+              dir="rtl"
+              value={state.shortDescriptionAr ?? ''}
+              onChange={(e) => setState({ ...state, shortDescriptionAr: e.target.value })}
             />
           </Field>
           <Field label="Arabic search words (hidden — helps Arabic search find this item)" full>

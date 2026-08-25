@@ -6,6 +6,7 @@ import { discountPercent, formatPrice } from '../lib/format';
 import { publicUrl, shareLink } from '../lib/share';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import { pName, pDesc, specLabel } from '../lib/localizeProduct';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
 import PdfView from '../components/PdfView';
@@ -16,7 +17,7 @@ export default function ProductDetail() {
   const { products, loading } = useProducts();
   const product = products.find((p) => p.id === id);
   const { add } = useCart();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
@@ -65,7 +66,7 @@ export default function ProductDetail() {
             <span className="mx-2">/</span>
           </>
         )}
-        <span className="text-slate-700">{product.name}</span>
+        <span className="text-slate-700">{pName(product, lang)}</span>
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2">
@@ -107,7 +108,7 @@ export default function ProductDetail() {
             <div className="text-xs uppercase tracking-wide text-slate-500">{product.brand}</div>
             <StaffProductEdit product={product} />
           </div>
-          <h1 className="mt-1 text-3xl font-extrabold text-slate-900">{product.name}</h1>
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-900">{pName(product, lang)}</h1>
           <div className="mt-3 flex items-center gap-3">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="text-2xl font-bold text-brand-700">
@@ -136,7 +137,7 @@ export default function ProductDetail() {
             </span>
           </div>
 
-          <p className="mt-5 text-slate-700">{product.shortDescription}</p>
+          <p className="mt-5 text-slate-700">{pDesc(product, lang)}</p>
 
           <div className="mt-6 flex items-center gap-3">
             <div className="inline-flex items-center rounded-lg border border-slate-300">
@@ -175,7 +176,7 @@ export default function ProductDetail() {
               {/* In the order staff typed them — see specRowsOf. */}
               {specRowsOf(product).map((row, i) => (
                 <div key={`${row.name}-${i}`} className="grid grid-cols-3 gap-4 px-4 py-3 text-sm">
-                  <dt className="text-slate-500">{row.name}</dt>
+                  <dt className="text-slate-500">{specLabel(row.name, lang)}</dt>
                   <dd className="col-span-2 text-slate-900">{row.value}</dd>
                 </div>
               ))}

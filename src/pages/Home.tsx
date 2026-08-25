@@ -7,6 +7,7 @@ import { useSettings } from '../lib/useSettings';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { openChat } from '../lib/chatPanel';
+import { pName } from '../lib/localizeProduct';
 import { formatPrice } from '../lib/format';
 import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
@@ -597,6 +598,7 @@ function SectionHead({
 }
 
 function ArrivalCard({ product }: { product: Product }) {
+  const { lang } = useLang();
   const { t } = useLang();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
@@ -618,7 +620,7 @@ function ArrivalCard({ product }: { product: Product }) {
         to={`/product/${product.id}`}
         className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-slate-800 hover:text-brand-700"
       >
-        {product.name}
+        {pName(product, lang)}
       </Link>
       <div className="flex items-baseline gap-1.5">
         <span className="text-lg font-extrabold text-slate-900">

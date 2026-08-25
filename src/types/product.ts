@@ -28,6 +28,10 @@ export interface Product {
   rating: number;       // 0..5
   inStock: boolean;
   shortDescription: string;
+  /** Arabic wording, shown when the site is in Arabic; empty falls back
+      to the English. */
+  nameAr?: string;
+  shortDescriptionAr?: string;
   /** Hidden Arabic search words — never shown, only matched when someone
       searches in Arabic. Space-separated words and synonyms. */
   keywordsAr?: string;
