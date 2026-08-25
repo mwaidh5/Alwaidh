@@ -77,7 +77,12 @@ service cloud.firestore {
     // Orders: guests can place orders; admins manage them; signed-in
     // customers can read their own orders.
     match /orders/{id} {
-      allow create: if true;
+      // Guests order freely, but an order may only carry a signed-in
+      // user's own uid — nobody can plant orders in another account's
+      // history.
+      allow create: if !('userUid' in request.resource.data)
+        || request.resource.data.userUid == null
+        || (request.auth != null && request.auth.uid == request.resource.data.userUid);
       allow read, update, delete: if isAdmin();
       allow read: if request.auth != null && request.auth.uid == resource.data.userUid;
     }
@@ -129,7 +134,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /messages/{msgId} {
-        allow get, list, create: if true;
+        allow get, list: if true;
+        // Anyone may write into a conversation they know the id of, but
+        // only real staff can sign a message as staff — a visitor cannot
+        // forge a reply that looks like it came from the shop.
+        allow create: if request.resource.data.get('from', 'guest') != 'staff'
+          || isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
         allow update: if false;
         allow delete: if isAdmin();
       }
@@ -146,9 +156,12 @@ service cloud.firestore {
       allow create: if emailVerified()
         && request.auth.token.email in request.resource.data.members;
       // Members keep the conversation up to date (last message, read marks,
-      // adding people). They can't remove themselves from it.
+      // adding people). Membership only ever grows — nobody can kick
+      // anyone, themselves included — and the creator stays the creator.
       allow update: if member()
-        && request.auth.token.email in request.resource.data.members;
+        && request.auth.token.email in request.resource.data.members
+        && request.resource.data.members.hasAll(resource.data.members)
+        && request.resource.data.get('createdBy', '') == resource.data.get('createdBy', '');
       allow delete: if isAdmin() || (member() && resource.data.createdBy == request.auth.token.email);
 
       match /messages/{msgId} {

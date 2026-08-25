@@ -40,9 +40,28 @@ service firebase.storage {
         || isShopManager() || isInstaller();
     }
 
-    // Public read for anything customers might see (product images, etc).
-    match /{allPaths=**} {
+    // Public read only where customers are meant to look: the catalogue,
+    // the site's own imagery and the shareable file library. Everything
+    // else needs a role (in-app viewing still works everywhere — the app
+    // uses tokened download URLs, which don't consult these rules).
+    match /products/{allPaths=**} {
       allow read: if true;
+    }
+    match /site/{allPaths=**} {
+      allow read: if true;
+    }
+    match /library/{allPaths=**} {
+      allow read: if true;
+    }
+    // Job files (invoices, site photos) are business records.
+    match /jobs/{allPaths=**} {
+      allow read: if isStaff();
+    }
+    match /originals/{allPaths=**} {
+      allow read: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+    }
+    match /uploads/{userId}/{allPaths=**} {
+      allow read: if isStaff() || (request.auth != null && request.auth.uid == userId);
     }
 
     // Product images: admins and product staff (either team, plus the shop
