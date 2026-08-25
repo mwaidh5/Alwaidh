@@ -255,6 +255,30 @@
   .alw-panel.alw-on .alw-shine {
     animation: alw-glimmer 7s ease-in-out infinite;
   }
+  /* The wall kit wakes with the first panel: LED to green, screen lit,
+     charge cells filling, and current running down the cables. */
+  .alw-led,
+  .alw-inv-screen,
+  .alw-cell {
+    transition: fill 0.5s ease;
+  }
+  .alw-gear.alw-live .alw-led {
+    fill: #22c55e;
+  }
+  .alw-gear.alw-live .alw-inv-screen {
+    fill: #38bdf8;
+  }
+  .alw-cell-on {
+    fill: #4ade80 !important;
+  }
+  .alw-cable-flow {
+    opacity: 0;
+    stroke-dasharray: 2.5 4;
+  }
+  .alw-gear.alw-live .alw-cable-flow {
+    opacity: 1;
+    animation: alw-current 0.9s linear infinite;
+  }
   /* Bending over the rack to fasten it: bow in, wiggle like driving
      screws, straighten. One keyframe run covers the whole gesture. */
   .alw-worker.alw-working .alw-torso {
@@ -290,7 +314,8 @@
     .alw-cloud-a,
     .alw-cloud-b,
     .alw-birds,
-    .alw-panel.alw-on .alw-shine {
+    .alw-panel.alw-on .alw-shine,
+    .alw-gear.alw-live .alw-cable-flow {
       animation: none;
     }
   }
@@ -356,6 +381,10 @@
   from { transform: translateX(-30px) translateY(6px); }
   40% { transform: translateX(160px) translateY(-4px); }
   to { transform: translateX(430px) translateY(2px); }
+}
+@keyframes alw-current {
+  from { stroke-dashoffset: 13; }
+  to { stroke-dashoffset: 0; }
 }
 @keyframes alw-glimmer {
   0%, 72%, 100% { opacity: 0.35; }

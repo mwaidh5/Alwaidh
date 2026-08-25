@@ -414,6 +414,45 @@ export default function SolarSceneLite() {
             <polygon points="107.3,150 206.3,112.2 310.7,150 211.7,187.8" fill="#ccc4b2" />
           </g>
 
+          {/* The wall kit: inverter and battery on the lit wall, cabled
+              to the roof. skewY(19.9) matches the wall's slope, so the
+              boxes hang flat on it like the windows do. It wakes the
+              moment the first panel is in: LED green, screen lit, charge
+              bars filling with the roof, and current flowing down the
+              cables. */}
+          <g className={count > 0 ? 'alw-gear alw-live' : 'alw-gear'}>
+            {/* DC run: roof edge → inverter → battery */}
+            <path d="M186,183 V198" fill="none" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M186,212 V218" fill="none" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" />
+            <path className="alw-cable-flow" d="M186,183 V198" fill="none" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round" />
+            <path className="alw-cable-flow" d="M186,212 V218" fill="none" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round" />
+
+            <g transform="translate(179 198) skewY(19.9)">
+              {/* inverter: a slim wall box with a screen and an LED */}
+              <rect x="0" y="0" width="14" height="14" rx="1.6" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.7" />
+              <rect className="alw-inv-screen" x="2.4" y="2.6" width="9.2" height="4.6" rx="0.8" fill="#334155" />
+              <circle className="alw-led" cx="3.6" cy="10.8" r="1.2" fill="#94a3b8" />
+              <rect x="6.4" y="9.8" width="5.2" height="2" rx="1" fill="#cbd5e1" />
+            </g>
+
+            <g transform="translate(177 218) skewY(19.9)">
+              {/* battery: a low cabinet with three charge bars */}
+              <rect x="0" y="0" width="18" height="9" rx="1.4" fill="#1e293b" stroke="#0f172a" strokeWidth="0.7" />
+              {[0, 1, 2].map((i) => (
+                <rect
+                  key={i}
+                  className={`alw-cell ${count > i * 2 ? 'alw-cell-on' : ''}`}
+                  x={2.2 + i * 5}
+                  y="2.2"
+                  width="3.6"
+                  height="4.6"
+                  rx="0.7"
+                  fill="#475569"
+                />
+              ))}
+            </g>
+          </g>
+
           {/* panels + their tap areas */}
           {SLOTS.map((slot, k) => {
             const i = k % 3;
