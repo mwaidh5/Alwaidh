@@ -64,7 +64,6 @@ export default function SolarSceneLite() {
   const svgRef = useRef<SVGSVGElement>(null);
   const workerRef = useRef<SVGGElement>(null);
   const flipRef = useRef<SVGGElement>(null);
-  const badgeRef = useRef<SVGGElement>(null);
   const houseRef = useRef<SVGGElement>(null);
   const panelRefs = useRef<(SVGGElement | null)[]>([]);
   const [filled, setFilled] = useState(() => SLOTS.map((s) => s.pre));
@@ -178,9 +177,7 @@ export default function SolarSceneLite() {
     }
 
     function face(towardX: number) {
-      const sc = towardX < s.pos[0] ? 'scale(1,1)' : 'scale(-1,1)';
-      flipRef.current?.setAttribute('transform', sc);
-      badgeRef.current?.setAttribute('transform', sc);
+      flipRef.current?.setAttribute('transform', towardX < s.pos[0] ? 'scale(1,1)' : 'scale(-1,1)');
     }
 
     function install(k: number) {
@@ -367,9 +364,44 @@ export default function SolarSceneLite() {
             </radialGradient>
           </defs>
 
-          <circle cx="352" cy="38" r="34" fill="url(#alwSunG)" />
+          <circle className="alw-sun" cx="352" cy="38" r="34" fill="url(#alwSunG)" />
           <circle cx="352" cy="38" r="13" fill="#fcd34d" />
+
+          {/* Two clouds on different winds, and a pair of birds. They all
+              start left of the frame and drift across on CSS clocks. */}
+          <g className="alw-cloud alw-cloud-a" fill="#ffffff" opacity="0.85">
+            <ellipse cx="0" cy="34" rx="17" ry="6.5" />
+            <ellipse cx="12" cy="31" rx="11" ry="5" />
+            <ellipse cx="-11" cy="31.5" rx="9" ry="4.4" />
+          </g>
+          <g className="alw-cloud alw-cloud-b" fill="#ffffff" opacity="0.65">
+            <ellipse cx="0" cy="62" rx="13" ry="5" />
+            <ellipse cx="9" cy="59.5" rx="8" ry="3.8" />
+          </g>
+          <g className="alw-birds" stroke="#475569" strokeWidth="1.1" fill="none" strokeLinecap="round">
+            <path d="M0,46 q3,-3.4 6,0 q3,-3.4 6,0" />
+            <path d="M14,52 q2.4,-2.8 4.8,0 q2.4,-2.8 4.8,0" />
+          </g>
+
           <ellipse cx="208" cy="230" rx="155" ry="14" fill="rgba(15,23,42,.14)" />
+
+          {/* A palm on the empty side, and a bush by the far wall. */}
+          <g transform="translate(44 216)">
+            <path d="M-1.5,0 C-2.5,-10 -1,-20 1,-27 L3.5,-26.5 C1.8,-19 1.5,-9 2.5,0 Z" fill="#8a6a4b" />
+            <g fill="#2e9e46">
+              <path d="M2,-27 C7,-33 15,-34 21,-31 C14,-30 8,-27.5 3.5,-25 Z" />
+              <path d="M2,-27 C-3,-33 -11,-34 -17,-31 C-10,-30 -4,-27.5 0.5,-25 Z" />
+              <path d="M2,-27.5 C4,-34 9,-38 15,-38.5 C10,-35.5 6,-31 3.5,-26.5 Z" />
+              <path d="M2,-27.5 C0,-34 -5,-38 -11,-38.5 C-6,-35.5 -2,-31 0.5,-26.5 Z" />
+              <path d="M1.6,-28 C2,-33.5 2.4,-36.5 2,-39.5 C3.4,-36 4,-32 3.4,-27.8 Z" />
+            </g>
+            <ellipse cx="1" cy="1.5" rx="9" ry="2.4" fill="rgba(15,23,42,.18)" />
+          </g>
+          <g transform="translate(352 222)" fill="#3aa653">
+            <ellipse cx="0" cy="-3" rx="9" ry="5.5" />
+            <ellipse cx="-7" cy="-1" rx="6" ry="4" fill="#2e8f45" />
+            <ellipse cx="7" cy="-1.5" rx="6.5" ry="4.2" fill="#35994c" />
+          </g>
 
           <g ref={houseRef}>
             {/* lit wall, shaded wall, windows, door, parapet, roof */}
@@ -403,7 +435,7 @@ export default function SolarSceneLite() {
                   <line x1="8" y1="3" x2="6" y2="-4" stroke="#7a7264" strokeWidth="1.6" />
                   <path d="M-19,-5 L-3,-16 L17,-8 L1,3 Z" fill="url(#alwPanelG)" stroke="#122a4d" strokeWidth="1" />
                   <path d="M-19,-5 L-3,-16 L17,-8" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="1" />
-                  <line x1="-11" y1="-10.5" x2="9" y2="-2.5" stroke="rgba(191,219,254,.5)" strokeWidth=".8" />
+                  <line className="alw-shine" x1="-11" y1="-10.5" x2="9" y2="-2.5" stroke="rgba(191,219,254,.5)" strokeWidth=".8" />
                 </g>
                 <polygon data-alw-slot={k} points={q.map((p) => p.join(',')).join(' ')} fill="transparent" style={{ cursor: 'pointer' }} />
               </g>
@@ -420,26 +452,6 @@ export default function SolarSceneLite() {
                 <g className="alw-torso">
                   <rect x="-6" y="-23" width="12" height="14" rx="3" fill="#2563eb" />
                   <rect x="-6" y="-23" width="12" height="5" rx="2.5" fill="#3b82f6" />
-                  {/* The SolarMax badge on his vest. It sits inside the flip
-                      group, so face() flips it a second time to keep the
-                      lettering readable whichever way he turns. */}
-                  <g ref={badgeRef}>
-                    <rect x="-5" y="-20.6" width="10" height="6" rx="1.4" fill="#ffffff" />
-                    <rect x="-4" y="-19.7" width="2.6" height="1.9" rx="0.4" fill="#1d4ed8" />
-                    <circle cx="3.2" cy="-18.7" r="1" fill="#fbbf24" />
-                    <text
-                      x="0"
-                      y="-15.9"
-                      textAnchor="middle"
-                      fontSize="2.1"
-                      fontWeight="800"
-                      fill="#1d4ed8"
-                      fontFamily="Inter, system-ui, sans-serif"
-                      style={{ letterSpacing: '.02em' }}
-                    >
-                      SolarMax
-                    </text>
-                  </g>
                   <g className="alw-arm alw-arm-l">
                     <rect x="-9.4" y="-22" width="3.2" height="5.5" rx="1.5" fill="#3b82f6" />
                     <rect x="-9" y="-17.5" width="2.6" height="6" rx="1.2" fill="#eab88e" />

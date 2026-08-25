@@ -234,6 +234,27 @@
   .alw-worker.alw-jump .alw-inner {
     animation: alw-leap 0.78s ease;
   }
+  /* Scenery: slow weather, nothing that fights the worker for attention. */
+  .alw-sun {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: alw-sunpulse 6s ease-in-out infinite;
+  }
+  .alw-cloud-a {
+    animation: alw-drift 75s linear infinite;
+  }
+  .alw-cloud-b {
+    animation: alw-drift 105s linear infinite;
+    animation-delay: -40s;
+  }
+  .alw-birds {
+    animation: alw-fly 38s linear infinite;
+    animation-delay: -6s;
+  }
+  /* Installed panels catch the sun now and then. */
+  .alw-panel.alw-on .alw-shine {
+    animation: alw-glimmer 7s ease-in-out infinite;
+  }
   /* Bending over the rack to fasten it: bow in, wiggle like driving
      screws, straighten. One keyframe run covers the whole gesture. */
   .alw-worker.alw-working .alw-torso {
@@ -264,7 +285,12 @@
     .alw-worker.alw-working .alw-torso,
     .alw-worker .alw-arm,
     .alw-worker.alw-fall .alw-inner,
-    .alw-worker.alw-jump .alw-inner {
+    .alw-worker.alw-jump .alw-inner,
+    .alw-sun,
+    .alw-cloud-a,
+    .alw-cloud-b,
+    .alw-birds,
+    .alw-panel.alw-on .alw-shine {
       animation: none;
     }
   }
@@ -316,6 +342,24 @@
   0% { transform: scaleY(0.8); }
   35% { transform: scaleY(1.1); }
   100% { transform: scaleY(1); }
+}
+
+@keyframes alw-sunpulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.12); opacity: 0.85; }
+}
+@keyframes alw-drift {
+  from { transform: translateX(-40px); }
+  to { transform: translateX(440px); }
+}
+@keyframes alw-fly {
+  from { transform: translateX(-30px) translateY(6px); }
+  40% { transform: translateX(160px) translateY(-4px); }
+  to { transform: translateX(430px) translateY(2px); }
+}
+@keyframes alw-glimmer {
+  0%, 72%, 100% { opacity: 0.35; }
+  82% { opacity: 1; }
 }
 
 @keyframes alw-screw {
