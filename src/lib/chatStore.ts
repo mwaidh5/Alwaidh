@@ -51,6 +51,7 @@ export interface ChatMessage {
   text: string;
   from: 'guest' | 'staff';
   by: string; // staff email; '' for the visitor
+  byName: string; // staff display name, when the account has one
   atMs: number | null;
   product: ChatProductCard | null; // product card attached to the message
 }
@@ -152,6 +153,7 @@ export async function sendStaffReply(
     text: body,
     from: 'staff',
     by: auth?.currentUser?.email ?? '',
+    byName: auth?.currentUser?.displayName ?? '',
     at: serverTimestamp(),
     ...(product ? { product } : {}),
   });
@@ -190,6 +192,7 @@ export function subscribeChatMessages(
             text: String(data.text ?? ''),
             from: data.from === 'staff' ? ('staff' as const) : ('guest' as const),
             by: String(data.by ?? ''),
+            byName: String(data.byName ?? ''),
             atMs: toMillis(data.at),
             product: p?.id
               ? {
