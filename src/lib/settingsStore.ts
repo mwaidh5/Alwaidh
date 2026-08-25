@@ -155,6 +155,9 @@ export interface SiteSettings {
   shopManagerEmails: string[];
   /** Field installers: they only see the jobs assigned to them. */
   installerEmails: string[];
+  /** Names the admin wrote for people: email -> display name. Wins
+      everywhere a person is shown. */
+  staffNames: Record<string, string>;
   /** Installer team leads: leader email -> the installers under them. */
   installerLeaders: Record<string, string[]>;
   heroImage: string;
@@ -198,6 +201,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   shopManagerEmails: [],
   installerEmails: [],
   installerLeaders: {},
+  staffNames: {},
   heroImage: '',
   solarBannerImage: '',
   logoImage: '',
@@ -284,6 +288,15 @@ function normalize(data: Record<string, unknown>): SiteSettings {
             ]),
           )
         : DEFAULT_SETTINGS.installerLeaders,
+    staffNames:
+      data.staffNames && typeof data.staffNames === 'object'
+        ? Object.fromEntries(
+            Object.entries(data.staffNames as Record<string, unknown>).map(([k, v]) => [
+              k.toLowerCase(),
+              String(v ?? '').trim(),
+            ]),
+          )
+        : DEFAULT_SETTINGS.staffNames,
     categoryLogos:
       data.categoryLogos && typeof data.categoryLogos === 'object'
         ? (data.categoryLogos as Record<string, string>)
@@ -405,6 +418,11 @@ export async function saveSettings(s: SiteSettings): Promise<void> {
       Object.entries(s.installerLeaders ?? {})
         .map(([k, v]) => [k.trim().toLowerCase(), cleanEmails(v)] as [string, string[]])
         .filter(([, v]) => v.length > 0),
+    ),
+    staffNames: Object.fromEntries(
+      Object.entries(s.staffNames ?? {})
+        .map(([k, v]) => [k.trim().toLowerCase(), String(v).trim()] as [string, string])
+        .filter(([k, v]) => k && v),
     ),
   };
   if (database) {

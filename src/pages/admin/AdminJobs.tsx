@@ -133,6 +133,7 @@ export default function AdminJobs() {
   const seen = useSeenJobs(user?.email ?? null);
   const [installerEmails, setInstallerEmails] = useState<string[] | null>(null);
   const [installerLeaders, setInstallerLeaders] = useState<Record<string, string[]>>({});
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   // A field installer sees only the jobs assigned to them. They can work
   // those jobs fully — edit, move, comment — but adding, reassigning and
   // deleting stay with the office. Read the list here rather than from the
@@ -183,6 +184,7 @@ export default function AdminJobs() {
       subscribeSettings((s) => {
         setInstallerEmails(s.installerEmails ?? []);
         setInstallerLeaders(s.installerLeaders ?? {});
+        setStaffNames(s.staffNames ?? {});
       }),
     [],
   );
@@ -216,7 +218,8 @@ export default function AdminJobs() {
     };
   }, []);
 
-  const installerName = (email: string) => installerNames[email] || prettyHandle(email);
+  const installerName = (email: string) =>
+    staffNames[email] || installerNames[email] || prettyHandle(email);
   const onlyMine = installerOnly ? myEmail : '';
   const rolesReady = installerEmails !== null;
   useEffect(() => {
@@ -560,7 +563,7 @@ export default function AdminJobs() {
           state={editing}
           setState={setEditing}
           installerEmails={installerEmails ?? []}
-          installerNames={installerNames}
+          installerNames={{ ...installerNames, ...staffNames }}
           canAssign={!installerOnly}
           assignPool={leaderPool}
           assignLocked={

@@ -10,7 +10,7 @@ import {
   uploadLibraryFile,
   type LibraryFile,
 } from '../../lib/libraryStore';
-import { prettyHandle } from '../../lib/staffDirectory';
+import { useStaffName } from '../../lib/staffDirectory';
 import PdfView from '../../components/PdfView';
 
 /**
@@ -20,6 +20,7 @@ import PdfView from '../../components/PdfView';
  */
 export default function AdminFiles() {
   const { t } = useLang();
+  const staffName = useStaffName();
   const { isAdmin } = useAuth();
   const [files, setFiles] = useState<LibraryFile[] | null>(null);
   const [error, setError] = useState('');
@@ -122,7 +123,7 @@ export default function AdminFiles() {
                   <p className="text-xs text-slate-500">
                     {[
                       formatFileSize(f.size),
-                      f.by ? `${t('Added by')} ${prettyHandle(f.by)}` : '',
+                      f.by ? `${t('Added by')} ${staffName(f.by)}` : '',
                       new Date(f.createdAt).toLocaleDateString('en-GB'),
                     ]
                       .filter(Boolean)
