@@ -958,6 +958,24 @@ const AR: Record<string, string> = {
   'Logo on the photo (top corner — optional)': 'الشعار على الصورة (الزاوية العلوية — اختياري)',
   'Shown in a small white chip pinned to the top corner of the photo, so use a clean photo without a logo baked in. A wide transparent PNG works best.':
     'يظهر داخل شارة بيضاء صغيرة مثبتة في زاوية الصورة العلوية، لذا استخدم صورة نظيفة بدون شعار مطبوع فيها. الأفضل ملف PNG عريض بخلفية شفافة.',
+  'Cash prices': 'الأسعار النقدية',
+  'Installments': 'التقسيط',
+  'Central Bank initiative — pay monthly': 'مبادرة البنك المركزي — ادفع بالأقساط الشهرية',
+  'Plan length': 'مدة التقسيط',
+  'year': 'سنة',
+  'years': 'سنوات',
+  'Inverter': 'العاكسة',
+  'Panels': 'الألواح',
+  'Batteries': 'البطاريات',
+  'Backup hours': 'ساعات التغذية',
+  'hours': 'ساعة',
+  'monthly': 'شهرياً',
+  'Total price': 'السعر النهائي',
+  'Cash price': 'السعر النقدي',
+  'Prices include installation and commissioning. IP65 inverter with internet monitoring and a 5-year warranty; 16 KWh IP20 lithium batteries, 8000 cycles, 5-year warranty; Jinko 650W panels with a 15-year warranty.':
+    'الأسعار تشمل التنصيب والتشغيل. العاكسة فئة IP65 مع مراقبة عبر الإنترنت وضمان 5 سنوات؛ بطاريات ليثيوم IP20 سعة 16 كيلو واط بعدد 8000 دورة وضمان 5 سنوات؛ ألواح Jinko قدرة 650 واط بضمان 15 سنة.',
+  'See everything matching your search': 'عرض كل النتائج المطابقة لبحثك',
+  'Browse all products': 'تصفح جميع المنتجات',
 };
 
 interface LanguageValue {

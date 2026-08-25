@@ -7,6 +7,15 @@ import {
   type PriceColumn,
   type PriceRow,
 } from '../../lib/solarPricesStore';
+import {
+  subscribeInstallmentRows,
+  createInstallmentRow,
+  upsertInstallmentRow,
+  deleteInstallmentRow,
+  cashPrice,
+  planMonthly,
+  type InstallmentRow,
+} from '../../lib/solarInstallmentsStore';
 import { useSettings } from '../../lib/useSettings';
 import { updateSettingsField } from '../../lib/settingsStore';
 
@@ -172,6 +181,140 @@ export default function AdminSolarPrices() {
       <p className="text-xs text-slate-500">
         Tip: the columns and their order here are exactly what shows on the public price sheet.
       </p>
+
+      <InstallmentsEditor />
+    </div>
+  );
+}
+
+/**
+ * The Central Bank initiative systems, sold on installments. Staff edit
+ * the specs and the published 7-year total; every other number on the
+ * public page derives from that one price — cash is the total divided by
+ * 1.21 (3% per year over 7 years), an N-year plan is cash times
+ * (1 + 0.03 x N), and the monthly payment is the plan divided by its
+ * months.
+ */
+function InstallmentsEditor() {
+  const [rows, setRows] = useState<InstallmentRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, InstallmentRow>>({});
+  const [error, setError] = useState('');
+  useEffect(() => subscribeInstallmentRows(setRows), []);
+  const fail = (e: unknown) => setError(e instanceof Error ? e.message : 'Something went wrong.');
+
+  const view = (r: InstallmentRow) => drafts[r.id] ?? r;
+  const setField = (r: InstallmentRow, key: keyof InstallmentRow, value: string) =>
+    setDrafts((d) => ({
+      ...d,
+      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) : value },
+    }));
+  const save = (r: InstallmentRow) => {
+    const draft = drafts[r.id];
+    if (!draft) return;
+    upsertInstallmentRow(draft).catch(fail);
+  };
+
+  const COLS: { key: keyof InstallmentRow; label: string; width?: string }[] = [
+    { key: 'sizeKw', label: 'KW' },
+    { key: 'sizeAmp', label: 'Amp' },
+    { key: 'inverterKw', label: 'العاكسة KW' },
+    { key: 'panelsKwp', label: 'الألواح KWP' },
+    { key: 'panelsCount', label: 'عدد الألواح' },
+    { key: 'batteryKwh', label: 'البطارية KWh' },
+    { key: 'batteryLabel', label: 'وصف البطاريات', width: 'min-w-[130px]' },
+    { key: 'backupHours', label: 'ساعات التغذية' },
+    { key: 'price7', label: 'سعر 7 سنوات', width: 'min-w-[110px]' },
+  ];
+
+  return (
+    <div className="space-y-3 pt-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900">Installments — مبادرة البنك المركزي</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Enter the published 7-year price; the cash price (÷ 1.21) and every shorter plan (+3% per
+            year) are calculated automatically on the public page.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => createInstallmentRow(rows.length).catch(fail)}
+          className="btn-primary"
+        >
+          + Row
+        </button>
+      </header>
+
+      {error && (
+        <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
+      )}
+
+      <div className="card overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-slate-50">
+              {COLS.map((c) => (
+                <th key={c.key} className={`border-b border-slate-200 p-2 text-xs font-bold text-slate-600 ${c.width ?? 'min-w-[80px]'}`}>
+                  {c.label}
+                </th>
+              ))}
+              <th className="min-w-[110px] border-b border-slate-200 p-2 text-xs font-bold text-slate-400">
+                نقداً (محسوب)
+              </th>
+              <th className="min-w-[110px] border-b border-slate-200 p-2 text-xs font-bold text-slate-400">
+                شهرياً / 7 سنوات
+              </th>
+              <th className="w-10 border-b border-slate-200 p-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={COLS.length + 3} className="p-8 text-center text-sm text-slate-400">
+                  No systems yet — click “+ Row” to add one.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => {
+                const r = view(row);
+                return (
+                  <tr key={row.id} className="hover:bg-slate-50/50">
+                    {COLS.map((c) => (
+                      <td key={c.key} className="border-b border-slate-100 p-1">
+                        <input
+                          value={String(r[c.key] ?? '')}
+                          onChange={(e) => setField(row, c.key, e.target.value)}
+                          onBlur={() => save(row)}
+                          dir="auto"
+                          className="w-full rounded border border-transparent px-2 py-1.5 hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none"
+                        />
+                      </td>
+                    ))}
+                    <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
+                      {r.price7 ? cashPrice(r.price7).toLocaleString('en-GB') : '—'}
+                    </td>
+                    <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
+                      {r.price7 ? planMonthly(r.price7, 7).toLocaleString('en-GB') : '—'}
+                    </td>
+                    <td className="border-b border-slate-100 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Delete this system?')) deleteInstallmentRow(row.id).catch(fail);
+                        }}
+                        title="Delete row"
+                        className="rounded px-2 py-1 text-red-500 hover:bg-red-50"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
