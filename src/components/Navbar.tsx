@@ -7,6 +7,7 @@ import { useSettings } from '../lib/useSettings';
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
 import LangSwitch from './LangSwitch';
+import { pName } from '../lib/localizeProduct';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { openDrawer } from '../lib/drawer';
 
@@ -20,7 +21,7 @@ const navLinks = [
 export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, hasAdminAccess, signOut } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   // Out of the way while a pop-up is open — on phones only, where the
   // screen is too small to share. Desktop dialogs sit in the middle of a
   // page that is still clearly there behind them.
@@ -58,7 +59,7 @@ export default function Navbar() {
     const words = q.split(/\s+/);
     return products
       .filter((p) => {
-        const hay = `${p.name} ${p.brand} ${p.keywordsAr ?? ''}`.toLowerCase();
+        const hay = `${p.name} ${p.brand} ${p.nameAr ?? ''} ${p.keywordsAr ?? ''}`.toLowerCase();
         return words.every((w) => hay.includes(w));
       })
       .slice(0, 6);
@@ -190,7 +191,7 @@ export default function Navbar() {
                             />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-medium text-slate-800">
-                                {p.name}
+                                {pName(p, lang)}
                               </span>
                               <span className="text-xs text-slate-500">{p.brand}</span>
                             </span>

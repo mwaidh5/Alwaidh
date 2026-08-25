@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import { pName } from '../lib/localizeProduct';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../lib/format';
 import { createOrder } from '../lib/orderStore';
@@ -12,7 +13,7 @@ export default function Cart() {
     useCart();
   const { user } = useAuth();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [checkout, setCheckout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<{ id: string } | null>(null);
@@ -142,7 +143,7 @@ export default function Cart() {
                     to={`/product/${product.id}`}
                     className="font-semibold text-slate-900 hover:text-brand-700"
                   >
-                    {product.name}
+                    {pName(product, lang)}
                   </Link>
                   <div className="text-xs text-slate-500">{product.brand}</div>
                   <div className="mt-2 flex items-center gap-3">

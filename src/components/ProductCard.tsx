@@ -3,10 +3,11 @@ import type { Product } from '../types/product';
 import { discountPercent, formatPrice } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
+import { pName, pDesc } from '../lib/localizeProduct';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const off = discountPercent(product.price, product.oldPrice);
 
   return (
@@ -30,9 +31,9 @@ export default function ProductCard({ product }: { product: Product }) {
           to={`/product/${product.id}`}
           className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 hover:text-brand-700 sm:text-base"
         >
-          {product.name}
+          {pName(product, lang)}
         </Link>
-        <p className="line-clamp-2 hidden text-sm text-slate-600 sm:block">{product.shortDescription}</p>
+        <p className="line-clamp-2 hidden text-sm text-slate-600 sm:block">{pDesc(product, lang)}</p>
         <div className="mt-auto flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pt-3">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-base font-bold text-brand-700 sm:text-lg">
