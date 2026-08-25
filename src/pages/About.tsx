@@ -200,7 +200,7 @@ export default function About() {
               ['18', 'Provinces we deliver to'],
             ].map(([v, k]) => (
               <div key={k}>
-                <dd className="text-3xl font-extrabold leading-none tracking-tight sm:text-4xl" dir="ltr">
+                <dd className="text-3xl font-extrabold leading-none tracking-tight sm:text-4xl">
                   {v}
                 </dd>
                 <dt className="mt-1.5 text-xs font-semibold text-white/60">{t(k)}</dt>
