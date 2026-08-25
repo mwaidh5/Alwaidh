@@ -11,6 +11,7 @@ import {
 } from '../../lib/chatStore';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
+import { useSettings } from '../../lib/useSettings';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
@@ -38,6 +39,7 @@ function chatTitle(c: ChatMeta): string {
 /** Live chat inbox: conversations on the left, the open thread on the right. */
 export default function AdminChat() {
   const { t } = useLang();
+  const staffNames = useSettings().staffNames ?? {};
   const { isAdmin } = useAuth();
   const [chats, setChats] = useState<ChatMeta[] | null>(null);
   const [error, setError] = useState('');
@@ -230,7 +232,7 @@ export default function AdminChat() {
                           m.from === 'staff' ? 'text-brand-100' : 'text-slate-400'
                         }`}
                       >
-                        {m.from === 'staff' && (m.byName || m.by) ? `${m.byName || m.by.split('@')[0]} · ` : ''}
+                        {m.from === 'staff' && (m.byName || m.by) ? `${staffNames[m.by] || m.byName || m.by.split('@')[0]} · ` : ''}
                         {timeText(m.atMs)}
                       </p>
                     </div>

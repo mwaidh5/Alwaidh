@@ -9,6 +9,7 @@ import {
 import { uploadJobCommentFile } from '../lib/imageUpload';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
+import { useStaffName } from '../lib/staffDirectory';
 import { ADMIN_EMAILS } from '../firebase';
 
 /**
@@ -141,6 +142,7 @@ const ICON: Record<JobEvent['kind'], string> = {
  */
 export default function JobActivity({ job }: { job: Job }) {
   const { t } = useLang();
+  const staffName = useStaffName();
   const settings = useSettings();
   const [events, setEvents] = useState<JobEvent[] | null>(null);
   const [draft, setDraft] = useState('');
@@ -256,7 +258,7 @@ export default function JobActivity({ job }: { job: Job }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-slate-800">
-                    <span className="font-semibold">{handleOf(e.by) || 'someone'}</span>{' '}
+                    <span className="font-semibold">{staffName(e.by) || 'someone'}</span>{' '}
                     {e.kind === 'comment' ? (
                       <span className="whitespace-pre-wrap">
                         {e.text.split(/(@[\w.-]+)/).map((part, i) =>

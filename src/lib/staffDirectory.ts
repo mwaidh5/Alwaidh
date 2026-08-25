@@ -10,6 +10,20 @@ export function prettyHandle(email: string): string {
   return handle.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * A resolver for a person's display name, usable in any component. The
+ * admin's name book in settings wins; otherwise a name is built from the
+ * email address.
+ */
+export function useStaffName(): (email: string) => string {
+  const settings = useSettings();
+  const book = settings.staffNames ?? {};
+  return (email: string) => {
+    const e = (email ?? '').toLowerCase();
+    return book[e] || prettyHandle(e);
+  };
+}
+
 /** "ahmed.ali@gmail.com" → "ahmed.ali", how people are tagged with @. */
 export function handleOf(email: string): string {
   return (email.split('@')[0] || email).toLowerCase();
@@ -68,7 +82,11 @@ export function useStaffDirectory(): StaffPerson[] {
     add(settings.installerEmails, 'Installer');
 
     return [...roleOf.entries()]
-      .map(([email, role]) => ({ email, role, name: names[email] || prettyHandle(email) }))
+      .map(([email, role]) => ({
+        email,
+        role,
+        name: settings.staffNames?.[email] || names[email] || prettyHandle(email),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [settings, names]);
 }

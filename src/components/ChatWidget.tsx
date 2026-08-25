@@ -11,6 +11,7 @@ import {
 } from '../lib/chatStore';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
+import { useSettings } from '../lib/useSettings';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { setChatUnread, useChatOpenSignal } from '../lib/chatPanel';
 import ChatProductCard from './ChatProductCard';
@@ -27,6 +28,7 @@ function timeText(ms: number | null): string {
  */
 export default function ChatWidget() {
   const { t } = useLang();
+  const staffNames = useSettings().staffNames ?? {};
   const modalOpen = useAnyModalOpen();
   const location = useLocation();
   const { user } = useAuth();
@@ -133,7 +135,7 @@ export default function ChatWidget() {
                       m.from === 'guest' ? 'text-brand-100' : 'text-slate-400'
                     }`}
                   >
-                    {m.from === 'staff' ? `${m.byName || m.by.split('@')[0] || t('Support')} · ` : ''}
+                    {m.from === 'staff' ? `${staffNames[m.by] || m.byName || m.by.split('@')[0] || t('Support')} · ` : ''}
                     {timeText(m.atMs)}
                   </p>
                 </div>
