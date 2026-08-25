@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Track from './pages/Track';
 import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
+          <Route path="/track/:id" element={<Track />} />
         <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />

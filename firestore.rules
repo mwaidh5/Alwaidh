@@ -85,6 +85,10 @@ service cloud.firestore {
         || (request.auth != null && request.auth.uid == request.resource.data.userUid);
       allow read, update, delete: if isAdmin();
       allow read: if request.auth != null && request.auth.uid == resource.data.userUid;
+      // The tracking page: knowing the order's unguessable id IS the
+      // ticket, exactly like a courier tracking number. Single reads
+      // only — listing stays with the admin.
+      allow get: if true;
     }
 
     // User profiles: each user reads/writes their own doc; admins see everyone.
