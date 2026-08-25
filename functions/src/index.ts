@@ -407,7 +407,8 @@ export const serveFile = onRequest({ invoker: 'public' }, async (req, res) => {
   const [meta] = await file.getMetadata();
   const filename = path.split('/').pop() ?? 'file';
   res.setHeader('Content-Type', String(meta.contentType ?? 'application/octet-stream'));
-  res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
+  const safeName = filename.replace(/[^\w.\- ()؀-ۿ]/g, '_').slice(0, 120) || 'file';
+  res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
   res.setHeader('Cache-Control', 'public, max-age=3600');
   if (meta.size) res.setHeader('Content-Length', String(meta.size));
   file
