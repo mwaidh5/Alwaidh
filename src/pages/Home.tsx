@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { categories } from '../data/categories';
 import { allBrands } from '../data/brands';
@@ -87,6 +87,23 @@ export default function Home() {
     return () => clearInterval(id);
   }, [paused, slides.length]);
 
+  // A finger-swipe across the banner turns the page on phones. Only a
+  // clearly horizontal drag counts, so vertical scrolling stays smooth.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const t0 = touchStart.current;
+    touchStart.current = null;
+    if (!t0) return;
+    const dx = e.changedTouches[0].clientX - t0.x;
+    const dy = e.changedTouches[0].clientY - t0.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    // "Next" follows the reading direction: drag against it in Arabic.
+    step(((lang === 'ar' ? dx > 0 : dx < 0) ? 1 : -1) as 1 | -1);
+  };
+
   const step = (dir: 1 | -1) => {
     setPaused(true);
     setSlide((s) => (s + dir + slides.length) % slides.length);
@@ -133,6 +150,8 @@ export default function Home() {
           className="relative h-[26rem] overflow-hidden rounded-3xl bg-slate-900 sm:h-[32rem]"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
         {slides.map((s, i) => (
           <div
