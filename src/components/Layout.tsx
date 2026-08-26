@@ -6,6 +6,7 @@ import ChatWidget from './ChatWidget';
 import BottomNav from './BottomNav';
 import PullToRefresh from './PullToRefresh';
 import MobileDrawer from './MobileDrawer';
+import LanguageGate from './LanguageGate';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 import { useLang } from '../lib/i18n';
 
@@ -45,6 +46,7 @@ export default function Layout() {
   const slide = dir === 'rtl' ? '-72%' : '72%';
   return (
     <>
+      <LanguageGate />
       <MobileDrawer />
       <div
         className="flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,.28,1)]"
