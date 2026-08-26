@@ -45,10 +45,22 @@ export default function BottomNav() {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 md:hidden"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      // translateZ pins the bar to its own compositor layer: without it,
+      // WebKit repaints fixed elements a frame late during momentum
+      // scrolling and the bar visibly drifts up before snapping back.
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)',
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+      }}
       aria-label={t('Main')}
     >
-      <div className="mx-auto flex max-w-md items-stretch justify-around gap-1 rounded-2xl border border-white/60 bg-white/80 p-1.5 shadow-[0_8px_30px_rgba(15,23,42,.18)] backdrop-blur-xl">
+      <div className="relative mx-auto flex max-w-md items-stretch justify-around gap-1 overflow-hidden rounded-[1.35rem] border border-white/50 bg-white/60 p-1.5 shadow-[0_10px_36px_rgba(15,23,42,.22)] ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150">
+        {/* the glass edge: a hairline of light along the top */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+        />
         {items.map((item) => {
           const { label, icon: Icon, badge } = item;
           const inside = (
@@ -73,7 +85,9 @@ export default function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 `${shape} ${
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-500 active:bg-slate-100'
+                  isActive
+                    ? 'bg-white/95 text-brand-700 shadow-[0_2px_10px_rgba(15,23,42,.14)]'
+                    : 'text-slate-600 active:bg-white/60'
                 }`
               }
             >
@@ -84,7 +98,7 @@ export default function BottomNav() {
               key={label}
               type="button"
               onClick={item.onClick}
-              className={`${shape} text-slate-500 active:bg-slate-100`}
+              className={`${shape} text-slate-600 active:bg-white/60`}
             >
               {inside}
             </button>
