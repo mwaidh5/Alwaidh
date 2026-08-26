@@ -145,10 +145,11 @@ export default function Home() {
     jsonLd: organizationJsonLd(),
   });
 
-  // The canvas leads the promo section with the solar tile as the big
-  // card; the other tiles become the split rows beside it.
+  // The big card is whichever tile Settings crowned; failing that, the
+  // canvas's default — the solar tile — and failing that, the first.
+  const crownedIdx = tiles.findIndex((tl) => tl.big);
   const solarIdx = tiles.findIndex((tl) => /solar/.test(tl.buttonLink));
-  const bigIdx = solarIdx >= 0 ? solarIdx : 0;
+  const bigIdx = crownedIdx >= 0 ? crownedIdx : solarIdx >= 0 ? solarIdx : 0;
   const bigTile = tiles[bigIdx];
   const sideTiles = tiles.map((tl, i) => ({ tile: tl, i })).filter(({ i }) => i !== bigIdx);
   const tileImg = (i: number) =>

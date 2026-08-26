@@ -91,6 +91,8 @@ export interface PromoTile {
   image: string;
   /** Shown in a white chip pinned to the photo's top corner. */
   logo: string;
+  /** The one large card on the homepage; the rest become split rows. */
+  big?: boolean;
   title: string;
   buttonLabel: string;
   buttonLink: string;
@@ -338,6 +340,7 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       ? (data.promoTiles as Record<string, unknown>[]).map((tile) => ({
           image: String(tile.image ?? ''),
           logo: String(tile.logo ?? ''),
+          big: Boolean(tile.big ?? false),
           title: String(tile.title ?? ''),
           buttonLabel: String(tile.buttonLabel ?? ''),
           buttonLink: String(tile.buttonLink ?? ''),
