@@ -728,7 +728,7 @@ function PageButton({
 }
 
 function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
-  const { lang } = useLang();
+  const { t, lang } = useLang();
   const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col overflow-hidden text-center">
@@ -773,7 +773,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
           disabled={!product.inStock}
           className="btn-primary mt-1 w-full px-3 py-2 text-xs transition disabled:cursor-not-allowed disabled:bg-slate-300 sm:mt-2 sm:w-auto sm:px-4 sm:text-sm sm:opacity-0 sm:group-hover:opacity-100 sm:disabled:opacity-100"
         >
-          {product.inStock ? 'Add to cart' : 'Out of stock'}
+          {t(product.inStock ? 'Add to cart' : product.comingSoon ? 'Coming soon' : 'Out of stock')}
         </button>
       </div>
     </div>
@@ -781,7 +781,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
 }
 
 function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
-  const { lang } = useLang();
+  const { t, lang } = useLang();
   const off = discountPercent(product.price, product.oldPrice);
   return (
     <div className="card group relative flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
@@ -827,7 +827,7 @@ function ListCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
             disabled={!product.inStock}
             className="btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {product.inStock ? 'Add to cart' : 'Out of stock'}
+            {t(product.inStock ? 'Add to cart' : product.comingSoon ? 'Coming soon' : 'Out of stock')}
           </button>
         </div>
       </div>

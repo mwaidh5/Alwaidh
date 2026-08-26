@@ -408,9 +408,41 @@ export const serveFile = onRequest({ invoker: 'public' }, async (req, res) => {
   const filename = path.split('/').pop() ?? 'file';
   res.setHeader('Content-Type', String(meta.contentType ?? 'application/octet-stream'));
   const safeName = filename.replace(/[^\w.\- ()؀-ۿ]/g, '_').slice(0, 120) || 'file';
+  // Link-preview crawlers (WhatsApp, Telegram, Facebook...) can't preview
+  // a raw PDF — they need a page with OpenGraph tags. They get a small
+  // card describing the file; every real visitor streams the file itself.
+  const ua = String(req.headers['user-agent'] ?? '');
+  if (/WhatsApp|facebookexternalhit|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot/i.test(ua)) {
+    const pretty = filename
+      .replace(/^\d{10,}-/, '')
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+    const sizeMb = meta.size ? (Number(meta.size) / 1048576).toFixed(1) + ' MB' : '';
+    const kind = String(meta.contentType ?? '').includes('pdf') ? 'PDF' : 'File';
+    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.status(200).send(`<!doctype html><html><head>
+<meta charset="utf-8" />
+<title>${esc(pretty)} — Alwaidh</title>
+<meta property="og:title" content="${esc(pretty)}" />
+<meta property="og:description" content="${kind}${sizeMb ? ' · ' + sizeMb : ''} · Alwaidh — الواعظ" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Alwaidh" />
+<meta property="og:image" content="https://alwaidh.com/pwa-512.png" />
+<meta http-equiv="refresh" content="0;url=${esc(req.url)}" />
+</head><body></body></html>`);
+    return;
+  }
+
   res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
   res.setHeader('Cache-Control', 'public, max-age=3600');
   if (meta.size) res.setHeader('Content-Length', String(meta.size));
+  if (req.method === 'HEAD') {
+    res.status(200).end();
+    return;
+  }
   file
     .createReadStream()
     .on('error', (e) => {
