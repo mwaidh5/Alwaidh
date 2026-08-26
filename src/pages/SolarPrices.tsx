@@ -47,7 +47,7 @@ const EN_PHRASES: Array<[RegExp, string]> = [
   [/ساعة/g, 'hours'],
 ];
 const PHONE = '0781 0150 876';
-const WEBSITE = 'www.alwaidhpower.com';
+const WEBSITE = 'alwaidh.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
 const ADDRESS_EN = 'Baghdad, Sinaa Street — opposite the University of Technology';
 
@@ -107,12 +107,11 @@ export default function SolarPrices() {
       // PNG stores pixel by pixel — the file came out over 10 MB, too big
       // to send anyone. At this resolution the difference is invisible.
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      const pdf = new jsPDF({
-        orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
-      });
-      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+      // A real A4 page, filled edge to edge: the sheets are drawn at the
+      // A4 aspect (1:1.414), so the photograph maps onto the full paper
+      // and printing leaves no margins to shrink into.
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       // Not pdf.save(): that is an <a download> click, which a web view
       // has nothing to catch — in the app the button did nothing at all.
       const result = await saveFile(
@@ -429,7 +428,7 @@ export default function SolarPrices() {
               fontFamily: en ? "'Inter', system-ui, sans-serif" : "'Janna LT', 'Tajawal', sans-serif",
               letterSpacing: 0,
             }}
-            className="mx-auto w-[1100px] max-w-none bg-white p-12 text-slate-900"
+            className="mx-auto flex min-h-[1556px] w-[1100px] max-w-none flex-col bg-white p-14 text-slate-900"
           >
             {/* Header: chip + title on one side, the logos on the other */}
             <div className="flex items-start justify-between gap-6">
@@ -448,22 +447,22 @@ export default function SolarPrices() {
               </div>
               <div className="flex flex-none items-center gap-4 pt-1">
                 {settings.solarLogo ? (
-                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-16 w-auto" />
                 ) : (
                   <div dir="ltr" className="text-start leading-tight">
                     <p className="text-xl font-black text-slate-900">SolarMax®</p>
                     <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-16 w-auto" />}
               </div>
             </div>
 
             {/* The table */}
-            <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
-              <div className="grid items-center gap-3 bg-brand-600 px-6 py-4" style={gridStyle}>
+            <div className="mt-8 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
+              <div className="grid items-center gap-3 bg-brand-600 px-6 py-5" style={gridStyle}>
                 {columns.map((c) => (
-                  <div key={c.key} className="text-sm font-extrabold text-white">
+                  <div key={c.key} className="text-base font-extrabold text-white">
                     {columnLabel(c)}
                     {!en && c.sub && !columnLabel(c).includes(c.sub) && (
                       <span className="block text-[10px] font-bold text-brand-100">{c.sub}</span>
@@ -474,14 +473,14 @@ export default function SolarPrices() {
               {rows.map((row) => (
                 <div
                   key={row.id}
-                  className="grid items-center gap-3 border-b border-slate-200 bg-white px-6 py-5 last:border-b-0"
+                  className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-7 last:border-b-0"
                   style={gridStyle}
                 >
                   {columns.map((c) =>
                     c.key === 'capacity' ? (
                       <div key={c.key} className="flex items-center gap-2.5">
                         <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
-                        <span className="text-lg font-black text-slate-900">
+                        <span className="text-xl font-black text-slate-900">
                           {sheetCell(localize(row.values[c.key] ?? '') || '—')}
                         </span>
                       </div>
@@ -494,7 +493,7 @@ export default function SolarPrices() {
                             ? `text-start text-lg font-extrabold ${
                                 c.key === 'priceWithInverter' ? 'text-brand-600' : 'text-slate-900'
                               }`
-                            : 'text-sm leading-relaxed text-slate-600'
+                            : 'text-base leading-relaxed text-slate-600'
                         }
                       >
                         {isPrice(c.key)
@@ -508,7 +507,7 @@ export default function SolarPrices() {
             </div>
 
             {/* Footer: where we are — the door stays on the website */}
-            <div className="mt-8 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
+            <div className="mt-auto flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
               <div className="leading-relaxed">
                 <p className="text-base font-bold text-slate-900">{en ? ADDRESS_EN : ADDRESS}</p>
                 <p className="text-sm text-slate-500">
@@ -535,7 +534,7 @@ export default function SolarPrices() {
               fontFamily: en ? "'Inter', system-ui, sans-serif" : "'Janna LT', 'Tajawal', sans-serif",
               letterSpacing: 0,
             }}
-            className="mx-auto w-[1240px] max-w-none bg-white p-12 text-slate-900"
+            className="mx-auto flex min-h-[1754px] w-[1240px] max-w-none flex-col bg-white p-14 text-slate-900"
           >
             <div className="flex items-center justify-between gap-6">
               <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
@@ -543,14 +542,14 @@ export default function SolarPrices() {
               </span>
               <div className="flex flex-none items-center gap-4">
                 {settings.solarLogo ? (
-                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-16 w-auto" />
                 ) : (
                   <div dir="ltr" className="text-start leading-tight">
                     <p className="text-xl font-black text-slate-900">SolarMax®</p>
                     <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-16 w-auto" />}
               </div>
             </div>
             <h2 className="mb-2 mt-5 text-4xl font-black leading-snug text-slate-900">
@@ -562,9 +561,9 @@ export default function SolarPrices() {
               {t('Every plan is calculated from the published 7-year total.')}
             </p>
 
-            <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
+            <div className="mt-8 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
               <div
-                className="grid items-center gap-3 bg-brand-600 px-6 py-4"
+                className="grid items-center gap-3 bg-brand-600 px-6 py-5"
                 style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
               >
                 {[
@@ -584,40 +583,40 @@ export default function SolarPrices() {
               {instRows.map((row) => (
                 <div
                   key={row.id}
-                  className="grid items-center gap-3 border-b border-slate-200 bg-white px-6 py-5 last:border-b-0"
+                  className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-7 last:border-b-0"
                   style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
                 >
                   <div className="flex items-center justify-center gap-2.5">
                     <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
-                    <span dir="ltr" className="text-base font-black text-slate-900">
+                    <span dir="ltr" className="text-xl font-black text-slate-900">
                       {row.sizeKw} KW / {row.sizeAmp} A
                     </span>
                   </div>
-                  <div dir="ltr" className="text-center text-sm text-slate-600">{row.inverterKw} KW IP65</div>
-                  <div dir="ltr" className="text-center text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-base text-slate-600">{row.inverterKw} KW IP65</div>
+                  <div dir="ltr" className="text-center text-base text-slate-600">
                     {row.panelsCount} × 650W ({row.panelsKwp} KWP)
                   </div>
-                  <div dir="ltr" className="text-center text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-base text-slate-600">
                     {row.batteryKwh} KWh {localize(row.batteryLabel)}
                   </div>
-                  <div dir="ltr" className="text-center text-sm text-slate-600">
+                  <div dir="ltr" className="text-center text-base text-slate-600">
                     {row.backupHours} {t('hours')}
                   </div>
-                  <div dir="ltr" className="text-center text-lg font-extrabold tracking-tight text-slate-900">
+                  <div dir="ltr" className="text-center text-2xl font-extrabold tracking-tight text-slate-900">
                     {money(planTotal(row.price7, years))}
                   </div>
-                  <div dir="ltr" className="text-center text-lg font-extrabold tracking-tight text-brand-600">
+                  <div dir="ltr" className="text-center text-2xl font-extrabold tracking-tight text-brand-600">
                     {money(planMonthly(row.price7, years))}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-7 rounded-2xl bg-slate-50 p-6">
-              <p className="mb-2 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
+            <div className="mt-8 rounded-2xl bg-slate-50 p-7">
+              <p className="mb-3 text-base font-extrabold text-slate-900">{t('Notes')}</p>
               {/* Hand-drawn bullets: html2canvas puts list markers on the
                   wrong side in RTL. */}
-              <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-600">
+              <div className="space-y-2 text-[15px] leading-relaxed text-slate-600">
                 {[
                   t('These prices include installation and commissioning; installation costs can vary by 10% depending on the site.'),
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
