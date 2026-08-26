@@ -7,6 +7,7 @@ import BottomNav from './BottomNav';
 import PullToRefresh from './PullToRefresh';
 import MobileDrawer from './MobileDrawer';
 import LanguageGate from './LanguageGate';
+import { trackPageView } from '../lib/ga';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 import { useLang } from '../lib/i18n';
 
@@ -38,6 +39,11 @@ export default function Layout() {
     if (navType === 'POP') return;
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   }, [location.pathname, navType]);
+
+  // Every screen the visitor lands on reaches Google Analytics.
+  useEffect(() => {
+    trackPageView(location.pathname, document.title);
+  }, [location.pathname]);
 
   // The menu reveal: the whole page slides aside and shrinks into a card,
   // and the drawer is simply what was underneath. The transform makes this
