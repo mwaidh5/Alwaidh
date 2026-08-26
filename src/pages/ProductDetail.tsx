@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { pName, pDesc, specLabel } from '../lib/localizeProduct';
 import { brandedFileUrl } from '../lib/brandedFiles';
+import { subscribeToStock } from '../lib/stockAlerts';
 import { useSeo } from '../lib/seo';
 import { specRowsOf, StaffProductEdit } from '../components/ProductEditor';
 import ProductCard from '../components/ProductCard';
@@ -161,10 +162,14 @@ export default function ProductDetail() {
             )}
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                product.inStock
+                  ? 'bg-green-100 text-green-800'
+                  : product.comingSoon
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-red-100 text-red-800'
               }`}
             >
-              {t(product.inStock ? 'In stock' : 'Out of stock')}
+              {t(product.inStock ? 'In stock' : product.comingSoon ? 'Coming soon' : 'Out of stock')}
             </span>
           </div>
 
@@ -200,6 +205,8 @@ export default function ProductDetail() {
             </button>
             <ShareButton product={product} />
           </div>
+
+          {!product.inStock && <NotifyMe productId={product.id} />}
 
           <div className="mt-8">
             <h2 className="font-semibold text-slate-900">{t('Specifications')}</h2>
@@ -339,4 +346,55 @@ function safeDecode(u: string): string {
   } catch {
     return u;
   }
+}
+
+/**
+ * The waiting list: an email against this product, and the shop writes
+ * the moment it lands in stock. Asking twice refreshes the same entry.
+ */
+function NotifyMe({ productId }: { productId: string }) {
+  const { t } = useLang();
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setState('busy');
+    try {
+      await subscribeToStock(productId, email);
+      setState('done');
+    } catch {
+      setState('error');
+    }
+  }
+
+  if (state === 'done') {
+    return (
+      <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-800">
+        {t("You're on the list — we'll email you the moment it's available.")}
+      </div>
+    );
+  }
+  return (
+    <form onSubmit={submit} className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <p className="mb-2.5 text-sm font-bold text-amber-900">{t('Want it? Get notified when it arrives.')}</p>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t('you@example.com')}
+          dir="ltr"
+          className="input flex-1"
+        />
+        <button type="submit" disabled={state === 'busy'} className="btn-primary flex-none disabled:opacity-60">
+          {state === 'busy' ? '…' : t('Notify me')}
+        </button>
+      </div>
+      {state === 'error' && (
+        <p className="mt-2 text-xs text-red-700">{t('That did not work — check the email and try again.')}</p>
+      )}
+    </form>
+  );
 }

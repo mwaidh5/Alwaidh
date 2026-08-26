@@ -174,6 +174,7 @@ export default function AdminProducts() {
         images,
         rating: Math.max(0, Math.min(5, Number(editing.rating) || 0)),
         inStock: editing.inStock,
+        comingSoon: Boolean(editing.comingSoon),
         shortDescription: editing.shortDescription.trim(),
         nameAr: (editing.nameAr ?? '').trim(),
         shortDescriptionAr: (editing.shortDescriptionAr ?? '').trim(),
