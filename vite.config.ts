@@ -42,7 +42,9 @@ export default defineConfig({
         // page is on our own origin — so the service worker was answering
         // it with the app shell, and the router showed "Page not found"
         // instead of finishing the Google sign-in.
-        navigateFallbackDenylist: [/^\/__\//],
+        // /f/** is the file proxy — a navigation there must reach the server
+        // for the real PDF, not be swallowed into the app shell.
+        navigateFallbackDenylist: [/^\/__\//, /^\/f\//],
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         // Firebase registers this one itself, on its own scope.
         globIgnores: ['firebase-messaging-sw.js'],
