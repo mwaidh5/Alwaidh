@@ -16,7 +16,7 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
-import { buildEmail, buildOrderEmail, type EmailKind } from './emails';
+import { buildEmail, buildOrderEmail, buildStockEmail, type EmailKind } from './emails';
 
 initializeApp();
 
@@ -470,5 +470,59 @@ export const emailOrderConfirmation = onDocumentCreated(
     } catch (e) {
       logger.error('order confirmation failed:', e);
     }
+  },
+);
+
+/**
+ * The waiting list pays out: when a product flips from out-of-stock to
+ * in-stock, everyone subscribed gets the back-in-stock email, once —
+ * entries are marked notified so a later restock doesn't re-mail people
+ * who already bought.
+ */
+export const notifyStockAvailable = onDocumentUpdated(
+  { document: 'products/{productId}', secrets: [SMTP_PASSWORD] },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
+    if (before.inStock || !after.inStock) return; // only the off -> on edge
+    const id = event.params.productId;
+    const dbase = getFirestore();
+    const snap = await dbase
+      .collection('stockAlerts')
+      .where('productId', '==', id)
+      .where('notified', '==', false)
+      .get();
+    if (snap.empty) return;
+    const { subject, html, text } = buildStockEmail(
+      String(after.name ?? 'Your product'),
+      `${SITE}/product/${id}`,
+    );
+    const transport = createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASSWORD.value() },
+    });
+    let sent = 0;
+    for (const docSnap of snap.docs) {
+      const to = String(docSnap.data().email ?? '');
+      if (!to.includes('@')) continue;
+      try {
+        await transport.sendMail({
+          from: `"Alwaidh" <${SMTP_USER}>`,
+          to,
+          replyTo: SMTP_REPLY_TO || undefined,
+          subject,
+          html,
+          text,
+        });
+        await docSnap.ref.update({ notified: true, notifiedAt: new Date() });
+        sent++;
+      } catch (e) {
+        logger.error(`stock email to ${to} failed:`, e);
+      }
+    }
+    logger.info(`stock alerts for ${id}: ${sent}/${snap.size} sent`);
   },
 );

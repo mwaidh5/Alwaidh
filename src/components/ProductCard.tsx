@@ -51,7 +51,7 @@ export default function ProductCard({ product }: { product: Product }) {
             disabled={!product.inStock}
             className="btn-primary w-full px-3 py-2 text-xs disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto sm:text-sm"
           >
-            {t(product.inStock ? 'Add to cart' : 'Out of stock')}
+            {t(product.inStock ? 'Add to cart' : product.comingSoon ? 'Coming soon' : 'Out of stock')}
           </button>
         </div>
       </div>

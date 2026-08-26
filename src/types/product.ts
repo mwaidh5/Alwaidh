@@ -27,6 +27,8 @@ export interface Product {
   imageFit?: 'contain' | 'cover';
   rating: number;       // 0..5
   inStock: boolean;
+  /** Announced but not sellable yet — shows a badge and a notify box. */
+  comingSoon?: boolean;
   shortDescription: string;
   /** Arabic wording, shown when the site is in Arabic; empty falls back
       to the English. */

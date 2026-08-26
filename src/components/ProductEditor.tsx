@@ -106,6 +106,7 @@ export default function ProductEditor({
         images,
         rating: Math.max(0, Math.min(5, Number(state.rating) || 0)),
         inStock: state.inStock,
+        comingSoon: Boolean(state.comingSoon),
         imageFit: (state.imageFit === 'cover' ? 'cover' : 'contain') as 'contain' | 'cover',
         shortDescription: state.shortDescription.trim(),
         nameAr: (state.nameAr ?? '').trim(),
@@ -599,6 +600,14 @@ export function ProductDialog({
                 onChange={(e) => setState({ ...state, inStock: e.target.checked })}
               />
               Available for purchase
+            </label>
+            <label className="flex items-center gap-2 pt-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(state.comingSoon)}
+                onChange={(e) => setState({ ...state, comingSoon: e.target.checked })}
+              />
+              Coming soon — let customers ask to be notified
             </label>
           </Field>
           <Field label="Product images" full>

@@ -283,3 +283,58 @@ ${button('تتبع طلبك')}
 
   return { subject, html, text };
 }
+
+/** "It's here" — the back-in-stock note, short and bilingual. */
+export function buildStockEmail(
+  productName: string,
+  productUrl: string,
+): { subject: string; html: string; text: string } {
+  const name = escape(productName);
+  const href = escape(productUrl);
+  const button = (label: string) => `
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background:${BRAND};border-radius:9px;">
+                  <a href="${href}" style="display:inline-block;padding:14px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">${label}</a>
+                </td>
+              </tr>
+            </table>`;
+  const subject = `Back in stock: ${productName} — توفر من جديد`;
+  const html = `<!doctype html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escape(subject)}</title></head>
+<body style="margin:0;padding:0;background:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:24px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;">
+      <tr><td style="background:${BRAND};padding:22px 28px;">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="padding-right:12px;"><img src="${LOGO}" width="34" height="34" alt="" style="display:block;border-radius:8px;background:#ffffff;" /></td>
+          <td style="color:#ffffff;font-size:19px;font-weight:700;">Alwaidh</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:32px 28px 8px 28px;">
+        <h1 style="margin:0 0 12px 0;font-size:21px;line-height:1.35;color:#0f172a;font-weight:800;">It's back in stock!</h1>
+        <p style="margin:0 0 22px 0;font-size:15px;line-height:1.6;color:#475569;">You asked us to tell you when <strong style="color:#0f172a;">${name}</strong> became available — it's in stock now. Popular items go fast.</p>
+${button('View the product')}
+      </td></tr>
+      <tr><td style="padding:26px 28px 0 28px;"><div style="height:1px;background:#e2e8f0;line-height:1px;">&nbsp;</div></td></tr>
+      <tr><td dir="rtl" style="padding:22px 28px 30px 28px;text-align:right;">
+        <h2 style="margin:0 0 10px 0;font-size:19px;line-height:1.4;color:#0f172a;font-weight:800;">توفر من جديد!</h2>
+        <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#475569;">طلبت أن نخبرك عند توفر <strong style="color:#0f172a;">${name}</strong> — وهو متوفر الآن. المنتجات المطلوبة تنفد بسرعة.</p>
+${button('اعرض المنتج')}
+      </td></tr>
+      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 28px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;">
+          Al-Waidh Technology Trading Co. · Sinaa Street, Baghdad, Iraq<br />
+          <a href="https://alwaidh.com" style="color:${BRAND};text-decoration:none;">alwaidh.com</a>
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `${productName} is back in stock!\n\n${productUrl}\n\nAl-Waidh Technology Trading Co. — alwaidh.com`;
+  return { subject, html, text };
+}

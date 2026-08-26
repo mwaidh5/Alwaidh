@@ -1026,6 +1026,12 @@ const AR: Record<string, string> = {
   'All articles': 'جميع المقالات',
   'Thinking about solar for your home or business?': 'تفكر بالطاقة الشمسية لبيتك أو محلك؟',
   'See our system prices, or ask us anything — the survey is free.': 'اطلع على أسعار منظوماتنا، أو اسألنا أي شيء — الكشف مجاني.',
+  'Coming soon': 'قريباً',
+  'Want it? Get notified when it arrives.': 'تريده؟ سنخبرك فور توفره.',
+  'Notify me': 'أخبرني',
+  "You're on the list — we'll email you the moment it's available.": 'أنت على القائمة — سنرسل لك بريداً فور توفره.',
+  'That did not work — check the email and try again.': 'لم ينجح الأمر — تأكد من البريد وحاول مجدداً.',
+  'you@example.com': 'you@example.com',
 };
 
 interface LanguageValue {

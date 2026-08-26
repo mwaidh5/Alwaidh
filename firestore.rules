@@ -110,6 +110,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Back-in-stock waiting list: anyone may leave an email against a
+    // product, nobody but the office (and the mailer function) reads the
+    // list back. The doc id is product+email, so re-asking overwrites the
+    // same entry instead of stacking copies.
+    match /stockAlerts/{id} {
+      allow create, update: if request.resource.data.keys().hasAll(['productId', 'email', 'notified'])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() < 200
+        && request.resource.data.email.matches('.*@.*')
+        && request.resource.data.productId is string
+        && request.resource.data.productId.size() < 100
+        && request.resource.data.notified == false;
+      allow read, delete: if isAdmin();
+    }
+
     // Analytics page-view events: any visitor can record a view; admins read.
     match /analytics_events/{id} {
       allow create: if true;

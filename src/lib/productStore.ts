@@ -70,6 +70,7 @@ function normalize(data: Record<string, unknown>, id: string): Product {
     imageFit: data.imageFit === 'cover' ? 'cover' : 'contain',
     rating: Number(data.rating ?? 0),
     inStock: Boolean(data.inStock ?? true),
+    comingSoon: Boolean(data.comingSoon ?? false),
     shortDescription: String(data.shortDescription ?? ''),
     keywordsAr: String(data.keywordsAr ?? ''),
     nameAr: String(data.nameAr ?? ''),
