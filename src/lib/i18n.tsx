@@ -1032,6 +1032,12 @@ const AR: Record<string, string> = {
   "You're on the list — we'll email you the moment it's available.": 'أنت على القائمة — سنرسل لك بريداً فور توفره.',
   'That did not work — check the email and try again.': 'لم ينجح الأمر — تأكد من البريد وحاول مجدداً.',
   'you@example.com': 'you@example.com',
+  'This is the big card': 'هذه هي البطاقة الكبيرة',
+  'Best photo size for the big card': 'أفضل حجم لصورة البطاقة الكبيرة',
+  'Best photo size for a side card': 'أفضل حجم لصورة البطاقة الجانبية',
+  'the photo fills the box, extra is cropped from the edges.': 'الصورة تملأ الإطار، وما يزيد يُقص من الأطراف.',
+  'Best banner size': 'أفضل حجم لصورة البنر',
+  'upload double (2432 × 1024) for sharp screens.': 'ارفع ضعف الحجم (2432 × 1024) لشاشات أوضح.',
 };
 
 interface LanguageValue {

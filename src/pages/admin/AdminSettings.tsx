@@ -286,6 +286,17 @@ export default function AdminSettings() {
               index={i}
               tile={tile}
               total={(settings.promoTiles ?? []).length}
+              isBig={
+                tile.big ||
+                (!(settings.promoTiles ?? []).some((x) => x.big) &&
+                  /solar/.test(tile.buttonLink))
+              }
+              onMakeBig={() =>
+                update(
+                  'promoTiles',
+                  (settings.promoTiles ?? []).map((x, n) => ({ ...x, big: n === i })),
+                )
+              }
               onChange={(next) =>
                 update(
                   'promoTiles',
@@ -315,6 +326,7 @@ export default function AdminSettings() {
                 {
                   image: '',
                   logo: '',
+                  big: false,
                   title: 'New tile',
                   buttonLabel: 'Explore now',
                   buttonLink: '/shop',
@@ -705,6 +717,8 @@ function PromoTileEditor({
   index,
   tile,
   total,
+  isBig,
+  onMakeBig,
   onChange,
   onRemove,
   onMove,
@@ -712,6 +726,9 @@ function PromoTileEditor({
   index: number;
   tile: PromoTile;
   total: number;
+  /** This tile renders as the one large homepage card. */
+  isBig: boolean;
+  onMakeBig: () => void;
   onChange: (t: PromoTile) => void;
   onRemove: () => void;
   onMove: (dir: 1 | -1) => void;
@@ -818,16 +835,22 @@ function PromoTileEditor({
             </div>
           </div>
 
+          <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+            <input type="radio" name="big-tile" checked={isBig} onChange={onMakeBig} className="h-4 w-4" />
+            {t('This is the big card')}
+            {isBig && <span className="ms-auto rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-bold text-brand-700">★</span>}
+          </label>
           <ImageField
             label="Tile photo"
             value={tile.image}
             folder="site"
             onChange={(url) => set('image', url)}
           />
-          <p className="mt-1 text-xs text-slate-500">
-            {t(
-              'Best sizes: about 1200 × 520 for the big solar tile, about 600 × 500 for the two side tiles. The photo fills the box, so anything extra is cropped from the edges.',
-            )}
+          <p className="mt-1 text-xs font-semibold text-slate-600">
+            {isBig
+              ? `📐 ${t('Best photo size for the big card')}: 1200 × 520`
+              : `📐 ${t('Best photo size for a side card')}: 600 × 500`}
+            <span className="font-normal text-slate-500"> — {t('the photo fills the box, extra is cropped from the edges.')}</span>
           </p>
           <div className="mt-3">
             <ImageField
@@ -999,6 +1022,10 @@ function HeroSlideEditor({
         folder="site"
         onChange={(url) => set('image', url)}
       />
+      <p className="mt-1 text-xs font-semibold text-slate-600">
+        📐 {t('Best banner size')}: 1216 × 512
+        <span className="font-normal text-slate-500"> — {t('upload double (2432 × 1024) for sharp screens.')}</span>
+      </p>
       <div className="mt-3">
         <ImageField
           label="Banner photo for phones (tall — optional)"
