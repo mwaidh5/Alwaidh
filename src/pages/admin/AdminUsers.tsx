@@ -540,6 +540,11 @@ export default function AdminUsers() {
                         onSaved={(next) => setSettings(next)}
                       />
                     )}
+                    <CrmAccess
+                      email={u.email.toLowerCase()}
+                      settings={settings}
+                      onSaved={(next) => setSettings(next)}
+                    />
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(u.lastSeenAt).toLocaleDateString('en-GB')}
@@ -651,6 +656,67 @@ function CrewEditor({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Which CRM books this person may open. Admins are not shown the chips:
+ * they hold both books by right, and a chip that cannot be turned off
+ * only invites confusion.
+ */
+function CrmAccess({
+  email,
+  settings,
+  onSaved,
+}: {
+  email: string;
+  settings: SiteSettings | null;
+  onSaved: (next: SiteSettings) => void;
+}) {
+  const [busyKey, setBusyKey] = useState('');
+  if (!settings) return null;
+  if (ADMIN_EMAILS.includes(email) || settings.extraAdminEmails.includes(email)) return null;
+
+  const books: { key: 'crmSolarEmails' | 'crmComputerEmails'; label: string }[] = [
+    { key: 'crmSolarEmails', label: '☀️ Solar CRM' },
+    { key: 'crmComputerEmails', label: '💻 Computers CRM' },
+  ];
+
+  async function toggle(key: 'crmSolarEmails' | 'crmComputerEmails') {
+    const list = settings![key] ?? [];
+    const next = list.includes(email) ? list.filter((e) => e !== email) : [...list, email];
+    setBusyKey(key);
+    try {
+      await updateSettingsField(key, next);
+      onSaved({ ...settings!, [key]: next });
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {books.map((b) => {
+        const on = (settings[b.key] ?? []).includes(email);
+        return (
+          <button
+            key={b.key}
+            type="button"
+            disabled={busyKey === b.key}
+            onClick={() => toggle(b.key)}
+            title={on ? 'Click to take this book away' : 'Click to give this book'}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition ${
+              on
+                ? 'bg-cyan-50 text-cyan-800 ring-cyan-200'
+                : 'bg-slate-50 text-slate-400 ring-slate-200'
+            }`}
+          >
+            {b.label}
+            {on ? ' ✓' : ''}
+          </button>
+        );
+      })}
     </div>
   );
 }

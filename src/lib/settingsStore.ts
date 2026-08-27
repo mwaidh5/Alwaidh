@@ -162,6 +162,10 @@ export interface SiteSettings {
   staffNames: Record<string, string>;
   /** Installer team leads: leader email -> the installers under them. */
   installerLeaders: Record<string, string[]>;
+  /** Who may open the CRM's solar contacts book. Admins always can. */
+  crmSolarEmails: string[];
+  /** Who may open the CRM's computers contacts book. Admins always can. */
+  crmComputerEmails: string[];
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -203,6 +207,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   shopManagerEmails: [],
   installerEmails: [],
   installerLeaders: {},
+  crmSolarEmails: [],
+  crmComputerEmails: [],
   staffNames: {},
   heroImage: '',
   solarBannerImage: '',
@@ -281,6 +287,12 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     installerEmails: Array.isArray(data.installerEmails)
       ? (data.installerEmails as string[]).map((e) => String(e).toLowerCase())
       : DEFAULT_SETTINGS.installerEmails,
+    crmSolarEmails: Array.isArray(data.crmSolarEmails)
+      ? (data.crmSolarEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.crmSolarEmails,
+    crmComputerEmails: Array.isArray(data.crmComputerEmails)
+      ? (data.crmComputerEmails as string[]).map((e) => String(e).toLowerCase())
+      : DEFAULT_SETTINGS.crmComputerEmails,
     installerLeaders:
       data.installerLeaders && typeof data.installerLeaders === 'object'
         ? Object.fromEntries(
@@ -417,6 +429,8 @@ export async function saveSettings(s: SiteSettings): Promise<void> {
     solarStaffEmails: cleanEmails(s.solarStaffEmails),
     shopManagerEmails: cleanEmails(s.shopManagerEmails),
     installerEmails: cleanEmails(s.installerEmails),
+    crmSolarEmails: cleanEmails(s.crmSolarEmails ?? []),
+    crmComputerEmails: cleanEmails(s.crmComputerEmails ?? []),
     installerLeaders: Object.fromEntries(
       Object.entries(s.installerLeaders ?? {})
         .map(([k, v]) => [k.trim().toLowerCase(), cleanEmails(v)] as [string, string[]])

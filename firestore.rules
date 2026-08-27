@@ -41,6 +41,25 @@ service cloud.firestore {
       return isAdmin() || isComputerStaff() || isSolarStaff()
         || isShopManager() || isInstaller();
     }
+    // The CRM: who may open which contacts book, assigned per person
+    // from the Users page. Admins hold both books.
+    function canCrm(section) {
+      return isAdmin()
+        || (section == 'solar' && emailVerified()
+            && request.auth.token.email in settingsData().get('crmSolarEmails', []))
+        || (section == 'computers' && emailVerified()
+            && request.auth.token.email in settingsData().get('crmComputerEmails', []));
+    }
+
+    // CRM leads. Reads must be filtered by section, so the rule can prove
+    // every returned doc is inside a book this person was given. Only an
+    // admin may move a lead between books.
+    match /crmContacts/{id} {
+      allow read, delete: if canCrm(resource.data.section);
+      allow create: if canCrm(request.resource.data.section);
+      allow update: if canCrm(resource.data.section)
+        && (isAdmin() || request.resource.data.section == resource.data.section);
+    }
 
     // Product catalogue: public read. Admins and shop managers write anything;
     // computer staff may write computer/camera products; solar staff may write
