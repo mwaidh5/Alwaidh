@@ -29,7 +29,9 @@ let pendingDraft = '';
  *  "I'm interested in the 20 Amp system" — so the visitor only has to
  *  press send. The draft is consumed once. */
 export function openChat(draft = ''): void {
-  pendingDraft = draft;
+  // Passed straight to onClick, React hands over the click event instead
+  // of words — anything that isn't a string is "no draft", not a crash.
+  pendingDraft = typeof draft === 'string' ? draft : '';
   openTicks += 1;
   emit();
 }

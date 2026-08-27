@@ -36,8 +36,10 @@ export default function BottomNav() {
     { to: '/solar-prices', label: 'Solar', icon: SunIcon },
     hasAdminAccess
       ? { to: '/admin', label: 'Dashboard', icon: GridIcon }
-      : { onClick: openChat, label: 'Chat', icon: ChatIcon, badge: chatUnread },
-    { to: user ? '/account' : '/login', label: user ? 'Account' : 'Sign in', icon: UserIcon },
+      : { onClick: () => openChat(), label: 'Chat', icon: ChatIcon, badge: chatUnread },
+    // "Login", not "Sign in": the Arabic for the long form wraps to two
+    // lines at this size and grows the whole bar.
+    { to: user ? '/account' : '/login', label: user ? 'Account' : 'Login', icon: UserIcon },
   ];
 
   if (modalOpen) return null;
@@ -77,7 +79,7 @@ export default function BottomNav() {
             </>
           );
           const shape =
-            'relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition';
+            'relative flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap rounded-xl py-2 text-[11px] font-semibold transition';
           return 'to' in item ? (
             <NavLink
               key={item.to}
