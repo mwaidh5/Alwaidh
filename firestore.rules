@@ -55,7 +55,10 @@ service cloud.firestore {
     // every returned doc is inside a book this person was given. Only an
     // admin may move a lead between books.
     match /crmContacts/{id} {
-      allow read, delete: if canCrm(resource.data.section);
+      allow read: if canCrm(resource.data.section);
+      // Erasing a lead is the admin's alone — staff work the book,
+      // they don't take pages out of it.
+      allow delete: if isAdmin();
       allow create: if canCrm(request.resource.data.section);
       allow update: if canCrm(resource.data.section)
         && (isAdmin() || request.resource.data.section == resource.data.section);

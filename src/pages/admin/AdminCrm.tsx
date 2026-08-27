@@ -417,6 +417,7 @@ export default function AdminCrm() {
       {viewing && (
         <ContactDetails
           contact={viewing}
+          canDelete={isAdmin}
           onClose={() => setViewingId(null)}
           onEdit={() => {
             setError('');
@@ -808,12 +809,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function ContactDetails({
   contact,
+  canDelete,
   onClose,
   onEdit,
   onMove,
   onDelete,
 }: {
   contact: CrmContact;
+  /** Only admins may erase a lead; the rules refuse everyone else anyway. */
+  canDelete: boolean;
   onClose: () => void;
   onEdit: () => void;
   onMove: (status: CrmStatus) => void;
@@ -956,13 +960,17 @@ function ContactDetails({
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-3">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="text-sm font-semibold text-red-700 hover:underline"
-          >
-            {t('Delete')}
-          </button>
+          {canDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-sm font-semibold text-red-700 hover:underline"
+            >
+              {t('Delete')}
+            </button>
+          ) : (
+            <span />
+          )}
           <button type="button" onClick={onEdit} className="btn-secondary">
             ✏️ {t('Edit')}
           </button>
