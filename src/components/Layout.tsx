@@ -68,6 +68,10 @@ export default function Layout() {
                 // entirely — the whole point is the glimpse of it.
                 position: 'relative',
                 zIndex: 40,
+                // Keep Safari holding the page on one compositor layer for
+                // the whole ride — re-rasterizing mid-slide is the white
+                // flicker iPhones sometimes show, worst with Arabic fonts.
+                willChange: 'transform',
               }
             : undefined
         }
