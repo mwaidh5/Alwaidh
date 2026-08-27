@@ -21,8 +21,13 @@ export default function Layout() {
   // page behind the menu for the whole return journey — which reads as a
   // teleport. So the decoration stays until the slide back has finished.
   const [settling, setSettling] = useState(false);
+  // The wrapper is the whole document tall, so scaling it about its own
+  // middle throws the card far from what the visitor was looking at —
+  // shrink it around the centre of the viewport instead.
+  const [cardOrigin, setCardOrigin] = useState(0);
   useEffect(() => {
     if (drawerOpen) {
+      setCardOrigin(window.scrollY + window.innerHeight / 2);
       setSettling(false);
       return;
     }
@@ -60,6 +65,7 @@ export default function Layout() {
           drawerOpen || settling
             ? {
                 transform: drawerOpen ? `translateX(${slide}) scale(.86)` : 'translateX(0) scale(1)',
+                transformOrigin: `50% ${cardOrigin}px`,
                 borderRadius: drawerOpen ? 24 : 0,
                 overflow: 'hidden',
                 boxShadow: drawerOpen ? '0 24px 70px rgba(2,6,23,.5)' : '0 0 0 rgba(2,6,23,0)',
