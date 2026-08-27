@@ -45,6 +45,22 @@ export default function Layout() {
     return () => window.clearTimeout(id);
   }, [drawerOpen]);
 
+  // iPhone, Arabic: the slid-out card adds scrollable space on the left,
+  // and in RTL that side is reachable — Safari drifted the page into it,
+  // parking the card back over the menu. The clip wrapper below removes
+  // the overflow at the source; this pins the root scroller too, for
+  // Safari versions that ignore the clip.
+  useEffect(() => {
+    if (!drawerOpen && !settling) return;
+    const html = document.documentElement;
+    const prev = html.style.overflowX;
+    html.style.overflowX = 'hidden';
+    window.scrollTo({ left: 0 });
+    return () => {
+      html.style.overflowX = prev;
+    };
+  }, [drawerOpen, settling]);
+
   // Open a new page and start at the top of it — otherwise tapping Shop
   // halfway down the homepage drops you halfway down the shop. Going back
   // is left alone: that is where a page restores the place you left, and
@@ -68,6 +84,11 @@ export default function Layout() {
     <>
       <LanguageGate />
       <MobileDrawer />
+      {/* overflow-x: clip (not hidden — hidden would make this a scroll
+          container and kill the sticky header) keeps the slid-out card
+          from widening the page: without it, RTL iOS can scroll into the
+          card's off-screen side. */}
+      <div style={{ overflowX: 'clip' }}>
       <div
         className="flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,.28,1)]"
         style={
@@ -125,6 +146,7 @@ export default function Layout() {
       {/* The bar floats over the page, so the end of it needs room to be
           scrolled clear of. */}
       <div aria-hidden className="h-24 md:hidden" />
+      </div>
       </div>
     </>
   );
