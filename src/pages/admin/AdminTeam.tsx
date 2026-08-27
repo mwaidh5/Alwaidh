@@ -172,7 +172,7 @@ export default function AdminTeam() {
               {t('No conversations yet. Start one with “+ New chat”.')}
             </p>
           ) : (
-            <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+            <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto lg:max-h-[calc(100dvh-14rem)]">
               {chats.map((c) => {
                 const unread = hasUnread(c, me);
                 return (
@@ -216,7 +216,7 @@ export default function AdminTeam() {
           )}
         </div>
 
-        <div className={`card flex min-h-[50vh] flex-col overflow-hidden ${activeId ? '' : 'hidden lg:flex'}`}>
+        <div className={`card flex h-[calc(100dvh-23rem)] min-h-[22rem] flex-col overflow-hidden lg:h-[calc(100dvh-14rem)] ${activeId ? '' : 'hidden lg:flex'}`}>
           {!active ? (
             <p className="m-auto p-10 text-center text-sm text-slate-500">
               {t('Pick a conversation, or start a new one.')}
