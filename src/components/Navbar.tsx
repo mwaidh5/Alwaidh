@@ -152,7 +152,10 @@ export default function Navbar() {
           <div className="relative" ref={searchRef}>
             <button
               type="button"
-              onClick={() => setSearchOpen((o) => !o)}
+              onClick={() => {
+                setSearchOpen((o) => !o);
+                setMenuOpen(false);
+              }}
               className="grid h-10 w-10 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50"
               aria-label="Search products"
               aria-expanded={searchOpen}
@@ -160,7 +163,7 @@ export default function Navbar() {
               <SearchIcon />
             </button>
             {searchOpen && (
-              <div className="fixed inset-x-4 top-[4.75rem] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+              <div className="fixed inset-x-4 top-[calc(env(safe-area-inset-top)+4.75rem)] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
                 <form onSubmit={handleSearchSubmit}>
                   <input
                     ref={searchInput}
@@ -173,9 +176,9 @@ export default function Navbar() {
                 </form>
                 <div className="mt-2 max-h-80 overflow-y-auto">
                   {searchQuery.trim() === '' ? (
-                    <p className="px-1 py-3 text-sm text-slate-500">Type to search products.</p>
+                    <p className="px-1 py-3 text-sm text-slate-500">{t('Type to search products.')}</p>
                   ) : results.length === 0 ? (
-                    <p className="px-1 py-3 text-sm text-slate-500">No products found.</p>
+                    <p className="px-1 py-3 text-sm text-slate-500">{t('No products found.')}</p>
                   ) : (
                     <ul className="space-y-1">
                       {results.map((p) => (
@@ -224,7 +227,10 @@ export default function Navbar() {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setMenuOpen((o) => !o)}
+                onClick={() => {
+                  setMenuOpen((o) => !o);
+                  setSearchOpen(false);
+                }}
                 className="flex flex-none items-center gap-2 rounded-full border border-slate-300 bg-white py-1 pl-1 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
@@ -251,8 +257,8 @@ export default function Navbar() {
                   role="menu"
                 >
                   <div className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
-                    Signed in as
-                    <div className="truncate font-semibold text-slate-800">{user.email}</div>
+                    {t('Signed in as')}
+                    <div className="truncate font-semibold text-slate-800" dir="ltr">{user.email}</div>
                   </div>
                   <Link
                     to="/account"
@@ -269,7 +275,7 @@ export default function Navbar() {
                       className="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                       role="menuitem"
                     >
-                      {isAdmin ? 'Admin dashboard' : 'Staff dashboard'}
+                      {t(isAdmin ? 'Admin dashboard' : 'Staff dashboard')}
                     </Link>
                   )}
                   <button

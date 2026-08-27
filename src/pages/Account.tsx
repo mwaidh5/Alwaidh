@@ -13,6 +13,7 @@ import { uploadImage } from '../lib/imageUpload';
 import { recordUserLogin } from '../lib/userStore';
 import { listOrdersForUser, type Order, type OrderStatus } from '../lib/orderStore';
 import { formatPrice } from '../lib/format';
+import { useLang } from '../lib/i18n';
 
 const STATUS_BADGES: Record<OrderStatus, string> = {
   pending: 'bg-amber-100 text-amber-800',
@@ -24,6 +25,7 @@ const STATUS_BADGES: Record<OrderStatus, string> = {
 
 export default function Account() {
   const { user, loading, sendPasswordReset } = useAuth();
+  const { t } = useLang();
   const location = useLocation();
 
   if (loading) {
@@ -36,9 +38,9 @@ export default function Account() {
   return (
     <div className="bg-slate-50">
       <div className="container-page py-10">
-        <h1 className="text-2xl font-extrabold text-slate-900">My Account</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900">{t('My account')}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Manage your profile, security, and see your orders.
+          {t('Manage your profile, security, and see your orders.')}
         </p>
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[360px,1fr]">
           <div className="space-y-6">
@@ -54,6 +56,7 @@ export default function Account() {
 
 function ProfileCard() {
   const { user, signOut } = useAuth();
+  const { t } = useLang();
   const fileInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(user?.displayName ?? '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL ?? '');
@@ -86,7 +89,7 @@ function ProfileCard() {
       await updateProfile(auth.currentUser, { photoURL: url });
       setPhotoURL(url);
       await syncUserDoc(name.trim() || user?.displayName || '', url);
-      setMsg('Profile photo updated.');
+      setMsg(t('Profile photo updated.'));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
@@ -103,7 +106,7 @@ function ProfileCard() {
     try {
       await updateProfile(auth.currentUser, { displayName: name.trim() });
       await syncUserDoc(name.trim(), photoURL);
-      setMsg('Profile updated.');
+      setMsg(t('Profile updated.'));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed.');
     } finally {
@@ -113,7 +116,7 @@ function ProfileCard() {
 
   return (
     <div className="card p-6">
-      <h2 className="font-bold text-slate-900">Profile</h2>
+      <h2 className="font-bold text-slate-900">{t('Profile')}</h2>
       <div className="mt-4 flex items-center gap-4">
         <div className="relative">
           {photoURL ? (
@@ -136,9 +139,9 @@ function ProfileCard() {
             disabled={uploading}
             className="btn-secondary px-4 py-2 text-sm"
           >
-            {uploading ? 'Uploading…' : 'Change photo'}
+            {uploading ? t('Uploading…') : t('Change photo')}
           </button>
-          <p className="mt-1 text-xs text-slate-500">JPG or PNG · max 5 MB</p>
+          <p className="mt-1 text-xs text-slate-500">{t('JPG or PNG · max 5 MB')}</p>
           <input
             ref={fileInput}
             type="file"
@@ -155,13 +158,13 @@ function ProfileCard() {
       <div className="mt-5 space-y-3">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Display name
+            {t('Display name')}
           </label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Email
+            {t('Email')}
           </label>
           <input className="input bg-slate-50 text-slate-500" value={user.email ?? ''} readOnly />
         </div>
@@ -171,7 +174,7 @@ function ProfileCard() {
           disabled={busy}
           className="btn-primary w-full"
         >
-          {busy ? 'Saving…' : 'Save profile'}
+          {busy ? t('Saving…') : t('Save profile')}
         </button>
       </div>
 
@@ -191,7 +194,7 @@ function ProfileCard() {
         onClick={() => signOut()}
         className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
       >
-        Sign out
+        {t('Sign out')}
       </button>
     </div>
   );
@@ -199,6 +202,7 @@ function ProfileCard() {
 
 function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise<void> }) {
   const { user } = useAuth();
+  const { t } = useLang();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [busy, setBusy] = useState(false);
@@ -274,7 +278,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
       await updatePassword(auth.currentUser, next);
       setCurrent('');
       setNext('');
-      setMsg('Password changed.');
+      setMsg(t('Password changed.'));
     } catch (e) {
       const raw = e instanceof Error ? e.message : '';
       if (raw.includes('auth/invalid-credential') || raw.includes('auth/wrong-password')) {
@@ -303,17 +307,17 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
 
   return (
     <div className="card p-6">
-      <h2 className="font-bold text-slate-900">Security</h2>
+      <h2 className="font-bold text-slate-900">{t('Security')}</h2>
 
       {user.emailVerified ? (
         <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-          ✅ Email verified
+          ✅ {t('Email verified')}
         </p>
       ) : (
         <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="font-semibold">⚠️ Your email isn't verified yet.</p>
+          <p className="font-semibold">⚠️ {t("Your email isn't verified yet.")}</p>
           <p className="mt-1 text-xs">
-            Some features (like staff access) only work with a verified email.
+            {t('Some features (like staff access) only work with a verified email.')}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
@@ -322,7 +326,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
               disabled={busy || checking}
               className="rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
             >
-              {busy ? 'Sending…' : 'Verify now — send email'}
+              {busy ? t('Sending…') : t('Verify now — send email')}
             </button>
             {/* Confirming happens in another tab, so this page has to be
                 told to look again — otherwise it sits here saying
@@ -333,7 +337,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
               disabled={busy || checking}
               className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
             >
-              {checking ? 'Checking…' : "I've clicked the link — check again"}
+              {checking ? t('Checking…') : t("I've clicked the link — check again")}
             </button>
           </div>
         </div>
@@ -344,7 +348,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
           <input
             type="password"
             className="input"
-            placeholder="Current password"
+            placeholder={t('Current password')}
             autoComplete="current-password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
@@ -353,7 +357,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
           <input
             type="password"
             className="input"
-            placeholder="New password (min 6 characters)"
+            placeholder={t('New password (min 6 characters)')}
             autoComplete="new-password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
@@ -361,20 +365,21 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
             minLength={6}
           />
           <button type="submit" disabled={busy} className="btn-primary w-full">
-            {busy ? 'Changing…' : 'Change password'}
+            {busy ? t('Changing…') : t('Change password')}
           </button>
           <button
             type="button"
             onClick={handleReset}
             className="w-full text-center text-sm text-brand-700 hover:underline"
           >
-            Forgot it? Email me a reset link
+            {t('Forgot it? Email me a reset link')}
           </button>
         </form>
       ) : (
         <p className="mt-3 text-sm text-slate-600">
-          You sign in with <span className="font-semibold">Google</span>, so your password is
-          managed by your Google account — there's no separate password for this site.
+          {t(
+            'You sign in with Google, so your password is managed by your Google account — there is no separate password for this site.',
+          )}
         </p>
       )}
       {msg && (
@@ -392,6 +397,7 @@ function SecurityCard({ onSendReset }: { onSendReset: (email: string) => Promise
 }
 
 function OrdersCard({ uid }: { uid: string }) {
+  const { t } = useLang();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [error, setError] = useState('');
 
@@ -412,9 +418,9 @@ function OrdersCard({ uid }: { uid: string }) {
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-slate-900">My orders</h2>
+        <h2 className="font-bold text-slate-900">{t('My orders')}</h2>
         {orders && orders.length > 0 && (
-          <span className="text-sm text-slate-500">{orders.length} total</span>
+          <span className="text-sm text-slate-500">{orders.length} {t('total')}</span>
         )}
       </div>
 
@@ -425,16 +431,16 @@ function OrdersCard({ uid }: { uid: string }) {
       )}
 
       {orders === null && !error ? (
-        <p className="mt-6 text-center text-sm text-slate-500">Loading…</p>
+        <p className="mt-6 text-center text-sm text-slate-500">{t('Loading…')}</p>
       ) : orders && orders.length === 0 ? (
         <div className="mt-6 py-8 text-center">
           <p className="text-3xl">🛒</p>
-          <p className="mt-2 text-sm text-slate-600">No orders yet.</p>
+          <p className="mt-2 text-sm text-slate-600">{t('No orders yet.')}</p>
           <p className="text-xs text-slate-500">
-            Orders you place while signed in will show up here.
+            {t('Orders you place while signed in will show up here.')}
           </p>
           <Link to="/shop" className="btn-primary mt-4 inline-flex px-5 py-2 text-sm">
-            Browse products
+            {t('Browse products')}
           </Link>
         </div>
       ) : (
@@ -444,18 +450,18 @@ function OrdersCard({ uid }: { uid: string }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-sm font-bold text-slate-900">
-                    Order <span className="font-mono text-slate-600">#{o.id.slice(0, 8)}</span>
+                    {t('Order')} <span className="font-mono text-slate-600" dir="ltr">#{o.id.slice(0, 8)}</span>
                   </p>
                   <p className="text-xs text-slate-500">
                     {new Date(o.createdAt).toLocaleDateString('en-GB')} ·{' '}
-                    {o.lines.reduce((n, l) => n + l.quantity, 0)} item(s)
+                    {o.lines.reduce((n, l) => n + l.quantity, 0)} {t('items')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-bold capitalize ${STATUS_BADGES[o.status]}`}
                   >
-                    {o.status}
+                    {t(o.status)}
                   </span>
                   <span className="text-sm font-extrabold text-slate-900">
                     {formatPrice(o.subtotal, o.currency)}
