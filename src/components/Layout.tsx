@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -22,12 +22,21 @@ export default function Layout() {
   // teleport. So the decoration stays until the slide back has finished.
   const [settling, setSettling] = useState(false);
   // The wrapper is the whole document tall, so scaling it about its own
-  // middle throws the card far from what the visitor was looking at —
-  // shrink it around the centre of the viewport instead.
-  const [cardOrigin, setCardOrigin] = useState(0);
+  // middle throws the card far from what the visitor was looking at. The
+  // correction is baked into the transform itself, as a translateY that
+  // re-centres the visible slice: Safari keeps compositing with the old
+  // origin when only transform-origin changes and the transform string
+  // stays the same, which left iPhones showing the bug the origin fix
+  // was meant to cure. Computed in a layout effect so the very first
+  // painted frame of the slide is already aimed true.
+  const [cardLift, setCardLift] = useState(0);
+  useLayoutEffect(() => {
+    if (drawerOpen) {
+      setCardLift(Math.round((Math.max(0, window.scrollY) + window.innerHeight / 2) * 0.14));
+    }
+  }, [drawerOpen]);
   useEffect(() => {
     if (drawerOpen) {
-      setCardOrigin(window.scrollY + window.innerHeight / 2);
       setSettling(false);
       return;
     }
@@ -64,8 +73,12 @@ export default function Layout() {
         style={
           drawerOpen || settling
             ? {
-                transform: drawerOpen ? `translateX(${slide}) scale(.86)` : 'translateX(0) scale(1)',
-                transformOrigin: `50% ${cardOrigin}px`,
+                transform: drawerOpen
+                  ? `translateX(${slide}) translateY(${cardLift}px) scale(.86)`
+                  : 'translateX(0) translateY(0) scale(1)',
+                // Scale hangs from the top edge; cardLift above brings the
+                // on-screen part of the page back into view.
+                transformOrigin: '50% 0',
                 borderRadius: drawerOpen ? 24 : 0,
                 overflow: 'hidden',
                 boxShadow: drawerOpen ? '0 24px 70px rgba(2,6,23,.5)' : '0 0 0 rgba(2,6,23,0)',
