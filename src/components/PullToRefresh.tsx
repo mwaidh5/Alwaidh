@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
+import { useDrawerOpen } from '../lib/drawer';
 
 /** How far to pull before letting go does anything. Deliberately steep:
     with the damping below it takes roughly a two-thirds-of-the-screen
@@ -45,10 +46,13 @@ export default function PullToRefresh() {
   const start = useRef<number | null>(null);
   // While a pop-up is open (adding a job, editing a product), its inner
   // scrolling was being read as a pull — the gesture is simply off then.
+  // Same for the phone menu: a downward swipe on it was dragging the
+  // refresh pill over the drawer and could reload the app mid-menu.
   const modalOpen = useAnyModalOpen();
+  const drawerOpen = useDrawerOpen();
 
   useEffect(() => {
-    if (modalOpen) {
+    if (modalOpen || drawerOpen) {
       start.current = null;
       setPull(0);
       return;
@@ -103,7 +107,7 @@ export default function PullToRefresh() {
       window.removeEventListener('touchend', onEnd);
       window.removeEventListener('touchcancel', onEnd);
     };
-  }, [refreshing, modalOpen]);
+  }, [refreshing, modalOpen, drawerOpen]);
 
   if (pull <= 0 && !refreshing) return null;
 

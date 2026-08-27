@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -27,16 +27,23 @@ export default function MobileDrawer() {
     closeDrawer();
   }, [location.pathname]);
 
-  // The page behind is a decorative card while the menu is up.
+  // The page behind is a decorative card while the menu is up. The scroll
+  // lock has to outlive the close by the length of the slide home: freeing
+  // it immediately lets iOS scroll or rubber-band the page while it is
+  // still translated, which shows as a sideways jump mid-animation.
+  const unlockTimer = useRef(0);
   useEffect(() => {
     if (!open) return;
+    window.clearTimeout(unlockTimer.current);
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeDrawer();
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = '';
+      unlockTimer.current = window.setTimeout(() => {
+        document.body.style.overflow = '';
+      }, 560);
       window.removeEventListener('keydown', onKey);
     };
   }, [open]);
