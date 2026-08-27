@@ -225,7 +225,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white py-1 pl-1 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="flex flex-none items-center gap-2 rounded-full border border-slate-300 bg-white py-1 pl-1 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -233,11 +233,11 @@ export default function Navbar() {
                   <img
                     src={user.photoURL}
                     alt=""
-                    className="h-7 w-7 rounded-full"
+                    className="h-7 w-7 flex-none rounded-full"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                  <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-brand-600 text-xs font-bold text-white">
                     {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
                   </span>
                 )}

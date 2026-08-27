@@ -1038,6 +1038,8 @@ const AR: Record<string, string> = {
   'the photo fills the box, extra is cropped from the edges.': 'الصورة تملأ الإطار، وما يزيد يُقص من الأطراف.',
   'Best banner size': 'أفضل حجم لصورة البنر',
   'upload double (2432 × 1024) for sharp screens.': 'ارفع ضعف الحجم (2432 × 1024) لشاشات أوضح.',
+  'Chat': 'دردشة',
+  'Login': 'دخول',
 };
 
 interface LanguageValue {
