@@ -133,7 +133,7 @@ export default function AdminChat() {
           ) : chats.length === 0 ? (
             <p className="p-6 text-center text-sm text-slate-500">{t('No conversations yet.')}</p>
           ) : (
-            <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+            <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto lg:max-h-[calc(100dvh-14rem)]">
               {chats.map((c) => (
                 <li key={c.id}>
                   <button
@@ -177,7 +177,7 @@ export default function AdminChat() {
         </div>
 
         {/* Open thread */}
-        <div className={`card flex min-h-[50vh] flex-col overflow-hidden ${activeId ? '' : 'hidden lg:flex'}`}>
+        <div className={`card flex h-[calc(100dvh-23rem)] min-h-[22rem] flex-col overflow-hidden lg:h-[calc(100dvh-14rem)] ${activeId ? '' : 'hidden lg:flex'}`}>
           {!active ? (
             <p className="m-auto p-10 text-center text-sm text-slate-500">
               {t('Pick a conversation to read and reply.')}
