@@ -231,7 +231,7 @@ export default function Navbar() {
                   setMenuOpen((o) => !o);
                   setSearchOpen(false);
                 }}
-                className="flex flex-none items-center gap-2 rounded-full border border-slate-300 bg-white py-1 pl-1 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="flex h-10 flex-none items-center gap-2 rounded-full border border-slate-300 bg-white p-1 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:pe-3"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -239,11 +239,11 @@ export default function Navbar() {
                   <img
                     src={user.photoURL}
                     alt=""
-                    className="h-7 w-7 flex-none rounded-full"
+                    className="h-8 w-8 flex-none rounded-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                  <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-brand-600 text-xs font-bold text-white">
                     {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -253,7 +253,9 @@ export default function Navbar() {
               </button>
               {menuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                  // end-0, not right-0: in Arabic the button sits near the
+                  // LEFT edge, and a right-anchored panel hung off-screen.
+                  className="absolute end-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
                   role="menu"
                 >
                   <div className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
@@ -281,7 +283,7 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    className="block w-full rounded-md px-3 py-2 text-start text-sm text-slate-700 hover:bg-slate-50"
                     role="menuitem"
                   >
                     {t('Sign out')}
