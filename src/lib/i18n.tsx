@@ -1070,6 +1070,7 @@ const AR: Record<string, string> = {
   'Referral': 'توصية',
   'Website': 'الموقع',
   'Other': 'أخرى',
+  'Send to Solar Jobs': 'إرسال إلى أعمال الطاقة الشمسية',
 };
 
 interface LanguageValue {

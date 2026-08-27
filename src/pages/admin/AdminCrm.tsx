@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   closestCorners,
   DndContext,
@@ -27,6 +28,7 @@ import {
   type CrmSection,
   type CrmStatus,
 } from '../../lib/crmStore';
+import { createJob } from '../../lib/jobsStore';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
 import { useStaffName } from '../../lib/staffDirectory';
@@ -106,7 +108,8 @@ function fmtWhen(ms: number | null): string {
 
 export default function AdminCrm() {
   const { t } = useLang();
-  const { isAdmin, isCrmSolar, isCrmComputers } = useAuth();
+  const { isAdmin, isCrmSolar, isCrmComputers, isSolarStaff } = useAuth();
+  const navigate = useNavigate();
   const sections = useMemo(
     () =>
       (
@@ -240,6 +243,33 @@ export default function AdminCrm() {
       setError(e instanceof Error ? e.message : 'Save failed.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** A won solar lead becomes a job card, ready to schedule. */
+  async function sendToJobs(contact: CrmContact) {
+    if (!confirm(`Create a solar job for ${contact.name || 'this customer'}?`)) return;
+    setError('');
+    try {
+      await createJob({
+        customer: contact.name,
+        phone: contact.phone,
+        address: contact.city,
+        mapUrl: '',
+        type: 'install',
+        system: contact.interest,
+        installer: '',
+        installerEmails: [],
+        notes: '',
+        invoiceUrl: '',
+        invoiceName: '',
+        status: 'new',
+        order: Date.now(),
+      });
+      await addContactNote(contact.id, '⚡ Sent to Solar Jobs').catch(() => undefined);
+      navigate('/admin/jobs');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create the job.');
     }
   }
 
@@ -418,6 +448,11 @@ export default function AdminCrm() {
         <ContactDetails
           contact={viewing}
           canDelete={isAdmin}
+          onSendToJobs={
+            viewing.section === 'solar' && viewing.status === 'won' && isSolarStaff
+              ? () => sendToJobs(viewing)
+              : null
+          }
           onClose={() => setViewingId(null)}
           onEdit={() => {
             setError('');
@@ -810,6 +845,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function ContactDetails({
   contact,
   canDelete,
+  onSendToJobs,
   onClose,
   onEdit,
   onMove,
@@ -818,6 +854,9 @@ function ContactDetails({
   contact: CrmContact;
   /** Only admins may erase a lead; the rules refuse everyone else anyway. */
   canDelete: boolean;
+  /** Set when this lead is won solar business and the viewer can make
+   *  jobs — turns the sale into a card on the jobs board. */
+  onSendToJobs: (() => void) | null;
   onClose: () => void;
   onEdit: () => void;
   onMove: (status: CrmStatus) => void;
@@ -906,6 +945,16 @@ function ContactDetails({
               ))}
             </select>
           </label>
+
+          {onSendToJobs && (
+            <button
+              type="button"
+              onClick={onSendToJobs}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600"
+            >
+              ⚡ {t('Send to Solar Jobs')}
+            </button>
+          )}
 
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
