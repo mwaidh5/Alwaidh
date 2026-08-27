@@ -31,6 +31,7 @@ import {
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
+import { useStaffName } from '../../lib/staffDirectory';
 import { useScrollLock } from '../../lib/useScrollLock';
 import { changedAt, markJobSeen, useSeenJobs } from '../../lib/seenJobs';
 import { useAuth } from '../../context/AuthContext';
@@ -244,8 +245,23 @@ export default function AdminJobs() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   );
 
+  // A job stores the installer's name as text frozen at assignment time,
+  // so a rename on the Users page never reached old cards. Re-resolve the
+  // label from the assigned emails on every render; the stored text only
+  // survives for ancient jobs that carry no emails.
+  const named = useMemo(
+    () =>
+      (jobs ?? []).map((j) =>
+        j.installerEmails.length
+          ? { ...j, installer: j.installerEmails.map(installerName).join(', ') }
+          : j,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [jobs, staffNames, installerNames],
+  );
+
   const filtered = useMemo(() => {
-    let list = jobs ?? [];
+    let list = named;
     if (typeFilter !== 'all') list = list.filter((j) => j.type === typeFilter);
     const q = query.trim().toLowerCase();
     if (q) {
@@ -261,7 +277,7 @@ export default function AdminJobs() {
     return [...list].sort(
       (a, b) => b.order - a.order || (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0),
     );
-  }, [jobs, typeFilter, query]);
+  }, [named, typeFilter, query]);
 
   const byStatus = useMemo(() => {
     const map: Record<JobStatus, Job[]> = {
@@ -609,6 +625,9 @@ export default function AdminJobs() {
 function JobsTrashModal({ onClose }: { onClose: () => void }) {
   useScrollLock();
   const { t } = useLang();
+  const staffName = useStaffName();
+  const whoOn = (j: Job) =>
+    j.installerEmails.length ? j.installerEmails.map(staffName).join(', ') : j.installer;
   // Restoring is safe, and anyone who can see the Trash may do it. Deleting
   // for good is the admin's alone — the database enforces that either way,
   // so this is about not offering a button that would be refused.
@@ -666,7 +685,7 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
                     {job.customer || 'Unnamed'}
                   </p>
                   <p className="truncate text-xs text-slate-500">
-                    {[job.system, job.installer].filter(Boolean).join(' — ') || t('No details')}
+                    {[job.system, whoOn(job)].filter(Boolean).join(' — ') || t('No details')}
                   </p>
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {t('Deleted')}
