@@ -30,6 +30,7 @@ import AdminChat from './pages/admin/AdminChat';
 import AdminTeam from './pages/admin/AdminTeam';
 import AdminBlog from './pages/admin/AdminBlog';
 import AdminJobs from './pages/admin/AdminJobs';
+import AdminCrm from './pages/admin/AdminCrm';
 import AdminFiles from './pages/admin/AdminFiles';
 import NotFound from './pages/NotFound';
 
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="prices" element={<AdminSolarPrices />} />
           <Route path="jobs" element={<AdminJobs />} />
+          <Route path="crm" element={<AdminCrm />} />
           <Route path="media" element={<AdminMedia />} />
           <Route path="chat" element={<AdminChat />} />
           <Route path="team" element={<AdminTeam />} />

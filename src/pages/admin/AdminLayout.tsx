@@ -23,7 +23,7 @@ import { sendAccountEmail } from '../../lib/accountEmail';
 // staff, 'jobs' = solar staff plus installers (who see only their own jobs),
 // 'staff' = every staff role except installers, 'team' = anyone who works
 // here, installers included.
-type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff' | 'team';
+type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff' | 'team' | 'crm';
 /** Routes that carry a "what's new" badge. */
 const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/jobs': 'jobs',
@@ -38,6 +38,7 @@ const ALERT_FOR: Record<string, AlertKey> = {
 const navItems: (NavItem & { access: Access })[] = [
   { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin', group: 'Work' },
   { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
+  { to: '/admin/crm', label: 'CRM', icon: '📇', access: 'crm', group: 'Work' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin', group: 'Work' },
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
   { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar', group: 'Shop' },
@@ -61,6 +62,8 @@ export default function AdminLayout() {
     isSolarStaff,
     isShopManager,
     isInstaller,
+    isCrmSolar,
+    isCrmComputers,
     hasAdminAccess,
     viewAs,
     realIsAdmin,
@@ -179,6 +182,7 @@ export default function AdminLayout() {
     if (access === 'solar') return isSolarStaff;
     if (access === 'jobs') return isSolarStaff || isInstaller;
     if (access === 'staff') return isComputerStaff || isSolarStaff || isShopManager;
+    if (access === 'crm') return isCrmSolar || isCrmComputers;
     if (access === 'team') return true; // any signed-in staff role
     return false;
   };
