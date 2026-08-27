@@ -6,6 +6,7 @@ import {
   deleteUser,
   listUsers,
   setUserDisabled,
+  setUserName,
   setUserRole,
   type AppUser,
 } from '../../lib/userStore';
@@ -93,6 +94,11 @@ export default function AdminUsers() {
   // Split the long list into the people who work here and everyone else.
   const [audience, setAudience] = useState<'all' | 'team' | 'customers'>('all');
 
+  // Renaming: one row at a time holds an open name box.
+  const [editingUid, setEditingUid] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([listUsers(), loadSettings()])
@@ -177,6 +183,31 @@ export default function AdminUsers() {
       setError(e instanceof Error ? e.message : 'Update failed.');
     } finally {
       setSavingUid(null);
+    }
+  }
+
+  async function handleSaveName(u: AppUser) {
+    const clean = nameDraft.trim();
+    setError('');
+    setSavingName(true);
+    try {
+      await setUserName(u.uid, clean);
+      // The staff name book is what chats, jobs and the directory read —
+      // keep it saying the same thing as the user record.
+      if (settings) {
+        const book = { ...(settings.staffNames ?? {}) };
+        const e = u.email.toLowerCase();
+        if (clean) book[e] = clean;
+        else delete book[e];
+        await updateSettingsField('staffNames', book);
+        setSettings({ ...settings, staffNames: book });
+      }
+      setEditingUid(null);
+      setRefresh((n) => n + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Rename failed.');
+    } finally {
+      setSavingName(false);
     }
   }
 
@@ -399,9 +430,54 @@ export default function AdminUsers() {
                         </span>
                       )}
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-900">
-                          {u.displayName || u.email}
-                        </p>
+                        {editingUid === u.uid ? (
+                          <form
+                            className="flex items-center gap-1.5"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleSaveName(u);
+                            }}
+                          >
+                            <input
+                              autoFocus
+                              type="text"
+                              value={nameDraft}
+                              onChange={(e) => setNameDraft(e.target.value)}
+                              placeholder={u.email}
+                              className="input max-w-[180px] px-2 py-1 text-sm"
+                            />
+                            <button
+                              type="submit"
+                              disabled={savingName}
+                              className="btn-primary px-2.5 py-1 text-xs"
+                            >
+                              {savingName ? '…' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingUid(null)}
+                              disabled={savingName}
+                              className="text-xs font-semibold text-slate-500 hover:underline"
+                            >
+                              Cancel
+                            </button>
+                          </form>
+                        ) : (
+                          <p className="truncate font-semibold text-slate-900">
+                            {u.displayName || u.email}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUid(u.uid);
+                                setNameDraft(u.displayName ?? '');
+                              }}
+                              title="Rename"
+                              className="ms-1.5 text-slate-400 hover:text-brand-600"
+                            >
+                              ✏️
+                            </button>
+                          </p>
+                        )}
                         <p className="text-xs text-slate-500">{u.email}</p>
                       </div>
                       {/* See the dashboard as this person sees it. */}

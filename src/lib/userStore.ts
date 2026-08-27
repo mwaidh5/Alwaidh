@@ -54,7 +54,12 @@ function normalize(data: Record<string, unknown>, uid: string): AppUser {
   return {
     uid,
     email: String(data.email ?? ''),
-    displayName: data.displayName ? String(data.displayName) : undefined,
+    // The admin's chosen name wins over whatever Google wrote at sign-in.
+    displayName: data.customName
+      ? String(data.customName)
+      : data.displayName
+        ? String(data.displayName)
+        : undefined,
     photoURL: data.photoURL ? String(data.photoURL) : undefined,
     role: (
       [
@@ -142,6 +147,24 @@ export async function setUserRole(uid: string, role: AppUser['role']): Promise<v
     return;
   }
   writeLocal(readLocal().map((u) => (u.uid === uid ? { ...u, role } : u)));
+}
+
+/**
+ * Rename a user. The name lands in `customName`, which sign-ins never
+ * touch — `recordUserLogin` keeps overwriting `displayName` with the
+ * Google profile name, so a plain rename would be undone on next login.
+ * An empty name clears the custom one and the Google name shows again.
+ */
+export async function setUserName(uid: string, name: string): Promise<void> {
+  const database = db;
+  const clean = name.trim();
+  if (database) {
+    await updateDoc(doc(database, COLLECTION, uid), { customName: clean });
+    return;
+  }
+  writeLocal(
+    readLocal().map((u) => (u.uid === uid ? { ...u, displayName: clean || undefined } : u)),
+  );
 }
 
 export async function setUserDisabled(uid: string, disabled: boolean): Promise<void> {
