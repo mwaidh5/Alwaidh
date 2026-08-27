@@ -14,7 +14,7 @@ import {
   type TeamJobCard,
   type TeamMessage,
 } from '../../lib/teamChatStore';
-import { handleOf, prettyHandle, useStaffDirectory } from '../../lib/staffDirectory';
+import { handleOf, prettyHandle, useStaffDirectory, useStaffName } from '../../lib/staffDirectory';
 import { subscribeJobs, type Job } from '../../lib/jobsStore';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
@@ -654,6 +654,9 @@ function ProductPicker({
 
 function JobPicker({ onClose, onPick }: { onClose: () => void; onPick: (j: TeamJobCard) => void }) {
   const { t } = useLang();
+  const staffName = useStaffName();
+  const whoOn = (j: Job) =>
+    j.installerEmails.length ? j.installerEmails.map(staffName).join(', ') : j.installer;
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [query, setQuery] = useState('');
 
@@ -704,7 +707,7 @@ function JobPicker({ onClose, onPick }: { onClose: () => void; onPick: (j: TeamJ
                     {j.customer || t('Unnamed')}
                   </span>
                   <span className="block truncate text-xs text-slate-500">
-                    {[j.system, j.installer].filter(Boolean).join(' · ')}
+                    {[j.system, whoOn(j)].filter(Boolean).join(' · ')}
                   </span>
                 </span>
               </button>
