@@ -103,6 +103,16 @@ export default function MobileDrawer() {
             <Link
               key={item.to}
               to={item.to}
+              onClick={() => {
+                // Tapping the page you're already on: the route doesn't
+                // change, so the close-on-navigate effect never fires and
+                // the tap felt dead. Close by hand and go to the top —
+                // that IS "take me home" when home is where you are.
+                if (item.to === location.pathname) {
+                  closeDrawer();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className={`flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-all duration-300 active:bg-white/10 ${
                 open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
               }`}
