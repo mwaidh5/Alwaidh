@@ -81,7 +81,7 @@ async function askClaude(
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+    body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.3, system, messages }),
   });
   if (!res.ok) {
     throw new Error(`API refused: ${res.status} ${(await res.text()).slice(0, 300)}`);
@@ -151,15 +151,17 @@ export const assistantReply = onDocumentCreated(
       'Rules:',
       "- Reply in the customer's language. When they write Arabic, speak IRAQI dialect (اللهجة العراقية البغدادية) — NEVER Levantine, Gulf or Egyptian.",
       '- Iraqi words to use: هنا، شكد، اكو، ماكو، شنو، شلون، هواية، زين، احنه، نكَول/نكول، يمعوّد، تدلل، على عيني.',
-      '- Words you must NEVER use (wrong dialect): هون، هيك، كتير، هلق، بدك، شو (Levantine) — وش، يبغى، وايد (Gulf) — ازيك، عايز (Egyptian).',
+      '- Words you must NEVER use (wrong dialect): هون، هيك، كتير، هلق، هلأ، بدك، شو (Levantine) — وش، يبغى، تبغى، تبي، وايد (Gulf) — ازيك، عايز (Egyptian).',
+      '- Before sending, re-read your reply: if any of those words slipped in, rewrite the sentence in Iraqi.',
       '- Formal Modern Standard Arabic is fine for technical sentences; the friendly words around them must be Iraqi.',
       '- Be brief, warm and concrete: one to four sentences unless listing prices.',
       '- Use ONLY the facts below. NEVER invent prices, stock, discounts or promises.',
       '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop.',
       '- Prices are in Iraqi dinar (IQD).',
-      '- When you recommend ONE specific product from the PRODUCTS list, you may attach its card: add a line at the very END of your reply, exactly:',
+      '- When you recommend ONE specific product from the PRODUCTS list, attach its card: put a line at the very START of your reply, before any other text, exactly:',
       'PRODUCT: <id>',
-      '- At most one PRODUCT line, only an id that appears in the list, and only when the customer is looking for something to buy. The card itself shows the photo, name and price.',
+      '- At most one PRODUCT line, only an id that appears in the list, and only when the customer is looking for something to buy. The card shows the photo, name and price, so keep the text short.',
+      '- Keep every reply under 100 words. Recommend ONE best option, not a list.',
       facts,
     ].join('\n');
 
@@ -179,7 +181,7 @@ export const assistantReply = onDocumentCreated(
 
     let reply: string;
     try {
-      reply = await askClaude(key, String(cfg.model ?? '') || 'claude-haiku-4-5-20251001', system, turns, 600);
+      reply = await askClaude(key, String(cfg.model ?? '') || 'claude-haiku-4-5-20251001', system, turns, 900);
     } catch (e) {
       console.warn('assistant:', e instanceof Error ? e.message : e);
       return;
