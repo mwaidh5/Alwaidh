@@ -52,7 +52,7 @@ export default function MobileDrawer() {
     { to: '/', label: 'Home', icon: <HomeIcon /> },
     { to: '/shop', label: 'Shop', icon: <ShopIcon /> },
     { to: '/solar-prices', label: 'Solar Prices', icon: <SunIcon /> },
-    { to: '/blog', label: 'Articles', icon: <span className="text-base">📝</span> },
+    { to: '/blog', label: 'Articles', icon: <ArticleIcon /> },
     { to: '/cart', label: 'Cart', icon: <CartIcon />, badge: itemCount },
     ...(hasAdminAccess
       ? [{ to: '/admin', label: isAdmin ? 'Admin' : 'Dashboard', icon: <GridIcon /> }]
@@ -189,6 +189,14 @@ function SunIcon() {
     <svg {...stroke} aria-hidden="true">
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+    </svg>
+  );
+}
+function ArticleIcon() {
+  return (
+    <svg {...stroke} aria-hidden="true">
+      <rect x="4" y="3.5" width="16" height="17" rx="2" />
+      <path d="M8 8.5h8M8 12h8M8 15.5h5" />
     </svg>
   );
 }
