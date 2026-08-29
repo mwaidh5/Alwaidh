@@ -35,21 +35,19 @@ export const NOTIFICATION_CHANNELS: NotificationChannel[] = [
   { key: 'team', label: 'Team chat', description: 'Messages from colleagues, and @ tags.' },
 ];
 
-/** The FCM topic behind each switch. Team chat is per person. */
+/**
+ * The FCM topic behind each switch — all per person now: a broadcast
+ * topic cannot leave out the person who caused the notification, so
+ * every channel became your-own-topic-per-channel and the server picks
+ * the recipients (minus the author) itself.
+ */
 function topicFor(key: NotificationKey, email: string): string {
-  switch (key) {
-    case 'jobs':
-      return 'staff-jobs';
-    case 'jobActivity':
-      return 'staff-job-activity';
-    case 'orders':
-      return 'staff-orders';
-    case 'messages':
-      return 'staff-messages';
-    case 'team':
-      return userTopic(email);
-  }
+  if (key === 'team') return userTopic(email);
+  return `${userTopic(email)}__${key}`;
 }
+
+/** The old broadcast topics, dropped on every sync. */
+const LEGACY_TOPICS = ['staff-jobs', 'staff-job-activity', 'staff-orders', 'staff-messages'];
 
 /**
  * A person's own topic, so team messages and @ tags reach exactly them.
@@ -336,10 +334,10 @@ export async function syncSubscriptions(roles: Roles, email: string | null): Pro
       if (!token) return;
       const prefs = notificationPrefs();
       const on: string[] = [];
-      const off: string[] = [];
+      const off: string[] = [...LEGACY_TOPICS];
       for (const { key } of channelsFor(roles)) {
-        if (key === 'team' && !email) continue;
-        (prefs[key] === false ? off : on).push(topicFor(key, email ?? ''));
+        if (!email) continue;
+        (prefs[key] === false ? off : on).push(topicFor(key, email));
       }
       await setWebTopics(token, on, off);
     } catch {
@@ -351,10 +349,13 @@ export async function syncSubscriptions(roles: Roles, email: string | null): Pro
   await ensureAndroidChannel();
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+    for (const topic of LEGACY_TOPICS) {
+      await FirebaseMessaging.unsubscribeFromTopic({ topic }).catch(() => undefined);
+    }
     const prefs = notificationPrefs();
     for (const { key } of channelsFor(roles)) {
-      if (key === 'team' && !email) continue;
-      const topic = topicFor(key, email ?? '');
+      if (!email) continue;
+      const topic = topicFor(key, email);
       if (prefs[key] === false) {
         await FirebaseMessaging.unsubscribeFromTopic({ topic }).catch(() => undefined);
       } else {
@@ -373,11 +374,11 @@ export async function setNotificationChannel(
   email: string | null,
 ): Promise<void> {
   savePrefs({ ...notificationPrefs(), [key]: on });
+  if (!email) return;
   if (!isNativeApp()) {
     try {
       const token = await webPushToken();
       if (!token) return;
-      if (key === 'team' && !email) return;
       const topic = topicFor(key, email ?? '');
       await setWebTopics(token, on ? [topic] : [], on ? [] : [topic]);
     } catch {
@@ -387,7 +388,6 @@ export async function setNotificationChannel(
   }
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
-    if (key === 'team' && !email) return;
     const topic = topicFor(key, email ?? '');
     if (on) await FirebaseMessaging.subscribeToTopic({ topic });
     else await FirebaseMessaging.unsubscribeFromTopic({ topic });
