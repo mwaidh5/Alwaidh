@@ -9,6 +9,7 @@ import MobileDrawer from './MobileDrawer';
 import LanguageGate from './LanguageGate';
 import { trackPageView } from '../lib/ga';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
+import { enablePush, isNativeApp } from '../lib/push';
 import { useLang } from '../lib/i18n';
 
 export default function Layout() {
@@ -69,6 +70,24 @@ export default function Layout() {
     if (navType === 'POP') return;
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   }, [location.pathname, navType]);
+
+  // Every new install of the app asks once for notification permission,
+  // a moment after the first screen settles — before any sign-in, so the
+  // device is ready the day its owner becomes staff (or we have news).
+  useEffect(() => {
+    try {
+      if (!isNativeApp() || localStorage.getItem('alwaidh.pushAsked.v1')) return;
+      localStorage.setItem('alwaidh.pushAsked.v1', '1');
+    } catch {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      enablePush({ isAdmin: false, isComputerStaff: false, isSolarStaff: false }, null).catch(
+        () => undefined,
+      );
+    }, 2500);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Every screen the visitor lands on reaches Google Analytics.
   useEffect(() => {

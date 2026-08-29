@@ -25,12 +25,55 @@ initializeApp();
 // crossing regions, and cap instances — this is a small shop.
 setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 
+/** Legacy broadcast topics — nothing publishes to these any more.
+ *  A broadcast cannot leave out the person who caused it, so every send
+ *  now goes to per-person channel topics instead; devices drop these on
+ *  their next launch (see src/lib/push.ts). */
 export const TOPICS = {
   jobs: 'staff-jobs',
   jobActivity: 'staff-job-activity',
   orders: 'staff-orders',
   messages: 'staff-messages',
 } as const;
+
+const OWNER_EMAILS = ['mwaidh5@gmail.com'];
+
+/** The role lists, read fresh so newly added staff get pings immediately. */
+async function staffLists(): Promise<{ admins: string[]; jobs: string[]; messages: string[] }> {
+  const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
+  const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(x).toLowerCase()) : []);
+  const admins = [...new Set([...OWNER_EMAILS, ...list(site.extraAdminEmails)])];
+  return {
+    admins,
+    jobs: [...new Set([...admins, ...list(site.solarStaffEmails)])],
+    messages: [
+      ...new Set([
+        ...admins,
+        ...list(site.computerStaffEmails),
+        ...list(site.solarStaffEmails),
+        ...list(site.shopManagerEmails),
+      ]),
+    ],
+  };
+}
+
+/** One channel's note to each person's own topic — never the author's:
+ *  nobody needs their phone to announce the comment they just typed. */
+async function pushUsers(
+  emails: string[],
+  author: unknown,
+  channel: string,
+  title: string,
+  body: string,
+  link: string,
+): Promise<void> {
+  const skip = String(author ?? '').trim().toLowerCase();
+  await Promise.all(
+    [...new Set(emails)]
+      .filter((e) => e && e !== skip)
+      .map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)),
+  );
+}
 
 async function push(topic: string, title: string, body: string, link: string): Promise<void> {
   try {
@@ -114,8 +157,10 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
   const customer = preview(job.customer, 40) || 'New customer';
   const system = preview(job.system, 40);
   const kind = job.type === 'repair' ? 'Repair' : 'Install';
-  await push(
-    TOPICS.jobs,
+  await pushUsers(
+    (await staffLists()).jobs,
+    job.createdBy,
+    'jobs',
     `🛠️ ${kind}: ${customer}`,
     [system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
     '/admin/jobs',
@@ -137,8 +182,10 @@ export const notifyJobActivity = onDocumentCreated(
     const customer = preview(snap.data()?.customer, 40) || 'a job';
     const who = preview(String(entry.by ?? '').split('@')[0], 24) || 'Someone';
     const icon = entry.kind === 'comment' ? '💬' : entry.kind === 'status' ? '🔄' : '✏️';
-    await push(
-      TOPICS.jobActivity,
+    await pushUsers(
+      (await staffLists()).jobs,
+      entry.by,
+      'jobActivity',
       `${icon} ${customer}`,
       entry.kind === 'comment'
         ? `${who}: ${preview(entry.text)}`
@@ -154,8 +201,10 @@ export const notifyOrderUpdate = onDocumentUpdated('orders/{orderId}', async (ev
   const after = event.data?.after.data();
   if (!before || !after || before.status === after.status) return;
   const name = preview(after.customerName, 40) || 'A customer';
-  await push(
-    TOPICS.orders,
+  await pushUsers(
+    (await staffLists()).admins,
+    '',
+    'orders',
     `🧾 Order ${preview(after.status, 20)}`,
     `${name}${after.customerPhone ? ` · ${preview(after.customerPhone, 20)}` : ''}`,
     '/admin/orders',
@@ -168,8 +217,10 @@ export const notifyNewOrder = onDocumentCreated('orders/{orderId}', async (event
   const name = preview(order.customerName, 40) || 'A customer';
   const total = Number(order.subtotal ?? 0).toLocaleString();
   const currency = preview(order.currency, 8) || 'IQD';
-  await push(
-    TOPICS.orders,
+  await pushUsers(
+    (await staffLists()).admins,
+    '',
+    'orders',
     `🧾 New order from ${name}`,
     `${total} ${currency}${order.customerPhone ? ` · ${preview(order.customerPhone, 20)}` : ''}`,
     '/admin/orders',
@@ -182,8 +233,10 @@ export const notifyNewChatMessage = onDocumentCreated(
     const msg = event.data?.data();
     // Staff replies shouldn't ping the staff.
     if (!msg || msg.from !== 'guest') return;
-    await push(
-      TOPICS.messages,
+    await pushUsers(
+      (await staffLists()).messages,
+      '',
+      'messages',
       '💬 New chat message',
       preview(msg.text) || 'A visitor wrote in the website chat',
       '/admin/chat',
@@ -236,8 +289,10 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
   const msg = event.data?.data();
   if (!msg) return;
   const name = preview(msg.name, 40) || 'Someone';
-  await push(
-    TOPICS.messages,
+  await pushUsers(
+    (await staffLists()).messages,
+    '',
+    'messages',
     `✉️ Message from ${name}`,
     preview(msg.subject) || preview(msg.message) || 'New enquiry',
     '/admin/submissions',
