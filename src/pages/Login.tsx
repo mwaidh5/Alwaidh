@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../lib/i18n';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
 export default function Login() {
   const { user, loading, configured, signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset } =
     useAuth();
+  const { t } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState<Mode>('signin');
@@ -61,16 +63,18 @@ export default function Login() {
     }
   }
 
-  const title = mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Reset password' : 'Sign in';
+  const title = t(mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Reset password' : 'Sign in');
 
   return (
     <section className="container-page py-16">
       <div className="mx-auto max-w-sm card p-7">
         <h1 className="text-2xl font-extrabold text-slate-900">{title}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          {mode === 'reset'
-            ? 'Enter your email and we’ll send you a reset link.'
-            : 'Sign in to your Alwaidh account.'}
+          {t(
+            mode === 'reset'
+              ? 'Enter your email and we’ll send you a reset link.'
+              : 'Sign in to your Alwaidh account.',
+          )}
         </p>
 
         {!configured && (
@@ -81,7 +85,7 @@ export default function Login() {
 
         {info && (
           <p className="mt-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-            {info}
+            {t(info)}
           </p>
         )}
 
@@ -91,7 +95,7 @@ export default function Login() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t('Your name')}
               autoComplete="name"
               className="input"
             />
@@ -100,7 +104,7 @@ export default function Login() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder={t('Email')}
             autoComplete="email"
             required
             className="input"
@@ -110,7 +114,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t('Password')}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               required
               minLength={6}
@@ -122,13 +126,15 @@ export default function Login() {
             disabled={!configured || submitting}
             className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting
-              ? 'Please wait…'
-              : mode === 'signup'
-                ? 'Create account'
-                : mode === 'reset'
-                  ? 'Send reset link'
-                  : 'Sign in'}
+            {t(
+              submitting
+                ? 'Please wait…'
+                : mode === 'signup'
+                  ? 'Create account'
+                  : mode === 'reset'
+                    ? 'Send reset link'
+                    : 'Sign in',
+            )}
           </button>
         </form>
 
@@ -143,7 +149,7 @@ export default function Login() {
               }}
               className="text-brand-700 hover:underline"
             >
-              Forgot password?
+              {t('Forgot password?')}
             </button>
             <button
               type="button"
@@ -154,7 +160,7 @@ export default function Login() {
               }}
               className="text-brand-700 hover:underline"
             >
-              Create account
+              {t('Create account')}
             </button>
           </div>
         )}
@@ -168,13 +174,13 @@ export default function Login() {
             }}
             className="mt-3 text-sm text-brand-700 hover:underline"
           >
-            ← Back to sign in
+            ← {t('Back to sign in')}
           </button>
         )}
 
         <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
           <span className="h-px flex-1 bg-slate-200" />
-          OR
+          {t('OR')}
           <span className="h-px flex-1 bg-slate-200" />
         </div>
 
@@ -185,18 +191,18 @@ export default function Login() {
           className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GoogleIcon />
-          Continue with Google
+          {t('Continue with Google')}
         </button>
 
         {error && (
           <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            {error}
+            {t(error)}
           </p>
         )}
 
         <p className="mt-6 text-center text-xs text-slate-500">
           <Link to="/" className="text-brand-700 hover:underline">
-            Back to home
+            {t('Back to home')}
           </Link>
         </p>
       </div>

@@ -22,6 +22,16 @@ export type SaveResult = 'saved' | 'shared' | 'opened' | 'failed';
 export async function saveFile(blob: Blob, filename: string): Promise<SaveResult> {
   if (!isNativeApp()) {
     const url = URL.createObjectURL(blob);
+    // On a phone browser a silent download disappears into a folder nobody
+    // opens — a new tab shows the PDF right away, with the browser's own
+    // share/save on it. Falls back to the download when pop-ups are blocked.
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      const opened = window.open(url, '_blank');
+      if (opened) {
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        return 'opened';
+      }
+    }
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;

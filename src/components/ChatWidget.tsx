@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useSettings } from '../lib/useSettings';
 import { useAnyModalOpen } from '../lib/useScrollLock';
-import { consumeChatDraft, setChatUnread, useChatOpenSignal } from '../lib/chatPanel';
+import { consumeChatDraft, setChatUnread, useChatOpenSignal, useChatToggleSignal } from '../lib/chatPanel';
 import ChatProductCard from './ChatProductCard';
 
 function timeText(ms: number | null): string {
@@ -38,6 +38,7 @@ export default function ChatWidget() {
   const [unread, setUnread] = useState(0);
   // The tab bar opens this and shows its count, so both have to leave here.
   const openSignal = useChatOpenSignal();
+  const toggleSignal = useChatToggleSignal();
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -47,6 +48,16 @@ export default function ChatWidget() {
       if (prefilled) setDraft(prefilled);
     }
   }, [openSignal]);
+
+  // The tab again = put it away.
+  useEffect(() => {
+    if (toggleSignal > 0) setOpen((o) => !o);
+  }, [toggleSignal]);
+
+  // Going to another page is leaving the conversation.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => setChatUnread(unread), [unread]);
   const [name, setName] = useState('');
@@ -95,6 +106,16 @@ export default function ChatWidget() {
 
   return (
     <>
+      {open && (
+        // A tap anywhere off the panel puts it away — phones only; on a
+        // desktop people scroll the shop with the chat sitting open.
+        <button
+          type="button"
+          aria-label={t('Close')}
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-30 cursor-default bg-transparent md:hidden"
+        />
+      )}
       {open && (
         <div className="fixed bottom-28 right-4 z-40 flex max-h-[70vh] md:bottom-24 w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-brand-700 px-4 py-3 text-white">
