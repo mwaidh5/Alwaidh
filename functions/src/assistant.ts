@@ -81,7 +81,8 @@ async function askClaude(
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.3, system, messages }),
+    // No temperature: the Claude 5 models refuse the parameter outright.
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
   });
   if (!res.ok) {
     throw new Error(`API refused: ${res.status} ${(await res.text()).slice(0, 300)}`);
@@ -181,7 +182,7 @@ export const assistantReply = onDocumentCreated(
 
     let reply: string;
     try {
-      reply = await askClaude(key, String(cfg.model ?? '') || 'claude-haiku-4-5-20251001', system, turns, 900);
+      reply = await askClaude(key, String(cfg.model ?? '') || 'claude-sonnet-5', system, turns, 900);
     } catch (e) {
       console.warn('assistant:', e instanceof Error ? e.message : e);
       return;
@@ -299,7 +300,7 @@ export const teachAssistant = onCall(
 
     const rawReply = await askClaude(
       key,
-      String(cfg.model ?? '') || 'claude-haiku-4-5-20251001',
+      String(cfg.model ?? '') || 'claude-sonnet-5',
       system,
       turns,
       800,
