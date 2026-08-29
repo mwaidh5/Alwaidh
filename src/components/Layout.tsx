@@ -98,7 +98,12 @@ export default function Layout() {
   // and the drawer is simply what was underneath. The transform makes this
   // wrapper the anchor for every fixed child — tab bar, chat bubble — so
   // they shrink with the page, which is exactly the effect.
-  const slide = dir === 'rtl' ? '-72%' : '72%';
+  //
+  // 56%, not more: the point is a CARD beside the menu, a third of the
+  // screen of it still showing — slide further and all that's left is a
+  // sliver, which reads as a plain side drawer. The menu labels sit in
+  // the far 58% of the panel, so this much card never covers a word.
+  const slide = dir === 'rtl' ? '-56%' : '56%';
   return (
     <>
       <LanguageGate />
