@@ -10,6 +10,7 @@ import {
   type ChatProductCard as ProductCard,
 } from '../../lib/chatStore';
 import { useAuth } from '../../context/AuthContext';
+import { loadAssistantConfig, saveAssistantConfig } from '../../lib/assistantStore';
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useProducts } from '../../lib/useProducts';
@@ -38,6 +39,7 @@ function chatTitle(c: ChatMeta): string {
 
 /** Live chat inbox: conversations on the left, the open thread on the right. */
 export default function AdminChat() {
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const { t } = useLang();
   const staffNames = useSettings().staffNames ?? {};
   const { isAdmin } = useAuth();
@@ -110,7 +112,8 @@ export default function AdminChat() {
 
   return (
     <div className="space-y-4">
-      <header>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
         <h1 className="text-2xl font-extrabold text-slate-900">{t('Messages')}</h1>
         <p className="mt-1 text-sm text-slate-600">
           {chats === null
@@ -119,7 +122,19 @@ export default function AdminChat() {
               ? t('Conversations from the chat bubble on the website appear here.')
               : `${chats.length} ${t('conversations')}${totalUnread ? ` · ${totalUnread} ${t('unread')}` : ''}`}
         </p>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setAssistantOpen(true)}
+            className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            🤖 Chat AI
+          </button>
+        )}
       </header>
+
+      {assistantOpen && <AssistantModal onClose={() => setAssistantOpen(false)} />}
 
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
@@ -399,6 +414,102 @@ function ProductPicker({
               ))}
             </ul>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Where the owner teaches the assistant: an on/off switch and a page of
+ * notes in plain language. The bot answers only from these notes plus
+ * the live catalogue and solar sheets — so whatever is written here is
+ * the whole of what it may claim.
+ */
+function AssistantModal({ onClose }: { onClose: () => void }) {
+  const [enabled, setEnabled] = useState(false);
+  const [knowledge, setKnowledge] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    loadAssistantConfig()
+      .then((cfg) => {
+        setEnabled(cfg.enabled);
+        setKnowledge(cfg.knowledge);
+        setLoaded(true);
+      })
+      .catch(() => setMsg('Could not load the settings.'));
+  }, []);
+
+  async function save() {
+    setBusy(true);
+    setMsg('');
+    try {
+      await saveAssistantConfig({ enabled, knowledge });
+      setMsg('Saved. The assistant uses the new notes on its very next reply.');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Save failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <h2 className="font-bold text-slate-900">🤖 Chat AI — teach the assistant</h2>
+          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              className="h-5 w-5 rounded border-slate-300 text-brand-600"
+            />
+            <span className="text-sm font-semibold text-slate-800">
+              Answer customers automatically
+            </span>
+          </label>
+          <div>
+            <p className="mb-1 text-sm font-bold text-slate-800">What the assistant knows</p>
+            <p className="mb-2 text-xs text-slate-500">
+              Write facts in plain Arabic or English, one per line: working hours, address,
+              delivery fees and areas, warranty, installation, payment. It already knows every
+              product price and the solar sheets on its own. It will NEVER invent anything that
+              is not written here — unknown questions get "a colleague will reply soon".
+            </p>
+            <textarea
+              value={knowledge}
+              onChange={(e) => setKnowledge(e.target.value)}
+              rows={12}
+              placeholder={'مثال:\nالدوام: السبت – الخميس، 9 صباحاً – 6 مساءً\nالتوصيل داخل بغداد 5,000 دينار، وللمحافظات حسب المنطقة\nالعنوان: بغداد — ...'}
+              className="input min-h-[16rem] w-full font-normal"
+              disabled={!loaded}
+            />
+          </div>
+          {msg && (
+            <p className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700">
+              {msg}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-3">
+          <p className="text-[11px] text-slate-400">
+            The bot goes quiet for 10 minutes whenever a real person replies in a chat.
+          </p>
+          <button type="button" onClick={save} disabled={busy || !loaded} className="btn-primary">
+            {busy ? 'Saving…' : 'Save'}
+          </button>
         </div>
       </div>
     </div>
