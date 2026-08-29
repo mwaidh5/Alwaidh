@@ -221,7 +221,13 @@ service cloud.firestore {
         }
         allow read: if inChat();
         allow create: if inChat() && request.resource.data.by == request.auth.token.email;
-        allow update: if false;
+        // A message never changes — except reactions, where each member
+        // may touch only their own slot.
+        allow update: if inChat()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          && request.resource.data.get('reactions', {})
+               .diff(resource.data.get('reactions', {}))
+               .affectedKeys().hasOnly([request.auth.token.email]);
         allow delete: if isAdmin();
       }
     }
@@ -267,7 +273,13 @@ service cloud.firestore {
         allow read: if isAdmin() || isSolarStaff() || ownJob();
         allow create: if (isAdmin() || isSolarStaff() || ownJob())
                       && request.resource.data.by == request.auth.token.email;
-        allow update: if false;
+        // History is written once — only reactions may be added, and each
+        // person may touch only their own slot in the map.
+        allow update: if (isAdmin() || isSolarStaff() || ownJob())
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          && request.resource.data.get('reactions', {})
+               .diff(resource.data.get('reactions', {}))
+               .affectedKeys().hasOnly([request.auth.token.email]);
         allow delete: if isAdmin();
       }
     }

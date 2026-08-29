@@ -13,6 +13,7 @@ import {
   type TeamChat,
   type TeamJobCard,
   type TeamMessage,
+  setTeamReaction,
 } from '../../lib/teamChatStore';
 import { handleOf, prettyHandle, useStaffDirectory, useStaffName } from '../../lib/staffDirectory';
 import { subscribeJobs, type Job } from '../../lib/jobsStore';
@@ -21,6 +22,7 @@ import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
 import ChatProductCard from '../../components/ChatProductCard';
+import Reactions from '../../components/Reactions';
 import type { ChatProductCard as ProductCard } from '../../lib/chatStore';
 
 function timeText(ms: number | null): string {
@@ -315,6 +317,11 @@ export default function AdminTeam() {
                         )}
                         {m.product && <ChatProductCard product={m.product} newTab />}
                         {m.job && <JobChip job={m.job} />}
+                        <Reactions
+                          dark={mine}
+                          reactions={m.reactions}
+                          onToggle={(emoji) => setTeamReaction(active.id, m.id, emoji)}
+                        />
                         <p
                           className={`mt-0.5 text-[10px] ${mine ? 'text-brand-100' : 'text-slate-400'}`}
                         >

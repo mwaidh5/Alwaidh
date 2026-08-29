@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   addJobComment,
+  setJobReaction,
   subscribeJobActivity,
   type Job,
   type JobAttachment,
   type JobEvent,
 } from '../lib/jobsStore';
 import { uploadJobCommentFile } from '../lib/imageUpload';
+import Reactions from './Reactions';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { useStaffName } from '../lib/staffDirectory';
@@ -276,6 +278,12 @@ export default function JobActivity({ job }: { job: Job }) {
                     )}
                   </p>
                   {e.attachments.length > 0 && <AttachmentList items={e.attachments} />}
+                  {e.kind === 'comment' && (
+                    <Reactions
+                      reactions={e.reactions}
+                      onToggle={(emoji) => setJobReaction(job.id, e.id, emoji)}
+                    />
+                  )}
                   <p className="text-xs text-slate-400">{whenText(e.atMs)}</p>
                 </div>
               </li>

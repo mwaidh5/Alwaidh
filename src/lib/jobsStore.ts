@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   deleteField,
+  FieldPath,
   doc,
   onSnapshot,
   orderBy,
@@ -67,6 +68,7 @@ export interface JobEvent {
   text: string;        // comment body, or a short description of the change
   mentions: string[];  // emails tagged in a comment
   attachments: JobAttachment[]; // photos and PDFs posted with the comment
+  reactions: Record<string, string>; // email → emoji, one per person
 }
 
 export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
@@ -421,6 +423,18 @@ export async function logJobEvent(
   }
 }
 
+
+/** email → emoji, tolerant of anything odd that got written. */
+function readReactions(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (v && typeof v === 'object') {
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof val === 'string' && val) out[k.toLowerCase()] = val;
+    }
+  }
+  return out;
+}
+
 /** Post a comment, optionally tagging colleagues and attaching photos/PDFs. */
 export async function addJobComment(
   jobId: string,
@@ -441,6 +455,23 @@ export async function addJobComment(
     by: currentEmail(),
     at: serverTimestamp(),
   });
+}
+
+/** Put, swap or take back this account's reaction on one history entry.
+ *  The rules allow exactly this: only the caller's own slot in the
+ *  reactions map may change, and nothing else on the entry. */
+export async function setJobReaction(
+  jobId: string,
+  entryId: string,
+  emoji: string | null,
+): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Reactions need a database connection.');
+  await updateDoc(
+    doc(database, COLLECTION, jobId, 'activity', entryId),
+    new FieldPath('reactions', currentEmail()),
+    emoji ?? deleteField(),
+  );
 }
 
 /** Live history for one job, oldest first. */
@@ -468,6 +499,7 @@ export function subscribeJobActivity(
             atMs: toMillis(data.at),
             text: String(data.text ?? ''),
             mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
+            reactions: readReactions(data.reactions),
             attachments: Array.isArray(data.attachments)
               ? (data.attachments as Record<string, unknown>[]).map((a) => ({
                   url: String(a.url ?? ''),

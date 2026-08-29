@@ -10,6 +10,9 @@ import {
   setDoc,
   where,
   type Firestore,
+  deleteField,
+  FieldPath,
+  updateDoc,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import type { ChatProductCard } from './chatStore';
@@ -51,6 +54,7 @@ export interface TeamMessage {
   mentions: string[];
   product: ChatProductCard | null;
   job: TeamJobCard | null;
+  reactions: Record<string, string>; // email → emoji, one per person
 }
 
 const COLLECTION = 'teamChats';
@@ -63,6 +67,18 @@ function toMillis(v: unknown): number | null {
   if (typeof v === 'number') return v;
   const ts = v as { toMillis?: () => number } | null;
   return typeof ts?.toMillis === 'function' ? ts.toMillis() : null;
+}
+
+
+/** email → emoji, tolerant of anything odd that got written. */
+function readReactions(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (v && typeof v === 'object') {
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof val === 'string' && val) out[k.toLowerCase()] = val;
+    }
+  }
+  return out;
 }
 
 function normalizeChat(data: Record<string, unknown>, id: string): TeamChat {
@@ -144,6 +160,7 @@ export function subscribeTeamMessages(
             by: String(data.by ?? ''),
             atMs: toMillis(data.at),
             mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
+            reactions: readReactions(data.reactions),
             product: p?.id
               ? {
                   id: String(p.id),
@@ -165,6 +182,22 @@ export function subscribeTeamMessages(
         }),
       ),
     () => cb([]),
+  );
+}
+
+/** Put, swap or take back this account's reaction on one message. The
+ *  rules allow only the caller's own slot in the reactions map to move. */
+export async function setTeamReaction(
+  chatId: string,
+  messageId: string,
+  emoji: string | null,
+): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Messaging needs a database connection.');
+  await updateDoc(
+    doc(database, COLLECTION, chatId, 'messages', messageId),
+    new FieldPath('reactions', myEmail()),
+    emoji ?? deleteField(),
   );
 }
 
