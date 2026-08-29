@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#1d4ed8"/>
-  <text x="50%" y="56%" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800" fill="#ffffff" dominant-baseline="middle">A</text>
+  <!-- The W from the wordmark: brand blue on a white tile, so the tab
+       icon reads as ours at 16px without squeezing the whole logo in. -->
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+  <path d="M9 19.5 L20.5 45.5 L32 24.5 L43.5 45.5 L55 19.5"
+        fill="none" stroke="#2563eb" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
