@@ -6,7 +6,7 @@
  * the web app). Topics avoid storing and expiring device tokens.
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
-export { assistantReply } from './assistant';
+export { assistantReply, teachAssistant } from './assistant';
 import { onCall, HttpsError, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
