@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
-import { openChat, useChatUnread } from '../lib/chatPanel';
+import { toggleChat, useChatUnread } from '../lib/chatPanel';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -36,7 +36,7 @@ export default function BottomNav() {
     { to: '/solar-prices', label: 'Solar', icon: SunIcon },
     hasAdminAccess
       ? { to: '/admin', label: 'Dashboard', icon: GridIcon }
-      : { onClick: () => openChat(), label: 'Chat', icon: ChatIcon, badge: chatUnread },
+      : { onClick: () => toggleChat(), label: 'Chat', icon: ChatIcon, badge: chatUnread },
     // "Login", not "Sign in": the Arabic for the long form wraps to two
     // lines at this size and grows the whole bar.
     { to: user ? '/account' : '/login', label: user ? 'Account' : 'Login', icon: UserIcon },

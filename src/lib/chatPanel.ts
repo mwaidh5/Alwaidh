@@ -24,6 +24,21 @@ function subscribe(fn: () => void): () => void {
 }
 
 let pendingDraft = '';
+let toggleTicks = 0;
+
+/** The tab bar's button: open when closed, close when open. */
+export function toggleChat(): void {
+  toggleTicks += 1;
+  emit();
+}
+
+export function useChatToggleSignal(): number {
+  return useSyncExternalStore(
+    subscribe,
+    () => toggleTicks,
+    () => 0,
+  );
+}
 
 /** Ask the chat panel to open, optionally with words already typed in —
  *  "I'm interested in the 20 Amp system" — so the visitor only has to

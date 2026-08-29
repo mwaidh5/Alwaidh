@@ -20,12 +20,12 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
   ]);
 
   const products = prodSnap.docs
-    .map((d) => d.data())
-    .filter((p) => !p.draft)
-    .map((p) => {
+    .filter((d) => !d.data().draft)
+    .map((d) => {
+      const p = d.data();
       const names = [p.name, p.nameAr].filter(Boolean).join(' / ');
       const stock = p.inStock ? 'in stock' : p.comingSoon ? 'coming soon' : 'out of stock';
-      return `${names} — ${Number(p.price ?? 0).toLocaleString('en-US')} IQD — ${stock}`;
+      return `id=${d.id} | ${names} — ${Number(p.price ?? 0).toLocaleString('en-US')} IQD — ${stock}`;
     })
     .join('\n');
 
@@ -157,6 +157,9 @@ export const assistantReply = onDocumentCreated(
       '- Use ONLY the facts below. NEVER invent prices, stock, discounts or promises.',
       '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop.',
       '- Prices are in Iraqi dinar (IQD).',
+      '- When you recommend ONE specific product from the PRODUCTS list, you may attach its card: add a line at the very END of your reply, exactly:',
+      'PRODUCT: <id>',
+      '- At most one PRODUCT line, only an id that appears in the list, and only when the customer is looking for something to buy. The card itself shows the photo, name and price.',
       facts,
     ].join('\n');
 
@@ -183,18 +186,44 @@ export const assistantReply = onDocumentCreated(
     }
     if (!reply) return;
 
+    // A PRODUCT: <id> line at the tail becomes a real product card — the
+    // same attachment staff send by hand.
+    let card: Record<string, unknown> | null = null;
+    const kept: string[] = [];
+    for (const line of reply.split('\n')) {
+      const m = /^\s*PRODUCT:\s*([\w-]+)\s*$/.exec(line);
+      if (m && !card) {
+        const snap = await db.doc(`products/${m[1]}`).get();
+        const prod = snap.data();
+        if (prod && !prod.draft) {
+          card = {
+            id: snap.id,
+            name: String(prod.name ?? ''),
+            price: Number(prod.price ?? 0),
+            currency: String(prod.currency ?? 'IQD'),
+            image: String(prod.image ?? ''),
+          };
+          continue;
+        }
+      }
+      kept.push(line);
+    }
+    const body = kept.join('\n').trim();
+    if (!body && !card) return;
+
     // Filed as staff so the widget styles it like a team reply; the staff
     // unread count is left alone so a person still reviews the thread.
     await db.collection(`chats/${chatId}/messages`).add({
       from: 'staff',
       by: ASSISTANT_BY,
       byName: '🤖 المساعد',
-      text: reply,
+      text: body,
+      ...(card ? { product: card } : {}),
       at: FieldValue.serverTimestamp(),
     });
     await db.doc(`chats/${chatId}`).set(
       {
-        lastText: reply,
+        lastText: body || `📦 ${String(card?.name ?? '')}`,
         lastFrom: 'staff',
         lastAt: FieldValue.serverTimestamp(),
         unreadForGuest: FieldValue.increment(1),
@@ -281,7 +310,7 @@ export const teachAssistant = onCall(
     for (const line of rawReply.split('\n')) {
       const m = /^\s*SAVE:\s*(.+)$/.exec(line);
       if (m && m[1].trim()) learned.push(m[1].trim());
-      else shown.push(line);
+      else if (!/^\s*PRODUCT:/.test(line)) shown.push(line);
     }
     const reply = shown.join('\n').trim();
 

@@ -1107,6 +1107,21 @@ const AR: Record<string, string> = {
   'shipped': 'في الطريق',
   'delivered': 'تم التوصيل',
   'cancelled': 'ملغي',
+  'Create account': 'إنشاء حساب',
+  'Reset password': 'إعادة تعيين كلمة المرور',
+  'Enter your email and we’ll send you a reset link.': 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
+  'Sign in to your Alwaidh account.': 'سجّل الدخول إلى حسابك في الواعظ.',
+  'Please wait…': 'انتظر قليلاً…',
+  'Send reset link': 'أرسل رابط إعادة التعيين',
+  'Back to sign in': 'رجوع لتسجيل الدخول',
+  'OR': 'أو',
+  'Password reset email sent. Check your inbox.': 'تم إرسال رابط إعادة التعيين — تحقق من بريدك.',
+  'Incorrect email or password.': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+  'No account found with that email.': 'لا يوجد حساب بهذا البريد.',
+  'An account with that email already exists.': 'يوجد حساب بهذا البريد مسبقاً.',
+  'Password should be at least 6 characters.': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+  'That email address looks invalid.': 'البريد الإلكتروني غير صالح.',
+  'Something went wrong.': 'حدث خطأ ما.',
 };
 
 interface LanguageValue {
