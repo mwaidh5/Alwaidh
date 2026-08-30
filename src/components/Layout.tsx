@@ -9,11 +9,13 @@ import MobileDrawer from './MobileDrawer';
 import LanguageGate from './LanguageGate';
 import { trackPageView } from '../lib/ga';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
-import { enablePush, isNativeApp } from '../lib/push';
+import { enablePush, isNativeApp, pushState, syncSubscriptions } from '../lib/push';
+import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 
 export default function Layout() {
   const location = useLocation();
+  const { user, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller } = useAuth();
   const navType = useNavigationType();
   const drawerOpen = useDrawerOpen();
   const { dir } = useLang();
@@ -88,6 +90,31 @@ export default function Layout() {
     }, 2500);
     return () => window.clearTimeout(id);
   }, []);
+
+  // Staff phones keep their notification topics in step from ANY page —
+  // waiting for a dashboard visit left phones deaf to the new per-person
+  // topics for days after the notification rework.
+  useEffect(() => {
+    if (!user?.email) return;
+    let cancelled = false;
+    (async () => {
+      if ((await pushState()) !== 'granted' || cancelled) return;
+      syncSubscriptions(
+        {
+          isAdmin: realIsAdmin,
+          isComputerStaff,
+          isSolarStaff,
+          isShopManager,
+          isInstaller,
+        },
+        user.email ?? null,
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller]);
 
   // Every screen the visitor lands on reaches Google Analytics.
   useEffect(() => {
