@@ -104,7 +104,12 @@ export default function AdminTeam() {
   })();
   const suggestions = (active?.members ?? [])
     .filter((m) => m !== me)
-    .filter((m) => mentionQuery !== null && handleOf(m).includes(mentionQuery));
+    .filter(
+      (m) =>
+        mentionQuery !== null &&
+        (handleOf(m).includes(mentionQuery) ||
+          nameOf(m).toLowerCase().includes(mentionQuery)),
+    );
 
   function insertMention(email: string) {
     setDraft((d) => d.replace(/@([\w.-]*)$/, `@${handleOf(email)} `));
@@ -405,8 +410,8 @@ export default function AdminTeam() {
                             onClick={() => insertMention(email)}
                             className="block w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50"
                           >
-                            <span className="font-semibold text-slate-800">@{handleOf(email)}</span>{' '}
-                            <span className="text-xs text-slate-400">{nameOf(email)}</span>
+                            <span className="font-semibold text-slate-800">{nameOf(email)}</span>{' '}
+                            <span className="text-xs text-slate-400">@{handleOf(email)}</span>
                           </button>
                         </li>
                       ))}
