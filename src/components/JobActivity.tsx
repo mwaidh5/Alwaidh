@@ -176,7 +176,10 @@ export default function JobActivity({ job }: { job: Job }) {
     return match ? match[1].toLowerCase() : null;
   })();
   const suggestions = staff.filter(
-    (e) => mentionQuery !== null && handleOf(e).includes(mentionQuery),
+    (e) =>
+      mentionQuery !== null &&
+      (handleOf(e).includes(mentionQuery) ||
+        staffName(e).toLowerCase().includes(mentionQuery)),
   );
 
   function insertMention(email: string) {
@@ -336,8 +339,8 @@ export default function JobActivity({ job }: { job: Job }) {
                   onClick={() => insertMention(email)}
                   className="block w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50"
                 >
-                  <span className="font-semibold text-slate-800">@{handleOf(email)}</span>{' '}
-                  <span className="text-xs text-slate-400">{email}</span>
+                  <span className="font-semibold text-slate-800">{staffName(email)}</span>{' '}
+                  <span className="text-xs text-slate-400">@{handleOf(email)}</span>
                 </button>
               </li>
             ))}
