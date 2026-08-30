@@ -32,10 +32,21 @@ export default function Layout() {
   // stays the same, which left iPhones showing the bug the origin fix
   // was meant to cure. Computed in a layout effect so the very first
   // painted frame of the slide is already aimed true.
-  const [cardLift, setCardLift] = useState(0);
+  // top/bottom describe the viewport slice of the document, so the card
+  // can be clipped to a real, bounded, rounded rectangle — without the
+  // clip it ran off the bottom of the screen as an endless slab. With
+  // the lift, the slice lands with identical margins above and below:
+  // lift - 0.14·scrollY = 0.07·viewport, whatever the scroll.
+  const [cardBox, setCardBox] = useState({ lift: 0, top: 0, bottom: 0 });
   useLayoutEffect(() => {
     if (drawerOpen) {
-      setCardLift(Math.round((Math.max(0, window.scrollY) + window.innerHeight / 2) * 0.14));
+      const y = Math.max(0, window.scrollY);
+      const docH = document.documentElement.scrollHeight;
+      setCardBox({
+        lift: Math.round((y + window.innerHeight / 2) * 0.14),
+        top: Math.round(y),
+        bottom: Math.max(0, Math.round(docH - y - window.innerHeight)),
+      });
     }
   }, [drawerOpen]);
   useEffect(() => {
@@ -146,12 +157,18 @@ export default function Layout() {
           drawerOpen || settling
             ? {
                 transform: drawerOpen
-                  ? `translateX(${slide}) translateY(${cardLift}px) scale(.86)`
+                  ? `translateX(${slide}) translateY(${cardBox.lift}px) scale(.86)`
                   : 'translateX(0) translateY(0) scale(1)',
-                // Scale hangs from the top edge; cardLift above brings the
+                // Scale hangs from the top edge; the lift above brings the
                 // on-screen part of the page back into view.
                 transformOrigin: '50% 0',
-                borderRadius: drawerOpen ? 24 : 0,
+                // The card is the screen's slice of the page, rounded on
+                // all four corners; on the way home the radius animates to
+                // zero and the clip becomes exactly the screen — invisible.
+                clipPath: `inset(${cardBox.top}px 0px ${cardBox.bottom}px 0px round ${
+                  drawerOpen ? 24 : 0
+                }px)`,
+                transitionProperty: 'transform, clip-path',
                 overflow: 'hidden',
                 boxShadow: drawerOpen ? '0 24px 70px rgba(2,6,23,.5)' : '0 0 0 rgba(2,6,23,0)',
                 // Above the drawer layer, or the menu's full-screen
