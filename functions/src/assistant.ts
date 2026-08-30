@@ -2,6 +2,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { getFirestore, FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
+import { pushUsers, staffLists } from './notify';
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
@@ -157,7 +158,8 @@ export const assistantReply = onDocumentCreated(
       '- Formal Modern Standard Arabic is fine for technical sentences; the friendly words around them must be Iraqi.',
       '- Be brief, warm and concrete: one to four sentences unless listing prices.',
       '- Use ONLY the facts below. NEVER invent prices, stock, discounts or promises.',
-      '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop.',
+      '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop. Whenever you say that, ALSO add a line at the very start of your reply, exactly:',
+      'NOTIFY_STAFF',
       '- Prices are in Iraqi dinar (IQD).',
       '- When you recommend ONE specific product from the PRODUCTS list, attach its card: put a line at the very START of your reply, before any other text, exactly:',
       'PRODUCT: <id>',
@@ -192,8 +194,13 @@ export const assistantReply = onDocumentCreated(
     // A PRODUCT: <id> line at the tail becomes a real product card — the
     // same attachment staff send by hand.
     let card: Record<string, unknown> | null = null;
+    let needsStaff = false;
     const kept: string[] = [];
     for (const line of reply.split('\n')) {
+      if (/^\s*NOTIFY_STAFF\s*$/.test(line)) {
+        needsStaff = true;
+        continue;
+      }
       const m = /^\s*PRODUCT:\s*([\w-]+)\s*$/.exec(line);
       if (m && !card) {
         const snap = await db.doc(`products/${m[1]}`).get();
@@ -233,6 +240,21 @@ export const assistantReply = onDocumentCreated(
       },
       { merge: true },
     );
+
+    // The bot promised a human — make sure the humans hear about it, on
+    // top of the ordinary new-message ping they already got.
+    if (needsStaff) {
+      const question = String(msg.text ?? '').replace(/\s+/g, ' ').slice(0, 90);
+      await pushUsers(
+        (await staffLists()).messages,
+        '',
+        'messages',
+        '📣 Customer needs staff',
+        question || 'The assistant handed a chat to the team',
+        '/admin/chat',
+        'staff-messages',
+      );
+    }
   },
 );
 

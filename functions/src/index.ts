@@ -18,6 +18,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
 import { buildEmail, buildOrderEmail, buildStockEmail, type EmailKind } from './emails';
+import { push, pushUsers, staffLists, userTopic } from './notify';
 
 initializeApp();
 
@@ -36,85 +37,8 @@ export const TOPICS = {
   messages: 'staff-messages',
 } as const;
 
-const OWNER_EMAILS = ['mwaidh5@gmail.com'];
 
-/** The role lists, read fresh so newly added staff get pings immediately. */
-async function staffLists(): Promise<{ admins: string[]; jobs: string[]; messages: string[] }> {
-  const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
-  const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(x).toLowerCase()) : []);
-  const admins = [...new Set([...OWNER_EMAILS, ...list(site.extraAdminEmails)])];
-  return {
-    admins,
-    jobs: [...new Set([...admins, ...list(site.solarStaffEmails)])],
-    messages: [
-      ...new Set([
-        ...admins,
-        ...list(site.computerStaffEmails),
-        ...list(site.solarStaffEmails),
-        ...list(site.shopManagerEmails),
-      ]),
-    ],
-  };
-}
 
-/** One channel's note to each person's own topic — never the author's:
- *  nobody needs their phone to announce the comment they just typed. */
-async function pushUsers(
-  emails: string[],
-  author: unknown,
-  channel: string,
-  title: string,
-  body: string,
-  link: string,
-): Promise<void> {
-  const skip = String(author ?? '').trim().toLowerCase();
-  await Promise.all(
-    [...new Set(emails)]
-      .filter((e) => e && e !== skip)
-      .map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)),
-  );
-}
-
-async function push(topic: string, title: string, body: string, link: string): Promise<void> {
-  try {
-    await getMessaging().send({
-      topic,
-      notification: { title, body },
-      // The app reads this to open the right screen when tapped.
-      data: { link },
-      apns: {
-        // iOS: a sound also makes the phone buzz when it's on silent.
-        payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
-        headers: { 'apns-priority': '10' },
-      },
-      android: {
-        priority: 'high',
-        notification: {
-          channelId: 'alwaidh-staff',
-          sound: 'default',
-          // Ask for the phone's usual notification sound and buzz. The
-          // channel governs this from Android 8 on, but these matter on
-          // older phones and when the channel was created elsewhere.
-          defaultSound: true,
-          defaultVibrateTimings: true,
-          priority: 'max',
-        },
-      },
-    });
-    logger.info(`sent to ${topic}: ${title}`);
-  } catch (err) {
-    // Never let a notification failure roll back or retry the write itself.
-    logger.error(`push to ${topic} failed`, err);
-  }
-}
-
-/**
- * A person's own topic, so a team message reaches exactly them. Must fold
- * emails the same way the web app does (see src/lib/push.ts).
- */
-function userTopic(email: string): string {
-  return `user_${String(email).trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-}
 
 /** Trim customer text so it fits a notification without leaking an essay. */
 function preview(text: unknown, max = 80): string {
@@ -164,6 +88,7 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
     `🛠️ ${kind}: ${customer}`,
     [system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
     '/admin/jobs',
+    TOPICS.jobs,
   );
 });
 
@@ -191,6 +116,7 @@ export const notifyJobActivity = onDocumentCreated(
         ? `${who}: ${preview(entry.text)}`
         : `${who} — ${preview(entry.text) || 'updated this job'}`,
       '/admin/jobs',
+      TOPICS.jobActivity,
     );
   },
 );
@@ -208,6 +134,7 @@ export const notifyOrderUpdate = onDocumentUpdated('orders/{orderId}', async (ev
     `🧾 Order ${preview(after.status, 20)}`,
     `${name}${after.customerPhone ? ` · ${preview(after.customerPhone, 20)}` : ''}`,
     '/admin/orders',
+    TOPICS.orders,
   );
 });
 
@@ -224,6 +151,7 @@ export const notifyNewOrder = onDocumentCreated('orders/{orderId}', async (event
     `🧾 New order from ${name}`,
     `${total} ${currency}${order.customerPhone ? ` · ${preview(order.customerPhone, 20)}` : ''}`,
     '/admin/orders',
+    TOPICS.orders,
   );
 });
 
@@ -240,6 +168,7 @@ export const notifyNewChatMessage = onDocumentCreated(
       '💬 New chat message',
       preview(msg.text) || 'A visitor wrote in the website chat',
       '/admin/chat',
+      TOPICS.messages,
     );
   },
 );
@@ -296,6 +225,7 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
     `✉️ Message from ${name}`,
     preview(msg.subject) || preview(msg.message) || 'New enquiry',
     '/admin/submissions',
+    TOPICS.messages,
   );
 });
 
