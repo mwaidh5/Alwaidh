@@ -90,7 +90,9 @@ export default function Navbar() {
 
   return (
     <header className={`safe-top sticky top-0 z-30 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl ${
-        modalOpen ? 'hidden md:block' : ''
+        // Gone on EVERY screen while a pop-up is up — on desktops it was
+        // still there, sitting over the top bar of the PDF preview.
+        modalOpen ? 'hidden' : ''
       }`}>
       <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
         <div className="flex min-w-0 items-center gap-2">
