@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { categories } from '../data/categories';
 import { allBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
-import { useSettings } from '../lib/useSettings';
+import { useSettingsStatus } from '../lib/useSettings';
+import { hasSettingsCache } from '../lib/settingsStore';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { openChat } from '../lib/chatPanel';
@@ -60,8 +61,11 @@ const USE_CASES = [
 
 export default function Home() {
   const { t, lang } = useLang();
-  const { products } = useProducts();
-  const settings = useSettings();
+  const { products, loading: productsLoading } = useProducts();
+  const { settings, loaded: settingsLoaded } = useSettingsStatus();
+  // Real content is ready when the server answered — or when this device
+  // has a cached copy of it, which is what cachedSettings() painted.
+  const settingsReady = settingsLoaded || hasSettingsCache();
 
   const imageFor = (slug: CategorySlug) =>
     products.find((p) => p.category === slug && p.image)?.image ?? '';
@@ -70,7 +74,7 @@ export default function Home() {
   // has been uploaded yet, fall back to something sensible so the page is
   // never blank.
   const stockImage = [FALLBACK.computers, FALLBACK.solar, FALLBACK.cameras];
-  const slides = (settings.heroSlides ?? []).map((s, i) => ({
+  const slides = (settingsReady ? (settings.heroSlides ?? []) : []).map((s, i) => ({
     ...s,
     image:
       s.image ||
@@ -110,7 +114,7 @@ export default function Home() {
     setSlide((s) => (s + dir + slides.length) % slides.length);
   };
 
-  const tiles = settings.promoTiles ?? [];
+  const tiles = settingsReady ? (settings.promoTiles ?? []) : [];
   // The list staff manage in Settings; until they add one, the built-in
   // brands with whatever logos were uploaded against them.
   const brandList = (settings.brands ?? []).length
@@ -168,6 +172,7 @@ export default function Home() {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
+        {!settingsReady && <div aria-hidden className="skeleton absolute inset-0" />}
         {slides.map((s, i) => (
           <div
             key={i}
@@ -349,6 +354,17 @@ export default function Home() {
       </section>
 
       {/* ---------------- Promo banners ---------------- */}
+      {!settingsReady && (
+        <section className="container-page pt-12" aria-hidden>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="skeleton h-72 rounded-3xl lg:col-span-2" />
+            <div className="grid grid-rows-2 gap-4">
+              <div className="skeleton rounded-3xl" />
+              <div className="skeleton rounded-3xl" />
+            </div>
+          </div>
+        </section>
+      )}
       <section className="container-page pt-12">
         {/* Phones follow the canvas: the first tile is a tall card with
             its wording on white below the photo, the rest are split rows.
@@ -376,6 +392,19 @@ export default function Home() {
       </section>
 
       {/* ---------------- New arrivals ---------------- */}
+      {productsLoading && (
+        <section className="mt-14 border-y border-slate-200 bg-slate-50" aria-hidden>
+          <div className="container-page py-14">
+            <div className="skeleton mb-6 h-8 w-48 rounded-lg" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <div className="skeleton h-64 rounded-2xl" />
+              <div className="skeleton h-64 rounded-2xl" />
+              <div className="skeleton hidden h-64 rounded-2xl lg:block" />
+              <div className="skeleton hidden h-64 rounded-2xl lg:block" />
+            </div>
+          </div>
+        </section>
+      )}
       {newest.length > 0 && (
         <section className="mt-14 border-y border-slate-200 bg-slate-50">
           <div className="container-page py-14">

@@ -231,6 +231,16 @@ const LS_KEY = 'alwaidh.settings.v1';
  *  banners immediately instead of flashing the built-in defaults. */
 const CACHE_KEY = 'alwaidh.settings.cache.v1';
 
+/** True when this device has seen the real settings before — those
+ *  pages can paint the cached copy instead of loading placeholders. */
+export function hasSettingsCache(): boolean {
+  try {
+    return localStorage.getItem(CACHE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function cachedSettings(): SiteSettings {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
