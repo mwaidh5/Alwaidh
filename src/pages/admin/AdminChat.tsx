@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   deleteChat,
   markStaffRead,
@@ -13,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { loadAssistantConfig, saveAssistantConfig } from '../../lib/assistantStore';
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
+import { useScrollLock } from '../../lib/useScrollLock';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
@@ -428,6 +430,9 @@ function ProductPicker({
  * answers from, so a correction here teaches the real thing.
  */
 function AssistantModal({ onClose }: { onClose: () => void }) {
+  // Registers as a modal (hides the floating tab bar, freezes the page)
+  // — without it the bar sat on top of the composer.
+  useScrollLock();
   const [tab, setTab] = useState<'teach' | 'notes'>('teach');
   const [enabled, setEnabled] = useState(false);
   const [knowledge, setKnowledge] = useState('');
@@ -514,7 +519,9 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return (
+  // A portal, not in-place: inside the page it sat under the sticky
+  // header and the tab bar on phones.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
       onClick={onClose}
@@ -671,6 +678,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
