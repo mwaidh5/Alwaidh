@@ -12,7 +12,6 @@ import {
   createInstallmentRow,
   upsertInstallmentRow,
   deleteInstallmentRow,
-  cashPrice,
   planMonthly,
   type InstallmentRow,
 } from '../../lib/solarInstallmentsStore';
@@ -206,12 +205,12 @@ function InstallmentsEditor() {
   const setField = (r: InstallmentRow, key: keyof InstallmentRow, value: string) =>
     setDrafts((d) => ({
       ...d,
-      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) : value },
+      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) * 1.21 : value },
     }));
   const save = (r: InstallmentRow) => {
     const draft = drafts[r.id];
     if (!draft) return;
-    upsertInstallmentRow(draft).catch(fail);
+    upsertInstallmentRow({ ...draft, price7: Math.round(draft.price7) }).catch(fail);
   };
 
   const COLS: { key: keyof InstallmentRow; label: string; width?: string }[] = [
@@ -223,7 +222,7 @@ function InstallmentsEditor() {
     { key: 'batteryKwh', label: 'البطارية KWh' },
     { key: 'batteryLabel', label: 'وصف البطاريات', width: 'min-w-[130px]' },
     { key: 'backupHours', label: 'ساعات التغذية' },
-    { key: 'price7', label: 'سعر 7 سنوات', width: 'min-w-[110px]' },
+    { key: 'price7', label: 'السعر النقدي', width: 'min-w-[110px]' },
   ];
 
   return (
@@ -232,8 +231,8 @@ function InstallmentsEditor() {
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Installments — مبادرة البنك المركزي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Enter the published 7-year price; the cash price (÷ 1.21) and every shorter plan (+3% per
-            year) are calculated automatically on the public page.
+            Enter the CASH price only — the 7-year bank price (× 1.21), every shorter plan (+3% per
+            year) and the monthly amounts are all calculated automatically.
           </p>
         </div>
         <button
@@ -259,7 +258,7 @@ function InstallmentsEditor() {
                 </th>
               ))}
               <th className="min-w-[110px] border-b border-slate-200 p-2 text-xs font-bold text-slate-400">
-                نقداً (محسوب)
+                سعر ٧ سنوات (محسوب)
               </th>
               <th className="min-w-[110px] border-b border-slate-200 p-2 text-xs font-bold text-slate-400">
                 شهرياً / 7 سنوات
@@ -282,7 +281,13 @@ function InstallmentsEditor() {
                     {COLS.map((c) => (
                       <td key={c.key} className="border-b border-slate-100 p-1">
                         <input
-                          value={String(r[c.key] ?? '')}
+                          value={
+                            c.key === 'price7'
+                              ? r.price7
+                                ? String(Math.round(r.price7 / 1.21))
+                                : ''
+                              : String(r[c.key] ?? '')
+                          }
                           onChange={(e) => setField(row, c.key, e.target.value)}
                           onBlur={() => save(row)}
                           dir="auto"
@@ -291,7 +296,7 @@ function InstallmentsEditor() {
                       </td>
                     ))}
                     <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
-                      {r.price7 ? cashPrice(r.price7).toLocaleString('en-GB') : '—'}
+                      {r.price7 ? Math.round(r.price7).toLocaleString('en-GB') : '—'}
                     </td>
                     <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
                       {r.price7 ? planMonthly(r.price7, 7).toLocaleString('en-GB') : '—'}
