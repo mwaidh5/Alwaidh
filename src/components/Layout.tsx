@@ -37,7 +37,7 @@ export default function Layout() {
   // clip it ran off the bottom of the screen as an endless slab. With
   // the lift, the slice lands with identical margins above and below:
   // lift - 0.14·scrollY = 0.07·viewport, whatever the scroll.
-  const [cardBox, setCardBox] = useState({ lift: 0, top: 0, bottom: 0 });
+  const [cardBox, setCardBox] = useState({ lift: 0, top: 0, bottom: 0, vw: 0, vh: 0 });
   useLayoutEffect(() => {
     if (drawerOpen) {
       const y = Math.max(0, window.scrollY);
@@ -46,9 +46,40 @@ export default function Layout() {
         lift: Math.round((y + window.innerHeight / 2) * 0.14),
         top: Math.round(y),
         bottom: Math.max(0, Math.round(docH - y - window.innerHeight)),
+        vw: window.innerWidth,
+        vh: window.innerHeight,
       });
     }
   }, [drawerOpen]);
+
+  // The card's picture frame, cut in the UNTRANSFORMED wrapper: iOS
+  // Safari quietly drops a clip-path that sits on the same element as an
+  // animated transform, which is why phones kept seeing an endless slab
+  // where emulation showed a card. The frame hugs the card's on-screen
+  // rect — top/bottom at 7% of the viewport, the open side at the card's
+  // visible edge (37% across) — and both the clip and the transform
+  // animate with the same curve, so the frame tracks the card exactly
+  // on the way home.
+  const frame = (() => {
+    if (!drawerOpen && !settling) return undefined;
+    const { top, bottom, vw, vh } = cardBox;
+    if (!vw) return undefined;
+    const m = Math.round(vh * 0.07);
+    const side = Math.round(vw * 0.63);
+    const open = drawerOpen;
+    const t = open ? top + m : top;
+    const b = open ? bottom + m : bottom;
+    const inner = open ? side : 0;
+    const [right, left] = dir === 'rtl' ? [inner, 0] : [0, inner];
+    return {
+      clipPath: `inset(${t}px ${right}px ${b}px ${left}px round ${open ? 24 : 0}px)`,
+      transition: 'clip-path 500ms cubic-bezier(.32,.72,.28,1)',
+      // The clip makes this wrapper its own stacking layer, which would
+      // fall behind the fixed drawer — lift the whole framed card above.
+      position: 'relative' as const,
+      zIndex: 40,
+    } as const;
+  })();
   useEffect(() => {
     if (drawerOpen) {
       setSettling(false);
@@ -150,7 +181,7 @@ export default function Layout() {
           container and kill the sticky header) keeps the slid-out card
           from widening the page: without it, RTL iOS can scroll into the
           card's off-screen side. */}
-      <div style={{ overflowX: 'clip' }}>
+      <div style={{ overflowX: 'clip', ...frame }}>
       <div
         className="flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,.28,1)]"
         style={
@@ -162,13 +193,6 @@ export default function Layout() {
                 // Scale hangs from the top edge; the lift above brings the
                 // on-screen part of the page back into view.
                 transformOrigin: '50% 0',
-                // The card is the screen's slice of the page, rounded on
-                // all four corners; on the way home the radius animates to
-                // zero and the clip becomes exactly the screen — invisible.
-                clipPath: `inset(${cardBox.top}px 0px ${cardBox.bottom}px 0px round ${
-                  drawerOpen ? 24 : 0
-                }px)`,
-                transitionProperty: 'transform, clip-path',
                 overflow: 'hidden',
                 boxShadow: drawerOpen ? '0 24px 70px rgba(2,6,23,.5)' : '0 0 0 rgba(2,6,23,0)',
                 // Above the drawer layer, or the menu's full-screen
