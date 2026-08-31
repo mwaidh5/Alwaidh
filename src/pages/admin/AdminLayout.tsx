@@ -6,7 +6,7 @@ import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
 import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
 import {
-  handlePushTaps,
+  clearDeliveredNotifications,
   isChannelOn,
   isNativeApp,
   pushState,
@@ -76,15 +76,11 @@ export default function AdminLayout() {
   const [push, setPush] = useState<PushState>('unsupported');
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // Notification permission state, and tapping a notification opens its page.
+  // Notification permission state. (Tap handling lives in Layout, so a
+  // notification can cold-start the app and still land on its page.)
   useEffect(() => {
     pushState().then(setPush);
-    let cleanup: (() => void) | undefined;
-    handlePushTaps((path) => navigate(path)).then((fn) => {
-      cleanup = fn;
-    });
-    return () => cleanup?.();
-  }, [navigate]);
+  }, []);
   const location = useLocation();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
@@ -150,10 +146,13 @@ export default function AdminLayout() {
 
   useEffect(() => subscribeSettings(setSettings), []);
 
-  // Opening a section marks it read on this device.
+  // Opening a section marks it read on this device — and being in the
+  // dashboard at all empties the phone's notification tray: the person
+  // is looking at the news, the reminders have done their job.
   useEffect(() => {
     const key = ALERT_FOR[location.pathname];
     if (key) markSeen(key);
+    clearDeliveredNotifications();
   }, [location.pathname]);
 
   if (loading) {

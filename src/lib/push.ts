@@ -412,8 +412,33 @@ export async function disablePush(roles: Roles, email: string | null): Promise<v
 }
 
 /**
+ * Wipe the notifications sitting in this device's tray — called when the
+ * person opens the dashboard, where the news has plainly been seen.
+ */
+export async function clearDeliveredNotifications(): Promise<void> {
+  if (isNativeApp()) {
+    try {
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      await FirebaseMessaging.removeAllDeliveredNotifications();
+    } catch {
+      /* app built before the messaging plugin — nothing to clear */
+    }
+    return;
+  }
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    for (const reg of await navigator.serviceWorker.getRegistrations()) {
+      for (const shown of await reg.getNotifications()) shown.close();
+    }
+  } catch {
+    /* browsers without the API — nothing to clear */
+  }
+}
+
+/**
  * Open the right dashboard page when a notification is tapped. Call once
- * when the admin shell mounts.
+ * when the app shell mounts — the SHOP shell, not the dashboard: a tap
+ * that cold-starts the app must find its listener already waiting.
  */
 export async function handlePushTaps(navigate: (path: string) => void): Promise<() => void> {
   if (!isNativeApp()) return () => {};
