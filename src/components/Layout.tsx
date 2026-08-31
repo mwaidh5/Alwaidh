@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from './ChatWidget';
@@ -9,13 +9,26 @@ import MobileDrawer from './MobileDrawer';
 import LanguageGate from './LanguageGate';
 import { trackPageView } from '../lib/ga';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
-import { enablePush, isNativeApp, pushState, syncSubscriptions } from '../lib/push';
+import { enablePush, handlePushTaps, isNativeApp, pushState, syncSubscriptions } from '../lib/push';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller } = useAuth();
+
+  // A tapped notification opens its page — armed here, in the shell that
+  // exists from the first frame, so even a tap that cold-starts the app
+  // finds someone listening.
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    handlePushTaps((path) => navigate(path)).then((fn) => {
+      cleanup = fn;
+    });
+    return () => cleanup?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const navType = useNavigationType();
   const drawerOpen = useDrawerOpen();
   const { dir } = useLang();
