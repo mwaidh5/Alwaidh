@@ -1130,6 +1130,7 @@ const AR: Record<string, string> = {
   'Show more': 'عرض المزيد',
   'Show less': 'عرض أقل',
   'edited': 'معدّلة',
+  'From here you can switch between cash prices and installment plans 👇': 'من هنا تكدر تبدل بين الأسعار النقدية وخطط التقسيط 👇',
 };
 
 interface LanguageValue {
