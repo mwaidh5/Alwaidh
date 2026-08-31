@@ -7,6 +7,7 @@
  */
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 export { assistantReply, teachAssistant } from './assistant';
+export { crmReminderSweep } from './crm';
 import { onCall, HttpsError, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
