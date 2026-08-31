@@ -361,7 +361,12 @@ function ProductPicker({
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <h2 className="font-bold text-slate-900">📦 {t('Send a product')}</h2>
-          <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-10 w-10 flex-none place-items-center rounded-full text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          >
             ✕
           </button>
         </div>
@@ -531,7 +536,12 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
           its own toolbars. */}
       <div
         className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-xl sm:h-[85vh] sm:max-w-2xl sm:rounded-xl"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        // Clear of the status bar above and the home indicator below —
+        // without the top inset the ✕ hid under the iPhone's clock.
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
