@@ -225,8 +225,15 @@ export default function AdminLayout() {
                 </p>
               </div>
               <nav>
-                <ul className="space-y-0.5 p-2">
-                  {visibleItems.map((item) => (
+                {/* The same groups the phone menu uses — a flat list of
+                    fifteen rows made people hunt; four labelled clusters
+                    read at a glance. */}
+                {[...new Set(visibleItems.map((i) => i.group))].map((group) => (
+                <ul key={group} className="space-y-0.5 p-2 pt-1 [&+ul]:border-t [&+ul]:border-slate-100">
+                  <li className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    {t(String(group))}
+                  </li>
+                  {visibleItems.filter((i) => i.group === group).map((item) => (
                     <li key={item.to}>
                       <NavLink
                         to={item.to}
@@ -257,6 +264,7 @@ export default function AdminLayout() {
                     </li>
                   ))}
                 </ul>
+                ))}
                 <div className="border-t border-slate-200 p-3 text-xs text-slate-500">
                   <p className="truncate">
                     {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
