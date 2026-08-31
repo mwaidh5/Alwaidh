@@ -189,8 +189,18 @@ service cloud.firestore {
         // forge a reply that looks like it came from the shop.
         allow create: if request.resource.data.get('from', 'guest') != 'staff'
           || isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
-        allow update: if false;
-        allow delete: if isAdmin();
+        // A staff member may fix or withdraw their own reply for five
+        // minutes; after that the record stands.
+        allow update: if (isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager())
+          && resource.data.from == 'staff'
+          && resource.data.by == request.auth.token.email
+          && request.time < resource.data.at + duration.value(5, 'm')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
+        allow delete: if isAdmin()
+          || ((isComputerStaff() || isSolarStaff() || isShopManager())
+              && resource.data.from == 'staff'
+              && resource.data.by == request.auth.token.email
+              && request.time < resource.data.at + duration.value(5, 'm'));
       }
     }
 
@@ -221,14 +231,21 @@ service cloud.firestore {
         }
         allow read: if inChat();
         allow create: if inChat() && request.resource.data.by == request.auth.token.email;
-        // A message never changes — except reactions, where each member
-        // may touch only their own slot.
+        // A message never changes — except reactions (each member only
+        // their own slot), and the author fixing their words for five
+        // minutes after sending.
         allow update: if inChat()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
-          && request.resource.data.get('reactions', {})
-               .diff(resource.data.get('reactions', {}))
-               .affectedKeys().hasOnly([request.auth.token.email]);
-        allow delete: if isAdmin();
+          && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+               && request.resource.data.get('reactions', {})
+                    .diff(resource.data.get('reactions', {}))
+                    .affectedKeys().hasOnly([request.auth.token.email]))
+              || (resource.data.by == request.auth.token.email
+                  && request.time < resource.data.at + duration.value(5, 'm')
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])));
+        allow delete: if isAdmin()
+          || (inChat()
+              && resource.data.by == request.auth.token.email
+              && request.time < resource.data.at + duration.value(5, 'm'));
       }
     }
 

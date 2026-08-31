@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   deleteChat,
+  deleteStaffMessage,
+  editStaffMessage,
   markStaffRead,
   sendStaffReply,
   subscribeChatMessages,
@@ -42,9 +44,18 @@ function chatTitle(c: ChatMeta): string {
 /** Live chat inbox: conversations on the left, the open thread on the right. */
 export default function AdminChat() {
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // Fixing your own words, briefly: which message is being rewritten.
+  const [editingMsg, setEditingMsg] = useState<{ id: string; text: string } | null>(null);
+  // A ticking clock so the edit buttons retire on time.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const { t } = useLang();
   const staffNames = useSettings().staffNames ?? {};
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const myEmail = user?.email?.toLowerCase() ?? '';
   const [chats, setChats] = useState<ChatMeta[] | null>(null);
   const [error, setError] = useState('');
   const [activeId, setActiveId] = useState('');
@@ -242,7 +253,35 @@ export default function AdminChat() {
                           : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
                       }`}
                     >
-                      {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
+                      {editingMsg?.id === m.id ? (
+                        <div className="min-w-[220px]">
+                          <textarea
+                            value={editingMsg.text}
+                            onChange={(e) => setEditingMsg({ id: m.id, text: e.target.value })}
+                            rows={2}
+                            className="w-full rounded-lg border-0 p-2 text-sm text-slate-800"
+                          />
+                          <div className="mt-1 flex justify-end gap-3 text-[11px] font-bold">
+                            <button type="button" className="text-brand-100" onClick={() => setEditingMsg(null)}>
+                              {t('Cancel')}
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded bg-white/90 px-2 py-0.5 text-brand-700"
+                              onClick={() => {
+                                const text = editingMsg.text.trim();
+                                if (!text) return;
+                                editStaffMessage(activeId, m.id, text).catch(() => undefined);
+                                setEditingMsg(null);
+                              }}
+                            >
+                              {t('Save')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                      )}
                       {m.product && <ChatProductCard product={m.product} newTab />}
                       <p
                         className={`mt-0.5 text-[10px] ${
@@ -251,7 +290,28 @@ export default function AdminChat() {
                       >
                         {m.from === 'staff' && (m.byName || m.by) ? `${staffNames[m.by] || m.byName || m.by.split('@')[0]} · ` : ''}
                         {timeText(m.atMs)}
+                        {m.editedMs ? ` · ${t('edited')}` : ''}
                       </p>
+                      {m.from === 'staff' &&
+                        m.by === myEmail &&
+                        m.atMs != null &&
+                        Date.now() - m.atMs < 5 * 60_000 &&
+                        editingMsg?.id !== m.id && (
+                          <div className="mt-1 flex justify-end gap-3 text-[10px] font-bold text-brand-100">
+                            <button type="button" onClick={() => setEditingMsg({ id: m.id, text: m.text })}>
+                              ✏️ {t('Edit')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm('Delete this message?'))
+                                  deleteStaffMessage(activeId, m.id).catch(() => undefined);
+                              }}
+                            >
+                              🗑 {t('Delete')}
+                            </button>
+                          </div>
+                        )}
                     </div>
                   </div>
                 ))}
