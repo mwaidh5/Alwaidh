@@ -429,3 +429,17 @@
     font-size: 16px !important;
   }
 }
+
+/* Live-content placeholder: a soft shimmer where words and pictures are
+   still on their way — better than stock defaults popping in over slow
+   internet and being swapped under the visitor's eyes. */
+.skeleton {
+  background: linear-gradient(100deg, #eef2f7 30%, #e2e8f0 45%, #eef2f7 60%);
+  background-size: 300% 100%;
+  animation: skeleton-slide 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-slide {
+  to {
+    background-position: -200% 0;
+  }
+}

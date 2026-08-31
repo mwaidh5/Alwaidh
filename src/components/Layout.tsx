@@ -142,6 +142,16 @@ export default function Layout() {
     return () => window.clearTimeout(id);
   }, []);
 
+  // The boot screen from index.html has done its job the moment this
+  // layout is on screen — fade it and take it out of the tree.
+  useEffect(() => {
+    const el = document.getElementById('boot');
+    if (!el) return;
+    el.classList.add('done');
+    const id = window.setTimeout(() => el.remove(), 450);
+    return () => window.clearTimeout(id);
+  }, []);
+
   // Staff phones keep their notification topics in step from ANY page —
   // waiting for a dashboard visit left phones deaf to the new per-person
   // topics for days after the notification rework.
