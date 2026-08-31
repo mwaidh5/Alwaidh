@@ -1141,6 +1141,8 @@ const AR: Record<string, string> = {
   'Our team will call you with a free quote. In a hurry? Talk to us on WhatsApp now.': 'فريقنا راح يتصل بيك بعرض سعر مجاني. مستعجل؟ احجينا واتساب هسه.',
   'See the systems and prices': 'شوف المنظومات والأسعار',
   'That phone number looks too short.': 'رقم الهاتف قصير — دقق عليه.',
+  'Too many wrong attempts — try again in': 'محاولات خاطئة كثيرة — حاول مجدداً بعد',
+  'Too many attempts — wait a few minutes, then try again.': 'محاولات كثيرة — انتظر دقائق وحاول مجدداً.',
 };
 
 interface LanguageValue {

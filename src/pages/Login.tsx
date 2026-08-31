@@ -1,9 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 
 type Mode = 'signin' | 'signup' | 'reset';
+
+// Ten wrong passwords locks the form for five minutes. Firebase throttles
+// brute force on its servers regardless — this is the honest, visible
+// layer, so a person mistyping sees a clock instead of a mystery error.
+const TRIES_KEY = 'alwaidh.login.tries.v1';
+const MAX_TRIES = 10;
+const LOCK_MS = 5 * 60_000;
+
+function readTries(): { count: number; lastAt: number; lockedUntil: number } {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TRIES_KEY) ?? '{}') as Partial<{
+      count: number;
+      lastAt: number;
+      lockedUntil: number;
+    }>;
+    return { count: raw.count ?? 0, lastAt: raw.lastAt ?? 0, lockedUntil: raw.lockedUntil ?? 0 };
+  } catch {
+    return { count: 0, lastAt: 0, lockedUntil: 0 };
+  }
+}
+
+function recordFailure(): number {
+  const now = Date.now();
+  const t = readTries();
+  const count = now - t.lastAt > LOCK_MS ? 1 : t.count + 1;
+  const lockedUntil = count >= MAX_TRIES ? now + LOCK_MS : 0;
+  try {
+    localStorage.setItem(TRIES_KEY, JSON.stringify({ count, lastAt: now, lockedUntil }));
+  } catch {
+    /* private mode — the server-side throttle still stands */
+  }
+  return lockedUntil;
+}
+
+function clearTries(): void {
+  try {
+    localStorage.removeItem(TRIES_KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}
 
 export default function Login() {
   const { user, loading, configured, signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset } =
@@ -18,6 +59,21 @@ export default function Login() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState(() => readTries().lockedUntil);
+  const [now, setNow] = useState(Date.now());
+  const locked = lockedUntil > now;
+  useEffect(() => {
+    if (!locked) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [locked]);
+  useEffect(() => {
+    // The lock expiring also forgives the earlier attempts.
+    if (lockedUntil && lockedUntil <= now) {
+      clearTries();
+      setLockedUntil(0);
+    }
+  }, [lockedUntil, now]);
 
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/';
 
@@ -41,6 +97,7 @@ export default function Login() {
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (locked) return;
     setError('');
     setInfo('');
     setSubmitting(true);
@@ -50,6 +107,7 @@ export default function Login() {
         navigate(redirectTo, { replace: true });
       } else if (mode === 'signin') {
         await signInWithEmail(email.trim(), password);
+        clearTries();
         navigate(redirectTo, { replace: true });
       } else {
         await sendPasswordReset(email.trim());
@@ -58,6 +116,10 @@ export default function Login() {
       }
     } catch (e) {
       setError(toMessage(e));
+      if (mode === 'signin') {
+        const until = recordFailure();
+        if (until) setLockedUntil(until);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -121,9 +183,18 @@ export default function Login() {
               className="input"
             />
           )}
+          {locked && (
+            <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800">
+              🔒 {t('Too many wrong attempts — try again in')}{' '}
+              <span dir="ltr">
+                {Math.floor((lockedUntil - now) / 60000)}:
+                {String(Math.ceil(((lockedUntil - now) % 60000) / 1000)).padStart(2, '0')}
+              </span>
+            </p>
+          )}
           <button
             type="submit"
-            disabled={!configured || submitting}
+            disabled={!configured || submitting || locked}
             className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t(
@@ -221,6 +292,8 @@ function toMessage(e: unknown): string {
   if (raw.includes('auth/invalid-email')) return 'That email address looks invalid.';
   if (raw.includes('auth/operation-not-allowed'))
     return 'Email/password sign-in is not enabled in Firebase yet.';
+  if (raw.includes('auth/too-many-requests'))
+    return 'Too many attempts — wait a few minutes, then try again.';
   return raw.replace('Firebase: ', '');
 }
 
