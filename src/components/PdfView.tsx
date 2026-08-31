@@ -20,7 +20,23 @@ export default function PdfView({ url, className }: { url: string; className?: s
           'pdfjs-dist/build/pdf.worker.min.mjs',
           import.meta.url,
         ).toString();
-        const docPdf = await pdfjs.getDocument({ url }).promise;
+        // iPhones showed Arabic PDFs as shuffled, unjoined letters: iOS
+        // refuses some of the fonts pdf.js installs through the FontFace
+        // API, and the fallback font cannot shape Arabic. disableFontFace
+        // makes pdf.js draw the glyph outlines itself — slower, but it
+        // owes nothing to the platform's font engine. Desktops keep the
+        // fast path; the cMaps and base-14 fonts are served from our own
+        // origin either way (see scripts/copy-pdf-assets.mjs).
+        const iOS =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const docPdf = await pdfjs.getDocument({
+          url,
+          cMapUrl: '/pdf-assets/cmaps/',
+          cMapPacked: true,
+          standardFontDataUrl: '/pdf-assets/standard_fonts/',
+          disableFontFace: iOS,
+        }).promise;
         if (cancelled || !holder.current) return;
         const el = holder.current;
         el.innerHTML = '';
