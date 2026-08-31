@@ -21,6 +21,7 @@ import Overview from './pages/admin/Overview';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
+import Lead from './pages/Lead';
 import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
@@ -52,6 +53,8 @@ export default function App() {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
           <Route path="/track/:id" element={<Track />} />
+          <Route path="/lead" element={<Lead />} />
+          <Route path="/lead/:campaign" element={<Lead />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/solar-prices" element={<SolarPrices />} />
