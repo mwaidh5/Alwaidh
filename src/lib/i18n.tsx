@@ -1129,6 +1129,7 @@ const AR: Record<string, string> = {
   'Set': 'ضبط',
   'Show more': 'عرض المزيد',
   'Show less': 'عرض أقل',
+  'edited': 'معدّلة',
 };
 
 interface LanguageValue {

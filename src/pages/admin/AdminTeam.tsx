@@ -7,6 +7,8 @@ import {
   deleteTeamChat,
   hasUnread,
   markTeamRead,
+  deleteTeamMessage,
+  editTeamMessage,
   sendTeamMessage,
   subscribeTeamChats,
   subscribeTeamMessages,
@@ -60,6 +62,13 @@ export default function AdminTeam() {
   const [jobPicker, setJobPicker] = useState(false);
   const [attachedProduct, setAttachedProduct] = useState<ProductCard | null>(null);
   const [attachedJob, setAttachedJob] = useState<TeamJobCard | null>(null);
+  // Fixing your own words, briefly: which message is being rewritten.
+  const [editingMsg, setEditingMsg] = useState<{ id: string; text: string } | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const [mentionOpen, setMentionOpen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -304,7 +313,34 @@ export default function AdminTeam() {
                         {!mine && active.isGroup && (
                           <p className="text-[11px] font-bold text-brand-700">{nameOf(m.by)}</p>
                         )}
-                        {m.text && (
+                        {editingMsg?.id === m.id && (
+                          <div className="min-w-[220px]">
+                            <textarea
+                              value={editingMsg.text}
+                              onChange={(e) => setEditingMsg({ id: m.id, text: e.target.value })}
+                              rows={2}
+                              className="w-full rounded-lg border-0 p-2 text-sm text-slate-800"
+                            />
+                            <div className="mt-1 flex justify-end gap-3 text-[11px] font-bold">
+                              <button type="button" className={mine ? 'text-brand-100' : 'text-slate-400'} onClick={() => setEditingMsg(null)}>
+                                {t('Cancel')}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded bg-white/90 px-2 py-0.5 text-brand-700 ring-1 ring-brand-200"
+                                onClick={() => {
+                                  const text = editingMsg.text.trim();
+                                  if (!text || !active) return;
+                                  editTeamMessage(active.id, m.id, text).catch(() => undefined);
+                                  setEditingMsg(null);
+                                }}
+                              >
+                                {t('Save')}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {editingMsg?.id !== m.id && m.text && (
                           <p className="whitespace-pre-wrap break-words">
                             {m.text.split(/(@[\w.-]+)/).map((part, i) =>
                               part.startsWith('@') ? (
@@ -331,7 +367,27 @@ export default function AdminTeam() {
                           className={`mt-0.5 text-[10px] ${mine ? 'text-brand-100' : 'text-slate-400'}`}
                         >
                           {timeText(m.atMs)}
+                          {m.editedMs ? ` · ${t('edited')}` : ''}
                         </p>
+                        {mine &&
+                          m.atMs != null &&
+                          Date.now() - m.atMs < 5 * 60_000 &&
+                          editingMsg?.id !== m.id && (
+                            <div className="mt-1 flex justify-end gap-3 text-[10px] font-bold text-brand-100">
+                              <button type="button" onClick={() => setEditingMsg({ id: m.id, text: m.text })}>
+                                ✏️ {t('Edit')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('Delete this message?') && active)
+                                    deleteTeamMessage(active.id, m.id).catch(() => undefined);
+                                }}
+                              >
+                                🗑 {t('Delete')}
+                              </button>
+                            </div>
+                          )}
                       </div>
                     </div>
                   );

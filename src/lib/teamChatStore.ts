@@ -55,6 +55,7 @@ export interface TeamMessage {
   product: ChatProductCard | null;
   job: TeamJobCard | null;
   reactions: Record<string, string>; // email → emoji, one per person
+  editedMs: number | null; // when the sender last fixed the wording
 }
 
 const COLLECTION = 'teamChats';
@@ -161,6 +162,7 @@ export function subscribeTeamMessages(
             atMs: toMillis(data.at),
             mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
             reactions: readReactions(data.reactions),
+            editedMs: toMillis(data.editedAt),
             product: p?.id
               ? {
                   id: String(p.id),
@@ -183,6 +185,22 @@ export function subscribeTeamMessages(
       ),
     () => cb([]),
   );
+}
+
+/** The five-minute grace: the author fixing their own message. */
+export async function editTeamMessage(chatId: string, messageId: string, text: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Messaging needs a database connection.');
+  await updateDoc(doc(database, COLLECTION, chatId, 'messages', messageId), {
+    text: text.trim(),
+    editedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteTeamMessage(chatId: string, messageId: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Messaging needs a database connection.');
+  await deleteDoc(doc(database, COLLECTION, chatId, 'messages', messageId));
 }
 
 /** Put, swap or take back this account's reaction on one message. The

@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   setDoc,
   type Firestore,
+  updateDoc,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -53,6 +54,7 @@ export interface ChatMessage {
   by: string; // staff email; '' for the visitor
   byName: string; // staff display name, when the account has one
   atMs: number | null;
+  editedMs: number | null; // when the sender last fixed the wording
   product: ChatProductCard | null; // product card attached to the message
 }
 
@@ -171,6 +173,22 @@ export async function sendStaffReply(
 }
 
 /** Live messages of one conversation, oldest first. */
+/** The five-minute grace: a staff member fixing their own reply. */
+export async function editStaffMessage(chatId: string, messageId: string, text: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Messaging needs a database connection.');
+  await updateDoc(doc(database, COLLECTION, chatId, 'messages', messageId), {
+    text: text.trim(),
+    editedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteStaffMessage(chatId: string, messageId: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Messaging needs a database connection.');
+  await deleteDoc(doc(database, COLLECTION, chatId, 'messages', messageId));
+}
+
 export function subscribeChatMessages(
   chatId: string,
   cb: (list: ChatMessage[]) => void,
@@ -194,6 +212,7 @@ export function subscribeChatMessages(
             by: String(data.by ?? ''),
             byName: String(data.byName ?? ''),
             atMs: toMillis(data.at),
+            editedMs: toMillis(data.editedAt),
             product: p?.id
               ? {
                   id: String(p.id),
