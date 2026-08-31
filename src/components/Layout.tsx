@@ -37,17 +37,27 @@ export default function Layout() {
   // clip it ran off the bottom of the screen as an endless slab. With
   // the lift, the slice lands with identical margins above and below:
   // lift - 0.14·scrollY = 0.07·viewport, whatever the scroll.
-  const [cardBox, setCardBox] = useState({ lift: 0, top: 0, bottom: 0, vw: 0, vh: 0 });
+  const [cardBox, setCardBox] = useState({ lift: 0, top: 0, bottom: 0, frameM: 0, vw: 0, vh: 0 });
   useLayoutEffect(() => {
     if (drawerOpen) {
       const y = Math.max(0, window.scrollY);
+      const vh = window.innerHeight;
       const docH = document.documentElement.scrollHeight;
+      // At the top of the page the slice would open on the blank strip
+      // above the site header (the phone's status-bar padding) — start
+      // the frame at the header instead, and re-centre the shorter card.
+      const header = document.querySelector('header');
+      const headerTop = header ? Math.max(0, header.getBoundingClientRect().top + y) : 0;
+      const sliceTop = Math.min(Math.max(y, headerTop), y + Math.round(vh * 0.25));
+      const sliceH = y + vh - sliceTop;
+      const marginTop = (vh - sliceH * 0.86) / 2;
       setCardBox({
-        lift: Math.round((y + window.innerHeight / 2) * 0.14),
+        lift: Math.round(marginTop + y - sliceTop * 0.86),
         top: Math.round(y),
-        bottom: Math.max(0, Math.round(docH - y - window.innerHeight)),
+        bottom: Math.max(0, Math.round(docH - y - vh)),
+        frameM: Math.round(marginTop),
         vw: window.innerWidth,
-        vh: window.innerHeight,
+        vh,
       });
     }
   }, [drawerOpen]);
@@ -62,13 +72,12 @@ export default function Layout() {
   // on the way home.
   const frame = (() => {
     if (!drawerOpen && !settling) return undefined;
-    const { top, bottom, vw, vh } = cardBox;
+    const { top, bottom, frameM, vw } = cardBox;
     if (!vw) return undefined;
-    const m = Math.round(vh * 0.07);
     const side = Math.round(vw * 0.63);
     const open = drawerOpen;
-    const t = open ? top + m : top;
-    const b = open ? bottom + m : bottom;
+    const t = open ? top + frameM : top;
+    const b = open ? bottom + frameM : bottom;
     const inner = open ? side : 0;
     const [right, left] = dir === 'rtl' ? [inner, 0] : [0, inner];
     return {

@@ -84,7 +84,9 @@ export default function MobileDrawer() {
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)',
         }}
       >
-        <div className="flex items-center justify-between">
+        {/* pe-14: the page card overlaps this end of the panel, and the
+            close button was sinking under its corner. */}
+        <div className="flex items-center justify-between pe-14">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-base font-bold text-white ring-1 ring-inset ring-white/20">
             {(user?.displayName || user?.email || 'A').charAt(0).toUpperCase()}
           </span>
