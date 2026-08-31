@@ -67,6 +67,24 @@ export default function SolarPrices() {
   const [instLive, setInstLive] = useState<InstallmentRow[]>([]);
   // Which price list is showing, and how long the payment plan runs.
   const [mode, setMode] = useState<'cash' | 'plan'>('cash');
+  // A one-time coach mark pointing at the cash/installments switch —
+  // gone forever once dismissed, or the moment the switch is used.
+  const HINT_KEY = 'alwaidh.instHint.v1';
+  const [showHint, setShowHint] = useState(() => {
+    try {
+      return localStorage.getItem(HINT_KEY) === null;
+    } catch {
+      return false;
+    }
+  });
+  function dismissHint() {
+    setShowHint(false);
+    try {
+      localStorage.setItem(HINT_KEY, '1');
+    } catch {
+      /* private mode — it just shows again next visit */
+    }
+  }
   const [years, setYears] = useState(FULL_YEARS);
   const [downloading, setDownloading] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -183,6 +201,27 @@ export default function SolarPrices() {
             <button type="button" onClick={downloadPdf} disabled={downloading} className="btn-secondary">
               {downloading ? t('Preparing…') : `⬇ ${t('Download PDF')}`}
             </button>
+            <div className="relative">
+            {showHint && (
+              <div className="absolute bottom-full right-0 z-10 mb-3 w-60 animate-bounce">
+                <div className="relative rounded-xl bg-brand-600 px-3.5 py-2.5 pe-8 text-[13px] font-semibold leading-snug text-white shadow-lg">
+                  {t('From here you can switch between cash prices and installment plans 👇')}
+                  <button
+                    type="button"
+                    onClick={dismissHint}
+                    aria-label={t('Close')}
+                    className="absolute end-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-white/20 text-[11px] leading-none hover:bg-white/35"
+                  >
+                    ✕
+                  </button>
+                  {/* the arrow tip, pointing at the switch */}
+                  <span
+                    aria-hidden
+                    className="absolute -bottom-1.5 right-8 h-3 w-3 rotate-45 bg-brand-600"
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
               {(
                 [
@@ -193,7 +232,10 @@ export default function SolarPrices() {
                 <button
                   key={o.key}
                   type="button"
-                  onClick={() => setMode(o.key)}
+                  onClick={() => {
+                    setMode(o.key);
+                    if (showHint) dismissHint();
+                  }}
                   className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
                     mode === o.key ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500'
                   }`}
@@ -201,6 +243,7 @@ export default function SolarPrices() {
                   {t(o.label)}
                 </button>
               ))}
+            </div>
             </div>
           </div>
         </div>
