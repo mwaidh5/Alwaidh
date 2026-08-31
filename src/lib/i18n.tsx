@@ -1122,6 +1122,7 @@ const AR: Record<string, string> = {
   'Password should be at least 6 characters.': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
   'That email address looks invalid.': 'البريد الإلكتروني غير صالح.',
   'Something went wrong.': 'حدث خطأ ما.',
+  'Sync to phone': 'مزامنة لجهات الاتصال',
 };
 
 interface LanguageValue {
