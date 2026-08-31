@@ -108,11 +108,14 @@ export default function AdminFiles() {
         ) : (
           <ul className="mt-4 divide-y divide-slate-100">
             {shown.map((f) => (
-              <li key={f.id} className="flex flex-wrap items-center gap-3 py-3">
+              <li key={f.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
                 <span className="text-2xl" aria-hidden>
                   {isPdf(f) ? '📕' : f.contentType.startsWith('image/') ? '🖼️' : '📄'}
                 </span>
-                <div className="min-w-0 flex-1">
+                {/* The name takes the rest of its own line on phones —
+                    sharing a row with four buttons squeezed it to a
+                    single character. */}
+                <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-0">
                   <button
                     type="button"
                     onClick={() => setPreview(f)}
@@ -131,7 +134,7 @@ export default function AdminFiles() {
                       .join(' · ')}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                   <button type="button" onClick={() => setPreview(f)} className="btn-secondary">
                     {t('View')}
                   </button>

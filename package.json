@@ -6,9 +6,9 @@
   "description": "Alwaidh online shop \u2014 computers, solar energy products, and Tiandy cameras.",
   "scripts": {
     "copy-imgly": "node scripts/copy-imgly-assets.mjs",
-    "predev": "node scripts/copy-imgly-assets.mjs",
+    "predev": "node scripts/copy-imgly-assets.mjs && node scripts/copy-pdf-assets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/copy-imgly-assets.mjs && node scripts/generate-sitemap.mjs",
+    "prebuild": "node scripts/copy-imgly-assets.mjs && node scripts/copy-pdf-assets.mjs && node scripts/generate-sitemap.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
