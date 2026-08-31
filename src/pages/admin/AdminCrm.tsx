@@ -18,6 +18,7 @@ import {
   CRM_TAGS,
   addContactNote,
   createContact,
+  setContactReminder,
   deleteContact,
   setContactStatus,
   subscribeContacts,
@@ -46,6 +47,7 @@ type FormState = CrmContact;
 
 const EMPTY: FormState = {
   id: '',
+  remindAtMs: null,
   section: 'solar',
   name: '',
   phone: '',
@@ -80,6 +82,14 @@ const TAG_STYLES: Record<string, string> = {
   Website: 'bg-cyan-100 text-cyan-800',
   Other: 'bg-slate-100 text-slate-600',
 };
+
+function remindChip(ms: number): { cls: string; label: string } {
+  const due = ms <= Date.now();
+  return {
+    cls: due ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800',
+    label: `🔔 ${new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
+  };
+}
 
 function tagChip(tag: string): string {
   return TAG_STYLES[tag] ?? TAG_STYLES.Other;
@@ -482,6 +492,14 @@ export default function AdminCrm() {
               ? () => sendToJobs(viewing)
               : null
           }
+          onSetReminder={async (ms) => {
+            setError('');
+            try {
+              await setContactReminder(viewing.id, ms);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not save the reminder.');
+            }
+          }}
           onClose={() => setViewingId(null)}
           onEdit={() => {
             setError('');
@@ -573,6 +591,11 @@ function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmCo
         <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${tagChip(contact.tag)}`}>
           {contact.tag}
         </span>
+        {contact.remindAtMs != null && (
+          <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${remindChip(contact.remindAtMs).cls}`}>
+            {remindChip(contact.remindAtMs).label}
+          </span>
+        )}
       </div>
 
       {contact.phone && (
@@ -667,6 +690,11 @@ function MobileCrm({
                 <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${tagChip(c.tag)}`}>
                   {c.tag}
                 </span>
+                {c.remindAtMs != null && (
+                  <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${remindChip(c.remindAtMs).cls}`}>
+                    {remindChip(c.remindAtMs).label}
+                  </span>
+                )}
               </div>
               {c.phone && (
                 <div className="mt-2.5 flex items-center gap-2" dir="ltr">
@@ -875,6 +903,7 @@ function ContactDetails({
   contact,
   canDelete,
   onSendToJobs,
+  onSetReminder,
   onClose,
   onEdit,
   onMove,
@@ -886,6 +915,8 @@ function ContactDetails({
   /** Set when this lead is won solar business and the viewer can make
    *  jobs — turns the sale into a card on the jobs board. */
   onSendToJobs: (() => void) | null;
+  /** Set/clear the recontact reminder (9am Baghdad on the chosen day). */
+  onSetReminder: (ms: number | null) => void;
   onClose: () => void;
   onEdit: () => void;
   onMove: (status: CrmStatus) => void;
@@ -896,6 +927,7 @@ function ContactDetails({
   const staffName = useStaffName();
   const [note, setNote] = useState('');
   const [posting, setPosting] = useState(false);
+  const [remindDraft, setRemindDraft] = useState('');
   const notesEnd = useRef<HTMLDivElement>(null);
   useEffect(() => {
     notesEnd.current?.scrollIntoView({ block: 'nearest' });
@@ -974,6 +1006,52 @@ function ContactDetails({
               ))}
             </select>
           </label>
+
+          <div>
+            <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              🔔 {t('Follow-up reminder')}
+            </span>
+            {contact.remindAtMs != null && (
+              <p
+                className={`mb-1.5 text-sm font-semibold ${
+                  contact.remindAtMs <= Date.now() ? 'text-red-600' : 'text-slate-600'
+                }`}
+              >
+                {contact.remindAtMs <= Date.now()
+                  ? t('Due — time to call them')
+                  : `${t('Reminds on')} ${new Date(contact.remindAtMs).toLocaleDateString('en-GB')}`}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={remindDraft}
+                onChange={(e) => setRemindDraft(e.target.value)}
+                className="input flex-1"
+              />
+              <button
+                type="button"
+                disabled={!remindDraft}
+                onClick={() => {
+                  // 9 in the morning Baghdad time on the chosen day.
+                  onSetReminder(new Date(`${remindDraft}T09:00:00+03:00`).getTime());
+                  setRemindDraft('');
+                }}
+                className="btn-primary px-3.5 py-2 text-sm disabled:opacity-50"
+              >
+                {t('Set')}
+              </button>
+              {contact.remindAtMs != null && (
+                <button
+                  type="button"
+                  onClick={() => onSetReminder(null)}
+                  className="text-sm font-semibold text-slate-500 hover:underline"
+                >
+                  {t('Clear')}
+                </button>
+              )}
+            </div>
+          </div>
 
           {onSendToJobs && (
             <button

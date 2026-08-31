@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  deleteField,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -66,6 +67,8 @@ export interface CrmContact {
   status: CrmStatus;
   notes: CrmNote[];
   order: number; // position weight within its column (newest first)
+  /** When to nudge the team to recontact them; null = no reminder. */
+  remindAtMs: number | null;
   createdBy: string;
   createdAtMs: number | null;
   updatedBy: string;
@@ -103,6 +106,7 @@ function normalize(data: Record<string, unknown>, id: string): CrmContact {
         }))
       : [],
     order: Number(data.order ?? 0),
+    remindAtMs: typeof data.remindAtMs === 'number' ? data.remindAtMs : null,
     createdBy: String(data.createdBy ?? ''),
     createdAtMs: toMillis(data.createdAt),
     updatedBy: String(data.updatedBy ?? ''),
@@ -142,7 +146,7 @@ export function subscribeContacts(
 
 type ContactInput = Omit<
   CrmContact,
-  'id' | 'notes' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'
+  'id' | 'notes' | 'remindAtMs' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'
 >;
 
 export async function createContact(input: ContactInput): Promise<void> {
@@ -186,6 +190,19 @@ export async function setContactStatus(
 }
 
 /** Append a note to the lead's running list. */
+/** Set, move or clear the follow-up reminder. Clearing the "already
+ *  reminded" mark alongside means a re-set date will fire again. */
+export async function setContactReminder(id: string, remindAtMs: number | null): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Reminders need a database connection.');
+  await updateDoc(doc(database, COLLECTION, id), {
+    remindAtMs: remindAtMs ?? deleteField(),
+    remindedAtMs: deleteField(),
+    updatedAt: serverTimestamp(),
+    updatedBy: currentEmail(),
+  });
+}
+
 export async function addContactNote(id: string, text: string): Promise<void> {
   const database = db;
   if (!database) throw new Error('The CRM needs a database connection.');

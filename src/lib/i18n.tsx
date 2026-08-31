@@ -1123,6 +1123,10 @@ const AR: Record<string, string> = {
   'That email address looks invalid.': 'البريد الإلكتروني غير صالح.',
   'Something went wrong.': 'حدث خطأ ما.',
   'Sync to phone': 'مزامنة لجهات الاتصال',
+  'Follow-up reminder': 'تذكير بالمتابعة',
+  'Due — time to call them': 'حان الموعد — وكت الاتصال',
+  'Reminds on': 'يذكّرك بتاريخ',
+  'Set': 'ضبط',
 };
 
 interface LanguageValue {
