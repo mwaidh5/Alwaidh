@@ -515,9 +515,16 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
+      onClick={onClose}
+    >
+      {/* A phone gets the whole screen — 88vh of dialog left the composer
+          under the keyboard and nothing fit. dvh, not vh: iOS's vh ignores
+          its own toolbars. */}
       <div
-        className="flex h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-xl sm:h-[85vh] sm:max-w-2xl sm:rounded-xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
