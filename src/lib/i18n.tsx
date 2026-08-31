@@ -1127,6 +1127,8 @@ const AR: Record<string, string> = {
   'Due — time to call them': 'حان الموعد — وكت الاتصال',
   'Reminds on': 'يذكّرك بتاريخ',
   'Set': 'ضبط',
+  'Show more': 'عرض المزيد',
+  'Show less': 'عرض أقل',
 };
 
 interface LanguageValue {
