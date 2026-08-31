@@ -301,16 +301,45 @@ export default function AdminCrm() {
             {t('Leads and customers — drag a card as the conversation moves.')}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setError('');
-            setEditing({ ...EMPTY, section, order: Date.now() });
-          }}
-          className="btn-primary"
-        >
-          + {t('Add contact')}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              // The books this person can see, as one standard contacts
+              // file — the phone's Contacts app does the importing, and
+              // caller ID does the rest.
+              setError('');
+              const list = (contacts ?? []).filter(
+                (c) => c.phone.trim() && sections.some((s) => s.key === c.section),
+              );
+              if (!list.length) {
+                setError('No contacts with phone numbers to sync yet.');
+                return;
+              }
+              const [{ crmVcf }, { saveFile }] = await Promise.all([
+                import('../../lib/vcard'),
+                import('../../lib/savePdf'),
+              ]);
+              const result = await saveFile(crmVcf(list), 'alwaidh-crm-contacts.vcf');
+              if (result === 'failed') {
+                setError('Could not hand the contacts file to this device.');
+              }
+            }}
+            className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            📇 {t('Sync to phone')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setEditing({ ...EMPTY, section, order: Date.now() });
+            }}
+            className="btn-primary"
+          >
+            + {t('Add contact')}
+          </button>
+        </div>
       </header>
 
       {sections.length > 1 && (
