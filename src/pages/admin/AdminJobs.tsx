@@ -760,6 +760,7 @@ function MobileJobs({
 }) {
   const { t } = useLang();
   const [only, setOnly] = useState<JobStatus | 'all'>('all');
+  const [expanded, setExpanded] = useState<Partial<Record<JobStatus, boolean>>>({});
 
   const shown = JOB_STATUSES.filter((s) => only === 'all' || s.key === only);
   const count = shown.reduce((n, s) => n + byStatus[s.key].length, 0);
@@ -805,7 +806,7 @@ function MobileJobs({
                   </h2>
                 )}
                 <div className="space-y-2.5">
-                  {byStatus[s.key].map((job) => (
+                  {(expanded[s.key] ? byStatus[s.key] : byStatus[s.key].slice(0, 10)).map((job) => (
                     <MobileJobCard
                       key={job.id}
                       job={job}
@@ -817,6 +818,17 @@ function MobileJobs({
                       onMove={(status) => onMove(job, status)}
                     />
                   ))}
+                  {byStatus[s.key].length > 10 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpanded((e) => ({ ...e, [s.key]: !e[s.key] }))}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-600 active:bg-slate-100"
+                    >
+                      {expanded[s.key]
+                        ? `▲ ${t('Show less')}`
+                        : `▼ ${t('Show more')} (${byStatus[s.key].length - 10})`}
+                    </button>
+                  )}
                 </div>
               </section>
             ),
@@ -990,6 +1002,13 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const { t } = useLang();
   const style = STATUS_STYLES[status];
+  // Ten cards tell the story of a column; a hundred bury it. The rest
+  // sit behind "Show more" — collapsing again when the column changes.
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => {
+    if (jobs.length <= 10) setShowAll(false);
+  }, [jobs.length]);
+  const visible = showAll ? jobs : jobs.slice(0, 10);
   return (
     <div
       ref={setNodeRef}
@@ -1020,7 +1039,7 @@ function Column({
           isOver ? style.over : 'bg-slate-50/60'
         }`}
       >
-        {jobs.map((j) => (
+        {visible.map((j) => (
           <JobCard
             key={j.id}
             job={j}
@@ -1031,6 +1050,17 @@ function Column({
             onDelete={() => onDelete(j)}
           />
         ))}
+        {jobs.length > 10 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+          >
+            {showAll
+              ? `▲ ${t('Show less')}`
+              : `▼ ${t('Show more')} (${jobs.length - 10})`}
+          </button>
+        )}
         {jobs.length === 0 && (
           <div className="flex h-24 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
             <span className="text-lg">🛠️</span>
