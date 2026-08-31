@@ -15,6 +15,9 @@ const ASKED_KEY = 'alwaidh.langAsked.v1';
 
 const firstVisit = (() => {
   try {
+    // Ad landing pages pick Arabic themselves — a pop-up quiz before the
+    // form is a conversion killer.
+    if (window.location.pathname.startsWith('/lead')) return false;
     return localStorage.getItem('alwaidh.lang.v1') === null && localStorage.getItem(ASKED_KEY) === null;
   } catch {
     return false;

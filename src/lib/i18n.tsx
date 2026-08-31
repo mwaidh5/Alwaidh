@@ -1131,6 +1131,16 @@ const AR: Record<string, string> = {
   'Show less': 'عرض أقل',
   'edited': 'معدّلة',
   'From here you can switch between cash prices and installment plans 👇': 'من هنا تكدر تبدل بين الأسعار النقدية وخطط التقسيط 👇',
+  'Let the sun power your home': 'خلّي الشمس تشغّل بيتك',
+  'Leave your number and our team calls you with a free quote — cash or bank installments up to 7 years.': 'اترك رقمك وفريق الواعظ يتصل بيك بعرض سعر مجاني — نقداً أو بتقسيط المصرف حتى ٧ سنوات.',
+  'Phone number (07xx xxx xxxx)': 'رقم الهاتف (07xx xxx xxxx)',
+  'Your area (optional)': 'منطقتك (اختياري)',
+  'Call me back': 'اتصلوا بيّه',
+  'Free consultation · 2-year installation warranty · Baghdad and all provinces': 'استشارة مجانية · ضمان سنتين على التركيب · بغداد وكل المحافظات',
+  'Got it — we will call you today!': 'وصلنا رقمك — راح نتصل بيك اليوم!',
+  'Our team will call you with a free quote. In a hurry? Talk to us on WhatsApp now.': 'فريقنا راح يتصل بيك بعرض سعر مجاني. مستعجل؟ احجينا واتساب هسه.',
+  'See the systems and prices': 'شوف المنظومات والأسعار',
+  'That phone number looks too short.': 'رقم الهاتف قصير — دقق عليه.',
 };
 
 interface LanguageValue {

@@ -54,6 +54,23 @@ service cloud.firestore {
     // CRM leads. Reads must be filtered by section, so the rule can prove
     // every returned doc is inside a book this person was given. Only an
     // admin may move a lead between books.
+    // Facebook ad leads: the landing page writes here (create-only,
+    // tight shape), and a Cloud Function copies each one into the CRM.
+    match /leads/{id} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'campaign', 'section'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 80
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 10
+        && request.resource.data.phone.size() < 25
+        && request.resource.data.campaign is string
+        && request.resource.data.campaign.size() < 60
+        && request.resource.data.get('city', '') is string
+        && request.resource.data.section in ['solar', 'computers'];
+      allow read, update, delete: if isAdmin();
+    }
+
     match /crmContacts/{id} {
       allow read: if canCrm(resource.data.section);
       // Erasing a lead is the admin's alone — staff work the book,
