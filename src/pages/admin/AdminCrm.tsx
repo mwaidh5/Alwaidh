@@ -448,7 +448,7 @@ export default function AdminCrm() {
               window.addEventListener('mousemove', onMove);
               window.addEventListener('mouseup', onUp);
             }}
-            className="-mx-1 hidden gap-4 overflow-x-auto px-1 pb-3 sm:flex"
+            className="-mx-1 hidden items-start gap-4 overflow-x-auto px-1 pb-3 sm:flex"
           >
             {CRM_STATUSES.map((col) => (
               <div key={col.key} className="w-[280px] flex-none snap-start">
@@ -530,11 +530,21 @@ function Column({
   onView: (c: CrmContact) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { t } = useLang();
   const style = STATUS_STYLES[status];
+  // Ten cards, then Show more. The column used to be a 72vh box that
+  // scrolled inside itself — once the page was at its end, the wheel had
+  // nowhere left to go and the last cards were unreachable. Columns grow
+  // with their contents now and the page does the scrolling.
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => {
+    if (contacts.length <= 10) setShowAll(false);
+  }, [contacts.length]);
+  const visible = showAll ? contacts : contacts.slice(0, 10);
   return (
     <div
       ref={setNodeRef}
-      className={`flex max-h-[72vh] min-h-[16rem] flex-col rounded-2xl border border-slate-200 bg-slate-50/80 transition ${
+      className={`flex min-h-[16rem] flex-col rounded-2xl border border-slate-200 bg-slate-50/80 transition ${
         isOver ? style.over : ''
       }`}
     >
@@ -545,10 +555,19 @@ function Column({
           {contacts.length}
         </span>
       </div>
-      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-3">
-        {contacts.map((c) => (
+      <div className="min-h-0 flex-1 space-y-2.5 px-2.5 pb-3">
+        {visible.map((c) => (
           <DraggableCard key={c.id} contact={c} onView={onView} />
         ))}
+        {contacts.length > 10 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+          >
+            {showAll ? `▲ ${t('Show less')}` : `▼ ${t('Show more')} (${contacts.length - 10})`}
+          </button>
+        )}
         {contacts.length === 0 && (
           <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">
             —
