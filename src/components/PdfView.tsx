@@ -38,11 +38,19 @@ export default function PdfView({ url, className }: { url: string; className?: s
         // The character maps and the base-14 fonts come from our own
         // origin (see scripts/copy-pdf-assets.mjs), so a file that leans
         // on either never depends on somebody else's CDN.
+        //
+        // useSystemFonts: false is the important one. Left on, a font the
+        // PDF names but does not embed is filled in from whatever is
+        // installed on that computer — which is why the same datasheet
+        // read cleanly here and came out with chopped, letter-dropped
+        // words on the owner's laptop. Now every machine draws it from
+        // the same bundled fonts.
         const docPdf = await pdfjs.getDocument({
           url,
           cMapUrl: '/pdf-assets/cmaps/',
           cMapPacked: true,
           standardFontDataUrl: '/pdf-assets/standard_fonts/',
+          useSystemFonts: false,
         }).promise;
         if (cancelled || !holder.current) return;
         const el = holder.current;

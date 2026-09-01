@@ -10,6 +10,9 @@ import { DEFAULT_COLUMNS, type PriceColumn } from './solarPricesStore';
 /** One full-width banner at the top of the homepage. */
 export interface HeroSlide {
   image: string;
+  /** The highlight colour on this banner — the eyebrow chip and the tail
+      of the headline. Empty means "pick from where the button links". */
+  accent: string;
   /** Optional taller crop used on phones, where the banner is portrait. */
   mobileImage: string;
   eyebrow: string;
@@ -42,6 +45,7 @@ export const HERO_DEFAULT_COLORS = {
 export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     image: '',
+    accent: '',
     mobileImage: '',
     eyebrow: 'New arrivals',
     title: 'Laptops built for real work',
@@ -57,6 +61,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   },
   {
     image: '',
+    accent: '',
     mobileImage: '',
     eyebrow: 'Clean energy',
     title: 'Cut your power bill for good',
@@ -72,6 +77,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   },
   {
     image: '',
+    accent: '',
     mobileImage: '',
     eyebrow: 'Surveillance',
     title: 'Tiandy cameras, properly installed',
@@ -340,6 +346,7 @@ function normalize(data: Record<string, unknown>): SiteSettings {
     heroSlides: Array.isArray(data.heroSlides)
       ? (data.heroSlides as Record<string, unknown>[]).map((h) => ({
           image: String(h.image ?? ''),
+          accent: String(h.accent ?? ''),
           mobileImage: String(h.mobileImage ?? ''),
           eyebrow: String(h.eyebrow ?? ''),
           title: String(h.title ?? ''),
