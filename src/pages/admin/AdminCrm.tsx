@@ -957,10 +957,13 @@ function ContactDetails({
   async function postNote() {
     const text = note.trim();
     if (!text || posting) return;
+    // Empty the box first; the note lands in the list as soon as it saves.
+    setNote('');
     setPosting(true);
     try {
       await addContactNote(contact.id, text);
-      setNote('');
+    } catch {
+      setNote((n) => n || text);
     } finally {
       setPosting(false);
     }

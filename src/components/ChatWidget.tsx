@@ -91,14 +91,18 @@ export default function ChatWidget() {
   async function send() {
     const text = draft.trim();
     if (!text || busy) return;
+    // The box empties the moment you press send — the message is already
+    // in the thread, greyed until the server has it. Waiting for the round
+    // trip first is what made sending feel stuck.
+    setDraft('');
     setBusy(true);
     setError('');
     try {
       const id = await sendGuestMessage(text, name);
       setChatId(id);
-      setDraft('');
     } catch {
       setError(t('Could not send — check your connection and try again.'));
+      setDraft((d) => d || text);
     } finally {
       setBusy(false);
     }
@@ -145,11 +149,11 @@ export default function ChatWidget() {
                 className={`flex ${m.from === 'guest' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm transition-opacity ${
                     m.from === 'guest'
                       ? 'rounded-br-sm bg-brand-600 text-white'
                       : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
-                  }`}
+                  } ${m.atMs === null ? 'opacity-60' : 'opacity-100'}`}
                 >
                   {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
                   {m.product && (

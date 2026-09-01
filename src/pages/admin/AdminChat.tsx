@@ -98,13 +98,18 @@ export default function AdminChat() {
   async function reply() {
     const text = draft.trim();
     if ((!text && !attached) || !activeId || busy) return;
+    // Empty the box first: the reply is already in the thread, greyed
+    // until the server confirms it.
+    const sentAttachment = attached;
+    setDraft('');
+    setAttached(null);
     setBusy(true);
     setError('');
     try {
-      await sendStaffReply(activeId, text, attached);
-      setDraft('');
-      setAttached(null);
+      await sendStaffReply(activeId, text, sentAttachment);
     } catch (e) {
+      setDraft((d) => d || text);
+      setAttached(sentAttachment);
       setError(e instanceof Error ? e.message : 'Could not send the reply.');
     } finally {
       setBusy(false);
@@ -247,11 +252,11 @@ export default function AdminChat() {
                     className={`flex ${m.from === 'staff' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm transition-opacity ${
                         m.from === 'staff'
                           ? 'rounded-br-sm bg-brand-600 text-white'
                           : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
-                      }`}
+                      } ${m.atMs === null ? 'opacity-60' : 'opacity-100'}`}
                     >
                       {editingMsg?.id === m.id ? (
                         <div className="min-w-[220px]">

@@ -189,6 +189,13 @@ export async function deleteStaffMessage(chatId: string, messageId: string): Pro
   await deleteDoc(doc(database, COLLECTION, chatId, 'messages', messageId));
 }
 
+/** Newest last, with anything still on its way to the server at the very
+ *  end: those carry no timestamp yet, and Firestore would otherwise sort
+ *  them before every real message. */
+function sendingLast<T extends { atMs: number | null }>(list: T[]): T[] {
+  return [...list].sort((x, y) => (x.atMs ?? Infinity) - (y.atMs ?? Infinity));
+}
+
 export function subscribeChatMessages(
   chatId: string,
   cb: (list: ChatMessage[]) => void,
@@ -202,6 +209,7 @@ export function subscribeChatMessages(
     query(messagesRef(database, chatId), orderBy('at', 'asc')),
     (snap) =>
       cb(
+        sendingLast(
         snap.docs.map((d) => {
           const data = d.data() as Record<string, unknown>;
           const p = data.product as Record<string, unknown> | undefined;
@@ -224,6 +232,7 @@ export function subscribeChatMessages(
               : null,
           };
         }),
+        ),
       ),
     () => cb([]),
   );

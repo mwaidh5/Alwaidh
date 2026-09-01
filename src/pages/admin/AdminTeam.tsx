@@ -129,6 +129,13 @@ export default function AdminTeam() {
   async function send() {
     const text = draft.trim();
     if ((!text && !attachedProduct && !attachedJob) || !activeId || busy) return;
+    // Empty the box first; the message is already in the thread, greyed
+    // until the server has it.
+    const sentProduct = attachedProduct;
+    const sentJob = attachedJob;
+    setDraft('');
+    setAttachedProduct(null);
+    setAttachedJob(null);
     setBusy(true);
     setError('');
     try {
@@ -138,13 +145,13 @@ export default function AdminTeam() {
       );
       await sendTeamMessage(activeId, text, {
         mentions,
-        product: attachedProduct,
-        job: attachedJob,
+        product: sentProduct,
+        job: sentJob,
       });
-      setDraft('');
-      setAttachedProduct(null);
-      setAttachedJob(null);
     } catch (e) {
+      setDraft((d) => d || text);
+      setAttachedProduct(sentProduct);
+      setAttachedJob(sentJob);
       setError(e instanceof Error ? e.message : 'Could not send the message.');
     } finally {
       setBusy(false);
@@ -302,7 +309,9 @@ export default function AdminTeam() {
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm transition-opacity ${
+                          m.atMs === null ? 'opacity-60' : 'opacity-100'
+                        } ${
                           mine
                             ? 'rounded-br-sm bg-brand-600 text-white'
                             : `rounded-bl-sm border bg-white text-slate-800 ${
