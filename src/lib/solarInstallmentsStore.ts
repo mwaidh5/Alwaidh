@@ -17,9 +17,13 @@ import { db } from '../firebase';
  * one number — the 7-year total the bank's table publishes. Everything
  * else derives from it:
  *
- *   cash price      = 7-year total ÷ 1.21   (3% per year × 7 years)
- *   N-year total    = cash × (1 + 0.03 × N)
+ *   cash price      = 7-year total ÷ 1.225  (3% a year, plus a flat 1.5%)
+ *   N-year total    = cash × (1 + 0.03 × N + 0.015)
  *   monthly payment = N-year total ÷ (N × 12)
+ *
+ * So a one-year plan costs 4.5% over cash and the seven-year plan 22.5%.
+ * Everything is rounded to the nearest thousand dinars — nobody quotes
+ * hundreds on a fifteen-million-dinar system.
  */
 export interface InstallmentRow {
   id: string;
@@ -38,17 +42,28 @@ export interface InstallmentRow {
 }
 
 export const YEAR_RATE = 0.03;
+/** The bank's flat charge on top of the yearly rate. */
+export const BASE_RATE = 0.015;
 export const FULL_YEARS = 7;
 
+/** To the nearest thousand dinars. */
+const round1k = (n: number) => Math.round(n / 1000) * 1000;
+
+/** What a plan of N years costs over the cash price: 4.5% at one year,
+ *  22.5% at seven. */
+export function planRate(years: number): number {
+  return 1 + YEAR_RATE * years + BASE_RATE;
+}
+
 export function cashPrice(price7: number): number {
-  return Math.round(price7 / (1 + YEAR_RATE * FULL_YEARS) / 1000) * 1000;
+  return round1k(price7 / planRate(FULL_YEARS));
 }
 export function planTotal(price7: number, years: number): number {
-  if (years >= FULL_YEARS) return price7;
-  return Math.round((cashPrice(price7) * (1 + YEAR_RATE * years)) / 1000) * 1000;
+  if (years >= FULL_YEARS) return round1k(price7);
+  return round1k(cashPrice(price7) * planRate(years));
 }
 export function planMonthly(price7: number, years: number): number {
-  return Math.round(planTotal(price7, years) / (years * 12));
+  return round1k(planTotal(price7, years) / (years * 12));
 }
 
 const COLLECTION = 'solarInstallments';

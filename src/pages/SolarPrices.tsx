@@ -596,14 +596,15 @@ export default function SolarPrices() {
                     <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-10 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
               </div>
             </div>
-            <h2 className="mb-1 mt-3 text-2xl font-black leading-snug text-slate-900">
+            <p className="mt-2 text-center text-lg font-black text-slate-800">شركة تقنية الواعظ</p>
+            <h2 className="mb-1 mt-1 text-2xl font-black leading-snug text-slate-900">
               {t('Installment systems — Central Bank initiative')}
             </h2>
             <p className="text-sm leading-relaxed text-slate-500">
-              {t('The monthly payment for each plan length — 3, 5 and 7 years.')}
+              {t('The total and the monthly payment for each plan length — 3, 5 and 7 years.')}
             </p>
 
             <div className="mt-5 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
@@ -617,9 +618,9 @@ export default function SolarPrices() {
                   t('Panels'),
                   t('Batteries'),
                   t('Backup hours'),
-                  `${t('Monthly')} · 3 ${t('years')}`,
-                  `${t('Monthly')} · 5 ${t('years')}`,
-                  `${t('Monthly')} · 7 ${t('years')}`,
+                  `3 ${t('years')}`,
+                  `5 ${t('years')}`,
+                  `7 ${t('years')}`,
                 ].map((h) => (
                   <div key={h} className="text-center text-sm font-extrabold text-white">
                     {h}
@@ -629,7 +630,7 @@ export default function SolarPrices() {
               {instRows.map((row) => (
                 <div
                   key={row.id}
-                  className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-2.5 last:border-b-0"
+                  className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-1.5 last:border-b-0"
                   style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
                 >
                   <div className="flex items-center justify-center gap-2.5">
@@ -640,7 +641,7 @@ export default function SolarPrices() {
                   </div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">{row.inverterKw} KW IP65</div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">
-                    {row.panelsCount} × 650W
+                    {row.panelsCount}
                   </div>
                   <div className="text-center text-[15px] leading-tight text-slate-600">
                     <span dir="ltr" className="block">{row.batteryKwh} KWh</span>
@@ -650,25 +651,28 @@ export default function SolarPrices() {
                     {row.backupHours} {t('hours')}
                   </div>
                   {[3, 5, 7].map((y) => (
-                    <div
-                      key={y}
-                      dir="ltr"
-                      className={`text-center text-lg font-extrabold tracking-tight ${
-                        y === 7 ? 'text-brand-600' : 'text-slate-900'
-                      }`}
-                    >
-                      {money(planMonthly(row.price7, y))}
+                    <div key={y} dir="ltr" className="text-center leading-tight">
+                      <div
+                        className={`text-[17px] font-extrabold tracking-tight ${
+                          y === 7 ? 'text-brand-700' : 'text-slate-900'
+                        }`}
+                      >
+                        {money(planTotal(row.price7, y))}
+                      </div>
+                      <div className="text-[13px] font-bold text-brand-600">
+                        {money(planMonthly(row.price7, y))} / {t('month')}
+                      </div>
                     </div>
                   ))}
                 </div>
               ))}
             </div>
 
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-              <p className="mb-2 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
+            <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+              <p className="mb-1 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
               {/* Hand-drawn bullets: html2canvas puts list markers on the
                   wrong side in RTL. */}
-              <div className="space-y-0.5 text-[12px] leading-relaxed text-slate-600">
+              <div className="space-y-0 text-[11px] leading-snug text-slate-600">
                 {[
                   t('These prices include installation and commissioning; installation costs can vary by 10% depending on the site.'),
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
@@ -684,7 +688,15 @@ export default function SolarPrices() {
               </div>
             </div>
 
-            <div className="mt-7 flex items-center justify-between gap-6 border-t border-slate-200 pt-6">
+            <div className="mt-3 flex items-center justify-center gap-8 border-t border-slate-200 pt-3">
+              {(settings.brands ?? [])
+                .filter((b) => /jinko|saj|hailei/i.test(b.name) && b.image)
+                .map((b) => (
+                  <img key={b.name} src={b.image} alt={b.name} className="h-7 w-auto object-contain" />
+                ))}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-6 border-t border-slate-200 pt-3">
               <div className="leading-relaxed">
                 <p className="text-base font-bold text-slate-900">{en ? ADDRESS_EN : ADDRESS}</p>
                 <p className="text-sm text-slate-500">

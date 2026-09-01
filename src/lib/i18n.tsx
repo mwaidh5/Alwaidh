@@ -1153,6 +1153,8 @@ const AR: Record<string, string> = {
   'The monthly payment for each plan length — 3, 5 and 7 years.': 'القسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
   'Send our location': 'أرسل موقعنا',
   'Open the map': 'افتح الخريطة',
+  'month': 'شهر',
+  'The total and the monthly payment for each plan length — 3, 5 and 7 years.': 'السعر الكلي والقسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
 };
 
 interface LanguageValue {
