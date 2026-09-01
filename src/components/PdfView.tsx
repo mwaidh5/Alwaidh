@@ -39,18 +39,23 @@ export default function PdfView({ url, className }: { url: string; className?: s
         // origin (see scripts/copy-pdf-assets.mjs), so a file that leans
         // on either never depends on somebody else's CDN.
         //
-        // useSystemFonts: false is the important one. Left on, a font the
-        // PDF names but does not embed is filled in from whatever is
-        // installed on that computer — which is why the same datasheet
-        // read cleanly here and came out with chopped, letter-dropped
-        // words on the owner's laptop. Now every machine draws it from
-        // the same bundled fonts.
+        // The two flags are what make a page look the same everywhere.
+        // useSystemFonts: false stops a font the PDF names but doesn't
+        // embed from being filled in with whatever that computer has
+        // installed. disableFontFace goes further: pdf.js stops handing
+        // fonts to the browser at all and paints the letter shapes
+        // itself, so nothing depends on the browser accepting them. Both
+        // were reported broken by the owner on different machines — a
+        // laptop with chopped English, an iPhone with unjoined Arabic —
+        // while the same files rendered cleanly here. Drawing the
+        // outlines ourselves is slower per page and immune to both.
         const docPdf = await pdfjs.getDocument({
           url,
           cMapUrl: '/pdf-assets/cmaps/',
           cMapPacked: true,
           standardFontDataUrl: '/pdf-assets/standard_fonts/',
           useSystemFonts: false,
+          disableFontFace: true,
         }).promise;
         if (cancelled || !holder.current) return;
         const el = holder.current;
