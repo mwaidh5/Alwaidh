@@ -46,7 +46,7 @@ const EN_PHRASES: Array<[RegExp, string]> = [
   [/ساعات/g, 'hours'],
   [/ساعة/g, 'hours'],
 ];
-const PHONE = '0781 0150 876';
+const PHONE = '0774 420 5582';
 const WEBSITE = 'alwaidh.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
 const ADDRESS_EN = 'Baghdad, Sinaa Street — opposite the University of Technology';
