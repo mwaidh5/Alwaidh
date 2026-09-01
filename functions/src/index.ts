@@ -27,6 +27,14 @@ initializeApp();
 // crossing regions, and cap instances — this is a small shop.
 setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 
+/**
+ * Doha — the closest Google region to Iraq, and the same one the files
+ * already sit in. Anything a customer waits on directly runs here; the
+ * Firestore triggers cannot move, because a trigger has to live beside
+ * the database it watches (nam5, in the United States).
+ */
+export const NEAR = 'me-central1';
+
 /** Legacy broadcast topics — nothing publishes to these any more.
  *  A broadcast cannot leave out the person who caused it, so every send
  *  now goes to per-person channel topics instead; devices drop these on
@@ -55,7 +63,7 @@ function preview(text: unknown, max = 80): string {
  * a site installed from the browser only ever gets the notifications a
  * running tab draws itself, which is nothing once it's closed.
  */
-export const subscribeWebPush = onCall(async (request) => {
+export const subscribeWebPush = onCall({ region: NEAR }, async (request) => {
   const token = String(request.data?.token ?? '');
   const subscribe: string[] = Array.isArray(request.data?.subscribe)
     ? request.data.subscribe.map(String)
@@ -301,7 +309,7 @@ async function allowSend(email: string): Promise<boolean> {
   }
 }
 
-export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD] }, async (request) => {
+export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD], region: NEAR }, async (request) => {
   const email = String(request.data?.email ?? '').trim().toLowerCase();
   const kind: EmailKind = request.data?.kind === 'reset' ? 'reset' : 'verify';
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -372,7 +380,7 @@ export const sendAccountEmail = onCall({ secrets: [SMTP_PASSWORD] }, async (requ
  */
 const SERVABLE_PREFIXES = ['library/', 'products/', 'site/'];
 
-export const serveFile = onRequest({ invoker: 'public' }, async (req, res) => {
+export const serveFile = onRequest({ invoker: 'public', region: NEAR }, async (req, res) => {
   const raw = req.path.replace(/^\/f\//, '').replace(/^\/+/, '');
   let path = '';
   try {

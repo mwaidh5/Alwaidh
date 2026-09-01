@@ -21,7 +21,7 @@ export async function sendAccountEmail(kind: AccountEmailKind, email: string): P
     const { firebaseApp } = await import('../firebase');
     if (!firebaseApp) throw new Error('Firebase is not configured.');
     const { getFunctions, httpsCallable } = await import('firebase/functions');
-    const call = httpsCallable(getFunctions(firebaseApp, 'us-central1'), 'sendAccountEmail');
+    const call = httpsCallable(getFunctions(firebaseApp, 'me-central1'), 'sendAccountEmail');
     await call({ kind, email });
     return;
   } catch (e) {

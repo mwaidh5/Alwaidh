@@ -593,7 +593,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
       const { firebaseApp } = await import('../../firebase');
       if (!firebaseApp) throw new Error('Not connected.');
       const { getFunctions, httpsCallable } = await import('firebase/functions');
-      const call = httpsCallable(getFunctions(firebaseApp, 'us-central1'), 'teachAssistant');
+      const call = httpsCallable(getFunctions(firebaseApp, 'me-central1'), 'teachAssistant');
       const res = await call({
         messages: next.map(({ role, content }) => ({ role, content })),
       });
