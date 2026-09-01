@@ -149,19 +149,10 @@ export default function AdminJobs() {
   // The mouse wheel pans the board sideways. A native listener, because
   // React attaches wheel handlers passively and preventDefault would be
   // ignored — the page would scroll as well.
-  useEffect(() => {
-    const el = boardRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      if (el.scrollWidth - el.clientWidth <= 0) return;
-      const before = el.scrollLeft;
-      el.scrollLeft += e.deltaY;
-      if (el.scrollLeft !== before) e.preventDefault();
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
+  // No wheel hijack: turning a vertical wheel into sideways panning meant
+  // the page could not scroll at all with the pointer over the board, so
+  // anything below the fold was unreachable. Sideways panning stays on
+  // drag (below), shift+wheel and trackpad swipes — all native.
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
