@@ -56,6 +56,7 @@ export interface ChatMessage {
   atMs: number | null;
   editedMs: number | null; // when the sender last fixed the wording
   product: ChatProductCard | null; // product card attached to the message
+  place: ChatPlaceCard | null; // the shop's location, sent as a card
 }
 
 const COLLECTION = 'chats';
@@ -140,17 +141,27 @@ export async function sendGuestMessage(text: string, name = ''): Promise<string>
   return id;
 }
 
-/** Staff replies in a conversation, optionally sharing a product. */
+/** A pin the customer can open in their maps app. */
+export interface ChatPlaceCard {
+  label: string;
+  address: string;
+  maps: string;
+  waze: string;
+}
+
+/** Staff replies in a conversation, optionally sharing a product or the
+ *  shop's location. */
 export async function sendStaffReply(
   chatId: string,
   text: string,
   product: ChatProductCard | null = null,
+  place: ChatPlaceCard | null = null,
 ): Promise<void> {
   const database = db;
   if (!database) throw new Error('Chat needs a database connection.');
   const body = text.trim();
-  // A product card on its own is a complete reply.
-  if (!body && !product) return;
+  // A product card — or a location — on its own is a complete reply.
+  if (!body && !product && !place) return;
   await addDoc(messagesRef(database, chatId), {
     text: body,
     from: 'staff',
@@ -158,6 +169,7 @@ export async function sendStaffReply(
     byName: auth?.currentUser?.displayName ?? '',
     at: serverTimestamp(),
     ...(product ? { product } : {}),
+    ...(place ? { place } : {}),
   });
   await setDoc(
     doc(database, COLLECTION, chatId),
@@ -221,6 +233,14 @@ export function subscribeChatMessages(
             byName: String(data.byName ?? ''),
             atMs: toMillis(data.at),
             editedMs: toMillis(data.editedAt),
+            place: (data.place as ChatPlaceCard | undefined)?.maps
+              ? {
+                  label: String((data.place as ChatPlaceCard).label ?? ''),
+                  address: String((data.place as ChatPlaceCard).address ?? ''),
+                  maps: String((data.place as ChatPlaceCard).maps ?? ''),
+                  waze: String((data.place as ChatPlaceCard).waze ?? ''),
+                }
+              : null,
             product: p?.id
               ? {
                   id: String(p.id),
