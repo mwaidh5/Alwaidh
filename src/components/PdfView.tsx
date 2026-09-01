@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../lib/i18n';
+import { brandedFileUrl } from '../lib/brandedFiles';
 
 /**
  * Renders a PDF as sharp page images sized to the container and the
@@ -94,7 +95,7 @@ export default function PdfView({ url, className }: { url: string; className?: s
       {status === 'ready' && (
         <div className="p-3 text-center">
           <a
-            href={url}
+            href={brandedFileUrl(url)}
             target="_blank"
             rel="noreferrer"
             className="text-xs font-semibold text-brand-700 hover:underline"

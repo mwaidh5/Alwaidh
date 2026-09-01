@@ -139,7 +139,7 @@ export default function AdminFiles() {
                     {t('View')}
                   </button>
                   <a
-                    href={f.url}
+                    href={brandedFileUrl(f.url)}
                     target="_blank"
                     rel="noreferrer"
                     download={f.fileName || f.name}
@@ -300,7 +300,12 @@ function FilePreview({ item, onClose }: { item: LibraryFile; onClose: () => void
       >
         <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
           <h2 className="min-w-0 flex-1 truncate font-bold text-slate-900">{item.name}</h2>
-          <a href={item.url} target="_blank" rel="noreferrer" className="btn-secondary">
+          <a
+            href={brandedFileUrl(item.url)}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-secondary"
+          >
             {t('Open in new tab ↗')}
           </a>
           <button
