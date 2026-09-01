@@ -992,7 +992,7 @@ const AR: Record<string, string> = {
     'البطاريات المستخدمة من فئة IP20 سعة 16 كيلو واط بعدد 8000 دورة شحن وتفريغ وبعمق تفريغ 90% وبضمان 5 سنوات.',
   'The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.':
     'الألواح المستخدمة من نوع Jinko (اللوح رقم واحد عالمياً) بقدرة 650 واط وبضمان 15 سنة.',
-  'AC cabling is included up to 20 metres; any extra length is charged.': 'كيبلات التيار المتناوب AC مشمولة حتى طول 20 متراً، وأي زيادة تكون مقابل ثمن.',
+  'AC cabling is included up to 20 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
   'Every plan is calculated from the published 7-year total.':
     'كل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
   'Hi! I am interested in the {system} system — could you give me the details?':
@@ -1155,6 +1155,7 @@ const AR: Record<string, string> = {
   'Open the map': 'افتح الخريطة',
   'month': 'شهر',
   'The total and the monthly payment for each plan length — 3, 5 and 7 years.': 'السعر الكلي والقسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
+  'The price includes the AC cable between the inverter and the national board up to 15 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
 };
 
 interface LanguageValue {

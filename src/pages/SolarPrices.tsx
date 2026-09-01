@@ -678,7 +678,7 @@ export default function SolarPrices() {
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
                   t('The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.'),
                   t('The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.'),
-                  t('AC cabling is included up to 20 metres; any extra length is charged.'),
+                  t('The price includes the AC cable between the inverter and the national board up to 15 metres; any extra length is charged.'),
                 ].map((note) => (
                   <div key={note} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-600" />
