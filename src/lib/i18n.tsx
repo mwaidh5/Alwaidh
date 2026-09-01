@@ -1149,6 +1149,8 @@ const AR: Record<string, string> = {
   'Open the file': 'افتح الملف',
   'Use the default colour': 'استخدم اللون الافتراضي',
   'Highlight colour': 'لون التمييز',
+  'Monthly': 'شهرياً',
+  'The monthly payment for each plan length — 3, 5 and 7 years.': 'القسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
 };
 
 interface LanguageValue {

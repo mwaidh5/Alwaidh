@@ -213,11 +213,11 @@ function InstallmentsEditor() {
     upsertInstallmentRow({ ...draft, price7: Math.round(draft.price7) }).catch(fail);
   };
 
+  // No system-kW and no panel-kWp: amperes name the system and the panel
+  // count is what customers ask about.
   const COLS: { key: keyof InstallmentRow; label: string; width?: string }[] = [
-    { key: 'sizeKw', label: 'KW' },
     { key: 'sizeAmp', label: 'Amp' },
     { key: 'inverterKw', label: 'العاكسة KW' },
-    { key: 'panelsKwp', label: 'الألواح KWP' },
     { key: 'panelsCount', label: 'عدد الألواح' },
     { key: 'batteryKwh', label: 'البطارية KWh' },
     { key: 'batteryLabel', label: 'وصف البطاريات', width: 'min-w-[130px]' },

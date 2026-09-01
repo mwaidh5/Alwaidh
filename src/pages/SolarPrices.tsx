@@ -286,19 +286,18 @@ export default function SolarPrices() {
                       {row.sizeAmp}
                     </span>
                     <span className="text-lg font-bold text-slate-700">{t('Amp')}</span>
-                    <span dir="ltr" className="ms-auto rounded-full bg-brand-50 px-3 py-1 text-xs font-extrabold text-brand-700">
-                      {row.sizeKw} KW
-                    </span>
                   </div>
                   <dl>
                     {(
                       [
-                        [t('Inverter'), `${row.inverterKw} KW IP65`],
-                        [t('Panels'), `${row.panelsCount} × Jinko 650W — ${row.panelsKwp} KWP`],
-                        [t('Batteries'), `${row.batteryKwh} KWh ${localize(row.batteryLabel)}`],
-                        [t('Backup hours'), `${row.backupHours} ${t('hours')}`],
-                      ] as [string, string][]
-                    ).map(([k, v]) => (
+                        [t('Inverter'), `${row.inverterKw} KW IP65`, ''],
+                        [t('Panels'), `${row.panelsCount} × Jinko 650W`, ''],
+                        // The size leads; how many batteries make it up is
+                        // the small print underneath.
+                        [t('Batteries'), `${row.batteryKwh} KWh`, localize(row.batteryLabel)],
+                        [t('Backup hours'), `${row.backupHours} ${t('hours')}`, ''],
+                      ] as [string, string, string][]
+                    ).map(([k, v, sub]) => (
                       <div
                         key={k}
                         className="flex items-start justify-between gap-3 border-b border-dashed border-slate-200 py-2.5 last:border-b-0"
@@ -310,6 +309,11 @@ export default function SolarPrices() {
                           className="max-w-[12rem] text-end text-[13px] font-bold leading-relaxed text-slate-800"
                         >
                           {v}
+                          {sub && (
+                            <span dir="auto" className="block text-[11px] font-semibold text-slate-400">
+                              {sub}
+                            </span>
+                          )}
                         </dd>
                       </div>
                     ))}
@@ -599,15 +603,13 @@ export default function SolarPrices() {
               {t('Installment systems — Central Bank initiative')}
             </h2>
             <p className="text-sm leading-relaxed text-slate-500">
-              {t('Plan length')}: <span dir="ltr" className="font-bold text-slate-700">{years}</span>{' '}
-              {t(years === 1 ? 'year' : 'years')} ·{' '}
-              {t('Every plan is calculated from the published 7-year total.')}
+              {t('The monthly payment for each plan length — 3, 5 and 7 years.')}
             </p>
 
             <div className="mt-5 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
               <div
                 className="grid items-center gap-3 bg-brand-600 px-6 py-2.5"
-                style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+                style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
               >
                 {[
                   t('System'),
@@ -615,8 +617,9 @@ export default function SolarPrices() {
                   t('Panels'),
                   t('Batteries'),
                   t('Backup hours'),
-                  `${t('Total price')} (${years} ${t(years === 1 ? 'year' : 'years')})`,
-                  t('Monthly payment'),
+                  `${t('Monthly')} · 3 ${t('years')}`,
+                  `${t('Monthly')} · 5 ${t('years')}`,
+                  `${t('Monthly')} · 7 ${t('years')}`,
                 ].map((h) => (
                   <div key={h} className="text-center text-sm font-extrabold text-white">
                     {h}
@@ -627,30 +630,36 @@ export default function SolarPrices() {
                 <div
                   key={row.id}
                   className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-2.5 last:border-b-0"
-                  style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+                  style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
                 >
                   <div className="flex items-center justify-center gap-2.5">
                     <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
                     <span dir="ltr" className="text-xl font-black text-slate-900">
-                      {row.sizeKw} KW / {row.sizeAmp} A
+                      {row.sizeAmp} A
                     </span>
                   </div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">{row.inverterKw} KW IP65</div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">
-                    {row.panelsCount} × 650W ({row.panelsKwp} KWP)
+                    {row.panelsCount} × 650W
                   </div>
-                  <div dir="ltr" className="text-center text-[15px] text-slate-600">
-                    {row.batteryKwh} KWh {localize(row.batteryLabel)}
+                  <div className="text-center text-[15px] leading-tight text-slate-600">
+                    <span dir="ltr" className="block">{row.batteryKwh} KWh</span>
+                    <span className="block text-[12px] text-slate-400">{localize(row.batteryLabel)}</span>
                   </div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">
                     {row.backupHours} {t('hours')}
                   </div>
-                  <div dir="ltr" className="text-center text-xl font-extrabold tracking-tight text-slate-900">
-                    {money(planTotal(row.price7, years))}
-                  </div>
-                  <div dir="ltr" className="text-center text-xl font-extrabold tracking-tight text-brand-600">
-                    {money(planMonthly(row.price7, years))}
-                  </div>
+                  {[3, 5, 7].map((y) => (
+                    <div
+                      key={y}
+                      dir="ltr"
+                      className={`text-center text-lg font-extrabold tracking-tight ${
+                        y === 7 ? 'text-brand-600' : 'text-slate-900'
+                      }`}
+                    >
+                      {money(planMonthly(row.price7, y))}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
