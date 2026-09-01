@@ -718,7 +718,12 @@ function MobileCrm({
                 )}
               </div>
               {c.phone && (
-                <div className="mt-2.5 flex items-center gap-2" dir="ltr">
+                <p dir="ltr" className="mt-2 text-start text-[13px] font-bold text-slate-700">
+                  📞 {c.phone}
+                </p>
+              )}
+              {c.phone && (
+                <div className="mt-1.5 flex items-center gap-2" dir="ltr">
                   <a
                     href={telLink(c.phone)}
                     className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-bold text-white"
