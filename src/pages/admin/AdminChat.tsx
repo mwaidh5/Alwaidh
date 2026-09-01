@@ -20,6 +20,8 @@ import { useScrollLock } from '../../lib/useScrollLock';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
+import ChatPlaceCard from '../../components/ChatPlaceCard';
+import { SHOP_LOCATION } from '../../lib/shopLocation';
 
 function whenText(ms: number | null): string {
   if (!ms) return '';
@@ -111,6 +113,21 @@ export default function AdminChat() {
       setDraft((d) => d || text);
       setAttached(sentAttachment);
       setError(e instanceof Error ? e.message : 'Could not send the reply.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** One tap: the shop's pin goes over as a card the customer can open in
+   *  their maps app. */
+  async function sendLocation() {
+    if (!activeId || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await sendStaffReply(activeId, '', null, SHOP_LOCATION);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not send the location.');
     } finally {
       setBusy(false);
     }
@@ -288,6 +305,7 @@ export default function AdminChat() {
                         m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>
                       )}
                       {m.product && <ChatProductCard product={m.product} newTab />}
+                      {m.place && <ChatPlaceCard place={m.place} />}
                       <p
                         className={`mt-0.5 text-[10px] ${
                           m.from === 'staff' ? 'text-brand-100' : 'text-slate-400'
@@ -352,6 +370,15 @@ export default function AdminChat() {
                     className="btn-secondary flex-none px-3 py-2 text-sm"
                   >
                     📦
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendLocation}
+                    disabled={busy}
+                    title={t('Send our location')}
+                    className="btn-secondary flex-none px-3 py-2 text-sm disabled:opacity-50"
+                  >
+                    📍
                   </button>
                   <textarea
                     value={draft}
