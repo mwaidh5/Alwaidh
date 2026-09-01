@@ -1156,6 +1156,8 @@ const AR: Record<string, string> = {
   'month': 'شهر',
   'The total and the monthly payment for each plan length — 3, 5 and 7 years.': 'السعر الكلي والقسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
   'The price includes the AC cable between the inverter and the national board up to 15 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
+  'Learn from past chats': 'تعلّم من المحادثات السابقة',
+  'Reads what your team already answered': 'يقرأ إجابات فريقك السابقة',
 };
 
 interface LanguageValue {

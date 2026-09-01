@@ -12,6 +12,17 @@ const ASSISTANT_BY = 'assistant@alwaidh.com';
 /** The built-in owner; extra admins are read from settings at call time. */
 const OWNER_EMAILS = ['mwaidh5@gmail.com'];
 
+/**
+ * The catalogue and the price sheets, kept in memory for a minute.
+ *
+ * Every customer message used to re-read three collections before the
+ * assistant could think — a hundred-odd products among them. A minute is
+ * short enough that a price edit shows up almost at once, and long enough
+ * that a busy conversation isn't paying for the same read over and over.
+ */
+let factsCache: { at: number; text: string } | null = null;
+const FACTS_TTL = 60_000;
+
 /** Everything the shop knows, gathered fresh so a price is never stale. */
 async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> {
   const [prodSnap, sheetSnap, instSnap] = await Promise.all([
@@ -49,7 +60,7 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
     .join('\n');
 
   return [
-    '- Solar installments (Central Bank initiative, 1–7 year plans): the listed price7 is the 7-year total. Cash price = price7 ÷ 1.21. An N-year plan totals cash × (1 + 0.03 × N); monthly = total ÷ (12 × N).',
+    '- Solar installments (Central Bank initiative, 1–7 year plans): the listed price7 is the 7-year total. Cash price = price7 ÷ 1.225. An N-year plan totals cash × (1 + 0.03 × N + 0.015); monthly = total ÷ (12 × N). Round every figure to the nearest thousand dinars.',
     '',
     "OWNER'S NOTES (highest authority — follow these over anything else):",
     knowledge || '(none yet)',
@@ -63,6 +74,41 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
     'PRODUCTS (name — price — stock):',
     products || '(empty)',
   ].join('\n');
+}
+
+/**
+ * A handful of real exchanges: what a customer asked, and what a
+ * colleague answered. Nothing teaches tone and local pricing habits like
+ * the shop's own words — and the assistant's own replies are excluded,
+ * so it never learns from itself.
+ */
+async function recentStaffExamples(db: Firestore): Promise<string> {
+  try {
+    const chats = await db.collection('chats').orderBy('lastAt', 'desc').limit(25).get();
+    const pairs: string[] = [];
+    for (const chat of chats.docs) {
+      if (pairs.length >= 8) break;
+      const msgs = await chat.ref.collection('messages').orderBy('at', 'asc').limit(30).get();
+      let lastGuest = '';
+      for (const m of msgs.docs) {
+        const d = m.data();
+        const text = String(d.text ?? '').replace(/\s+/g, ' ').trim();
+        if (!text) continue;
+        if (d.from === 'guest') {
+          lastGuest = text.slice(0, 200);
+        } else if (d.by !== ASSISTANT_BY && lastGuest) {
+          pairs.push(`Customer: ${lastGuest}\nColleague: ${text.slice(0, 300)}`);
+          lastGuest = '';
+          if (pairs.length >= 8) break;
+        }
+      }
+    }
+    return pairs.length
+      ? ['', 'HOW THE TEAM ANSWERS (real exchanges — copy this tone, not these prices):', ...pairs].join('\n')
+      : '';
+  } catch {
+    return '';
+  }
 }
 
 const IDENTITY =
@@ -108,6 +154,12 @@ export const assistantReply = onDocumentCreated(
     document: 'chats/{chatId}/messages/{messageId}',
     secrets: [ANTHROPIC_API_KEY],
     timeoutSeconds: 60,
+    // A cold start puts several seconds between a customer's question and
+    // the first word of the answer. Keeping one instance awake
+    // (minInstances: 1) removes that, at the cost of a small standing
+    // charge every month — the owner's call, not ours. More memory is
+    // free of standing cost and starts faster.
+    memory: '512MiB',
   },
   async (event) => {
     const msg = event.data?.data();
@@ -132,21 +184,32 @@ export const assistantReply = onDocumentCreated(
       .get();
     const history = msgsSnap.docs.map((d) => d.data()).reverse();
 
-    // A human colleague active in the last ten minutes owns the thread.
-    const tenMinAgo = Date.now() - 10 * 60 * 1000;
+    // Silence belongs to whoever is actually writing. Reading the thread
+    // is not a claim on it — the assistant stands down the moment a
+    // colleague types a letter, and for a minute after they send, so a
+    // two-part answer isn't interrupted mid-thought.
+    const chatDoc = await db.doc(`chats/${chatId}`).get();
+    const typingAt = chatDoc.get('staffTypingAt');
+    if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return;
+
+    const aMinuteAgo = Date.now() - 60_000;
     if (
       history.some(
         (m) =>
           m.from === 'staff' &&
           m.by !== ASSISTANT_BY &&
           m.at instanceof Timestamp &&
-          m.at.toMillis() > tenMinAgo,
+          m.at.toMillis() > aMinuteAgo,
       )
     ) {
       return;
     }
 
-    const facts = await loadShopFacts(db, String(cfg.knowledge ?? ''));
+    const knowledge = String(cfg.knowledge ?? '');
+    const fresh = factsCache && Date.now() - factsCache.at < FACTS_TTL && factsCache.text.includes(knowledge);
+    const facts = fresh ? factsCache!.text : await loadShopFacts(db, knowledge);
+    if (!fresh) factsCache = { at: Date.now(), text: facts };
+    const examples = await recentStaffExamples(db);
     const system = [
       IDENTITY,
       '',
@@ -160,7 +223,9 @@ export const assistantReply = onDocumentCreated(
       '- Use ONLY the facts below. NEVER invent prices, stock, discounts or promises.',
       '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop. Whenever you say that, ALSO add a line at the very start of your reply, exactly:',
       'NOTIFY_STAFF',
-      '- Prices are in Iraqi dinar (IQD).',
+      '- Prices are in Iraqi dinar (IQD), always rounded to the nearest thousand.',
+      '- Answer the question that was asked. Do not repeat the shop address, the phone number or a list of options unless they help.',
+      examples,
       '- When you recommend ONE specific product from the PRODUCTS list, attach its card: put a line at the very START of your reply, before any other text, exactly:',
       'PRODUCT: <id>',
       '- At most one PRODUCT line, only an id that appears in the list, and only when the customer is looking for something to buy. The card shows the photo, name and price, so keep the text short.',
@@ -347,5 +412,101 @@ export const teachAssistant = onCall(
     }
 
     return { reply: reply || (learned.length ? 'تم، حفظتها. 👍' : ''), learned };
+  },
+);
+
+/**
+ * Read the shop's own history and write down what it teaches.
+ *
+ * Months of chats hold the answers the team gives every week — delivery
+ * fees, working hours, what fits a 30-amp house. This reads them, asks
+ * Claude for the durable facts (never a price it can look up, never
+ * one customer's private business), and adds anything new to the
+ * assistant's notes. The owner sees exactly what was added and can
+ * delete any line.
+ */
+export const learnFromChats = onCall(
+  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 300, region: 'me-central1', memory: '512MiB' },
+  async (request) => {
+    const email = String(request.auth?.token?.email ?? '').toLowerCase();
+    if (!email) throw new HttpsError('unauthenticated', 'Sign in first.');
+    const db = getFirestore();
+    const site = (await db.doc('settings/site').get()).data() ?? {};
+    const admins = [
+      ...OWNER_EMAILS,
+      ...(Array.isArray(site.extraAdminEmails) ? site.extraAdminEmails.map(String) : []),
+    ].map((e) => e.toLowerCase());
+    if (!admins.includes(email)) {
+      throw new HttpsError('permission-denied', 'Only the owner can do this.');
+    }
+
+    const key = (ANTHROPIC_API_KEY.value() || '').trim();
+    if (!key.startsWith('sk-ant-')) {
+      throw new HttpsError('failed-precondition', 'No AI key is connected yet.');
+    }
+
+    // The conversations, oldest message first within each, staff answers
+    // included — those are the ones worth learning from.
+    const chats = await db.collection('chats').orderBy('lastAt', 'desc').limit(120).get();
+    const transcripts: string[] = [];
+    for (const chat of chats.docs) {
+      const msgs = await chat.ref.collection('messages').orderBy('at', 'asc').limit(40).get();
+      const lines = msgs.docs
+        .map((m) => {
+          const d = m.data();
+          const text = String(d.text ?? '').replace(/\s+/g, ' ').trim();
+          if (!text) return '';
+          if (d.from === 'guest') return `Customer: ${text.slice(0, 240)}`;
+          if (d.by === ASSISTANT_BY) return '';           // never learn from itself
+          return `Colleague: ${text.slice(0, 240)}`;
+        })
+        .filter(Boolean);
+      if (lines.length >= 2) transcripts.push(lines.join('\n'));
+    }
+    if (!transcripts.length) {
+      return { learned: [], reviewed: 0, note: 'No conversations to learn from yet.' };
+    }
+
+    const cfgRef = db.doc('settings/assistant');
+    const cfg = (await cfgRef.get()).data() ?? {};
+    const known = String(cfg.knowledge ?? '');
+
+    const system = [
+      'You are reading a shop\'s customer-chat history to write its staff handbook.',
+      'Extract only DURABLE facts about how this business operates — the things a new employee would need told once:',
+      'working hours, address and directions, delivery areas and fees, warranty terms, what installation includes, payment and instalment conditions, brands carried, common technical guidance the team repeats.',
+      'Rules:',
+      '- Write each fact as one short sentence, in the language the team used (usually Iraqi Arabic).',
+      '- NEVER include a specific product price — the assistant reads live prices already.',
+      '- NEVER include a customer name, phone number, address or anything private to one person.',
+      '- Skip anything already covered by the existing notes below.',
+      '- Skip greetings, one-off promises, and anything you are unsure about.',
+      '- Output ONLY the facts, one per line, no numbering, no preamble. If there is nothing new, output nothing.',
+      '',
+      'EXISTING NOTES:',
+      known || '(none yet)',
+    ].join('\n');
+
+    const reply = await askClaude(
+      key,
+      String(cfg.model ?? '') || 'claude-sonnet-5',
+      system,
+      [{ role: 'user', content: transcripts.join('\n---\n').slice(0, 120_000) }],
+      1500,
+    ).catch((e) => {
+      throw new HttpsError('internal', e instanceof Error ? e.message : 'The AI did not answer.');
+    });
+
+    const learned = reply
+      .split('\n')
+      .map((l) => l.replace(/^[-*\d.\s]+/, '').trim())
+      .filter((l) => l.length > 8 && !/^\(/.test(l))
+      .slice(0, 40);
+
+    if (learned.length) {
+      const next = (known.trimEnd() ? known.trimEnd() + '\n' : '') + learned.join('\n');
+      await cfgRef.set({ knowledge: next }, { merge: true });
+    }
+    return { learned, reviewed: transcripts.length };
   },
 );
