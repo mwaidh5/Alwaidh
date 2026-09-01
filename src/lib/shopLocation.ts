@@ -8,8 +8,10 @@ export const SHOP_LOCATION = {
   lng: 44.443511,
   label: 'شركة الواعظ للقدرة',
   address: 'بغداد، شارع الصناعة — مقابل رئاسة الجامعة التكنولوجية',
-  /** The place itself on Google Maps, with the pin already dropped. */
-  maps: 'https://www.google.com/maps/place/?q=place_id:ChIJS-oOsqeBVxURnLpKX56_pCU',
+  /** Google's documented cross-platform form: the coordinates put the
+   *  pin in the right place and the place id makes the card open on the
+   *  shop by name. Handed to the phone's Maps app when there is one. */
+  maps: 'https://www.google.com/maps/search/?api=1&query=33.3114556%2C44.443511&query_place_id=ChIJS-oOsqeBVxURnLpKX56_pCU',
   /** Waze opens straight into navigation from wherever they are. */
   waze: 'https://waze.com/ul?ll=33.3114556,44.443511&navigate=yes',
 } as const;
