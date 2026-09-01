@@ -119,7 +119,7 @@ async function setWebTopics(token: string, subscribe: string[], unsubscribe: str
   const { firebaseApp } = await import('../firebase');
   if (!firebaseApp) return;
   const { getFunctions, httpsCallable } = await import('firebase/functions');
-  const call = httpsCallable(getFunctions(firebaseApp, 'us-central1'), 'subscribeWebPush');
+  const call = httpsCallable(getFunctions(firebaseApp, 'me-central1'), 'subscribeWebPush');
   await call({ token, subscribe, unsubscribe });
 }
 

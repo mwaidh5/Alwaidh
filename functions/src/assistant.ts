@@ -266,7 +266,8 @@ export const assistantReply = onDocumentCreated(
  * real thing. Owner and admins only.
  */
 export const teachAssistant = onCall(
-  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60 },
+  // Doha: the owner waits on every reply while teaching.
+  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60, region: 'me-central1' },
   async (request) => {
     const email = String(request.auth?.token?.email ?? '').toLowerCase();
     if (!email) throw new HttpsError('unauthenticated', 'Sign in first.');

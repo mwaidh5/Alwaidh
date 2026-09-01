@@ -11,7 +11,7 @@
         "source": "/f/**",
         "function": {
           "functionId": "serveFile",
-          "region": "us-central1"
+          "region": "me-central1"
         }
       },
       {
