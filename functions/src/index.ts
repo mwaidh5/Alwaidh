@@ -176,7 +176,7 @@ export const notifyNewChatMessage = onDocumentCreated(
       'messages',
       '💬 New chat message',
       preview(msg.text) || 'A visitor wrote in the website chat',
-      '/admin/chat',
+      `/admin/chat?c=${event.params.chatId}`,
       TOPICS.messages,
     );
   },

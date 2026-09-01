@@ -12,6 +12,7 @@ import {
   type ChatMeta,
   type ChatProductCard as ProductCard,
 } from '../../lib/chatStore';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loadAssistantConfig, saveAssistantConfig } from '../../lib/assistantStore';
 import { useLang } from '../../lib/i18n';
@@ -61,6 +62,12 @@ export default function AdminChat() {
   const [chats, setChats] = useState<ChatMeta[] | null>(null);
   const [error, setError] = useState('');
   const [activeId, setActiveId] = useState('');
+  // ?c=<id> — a notification pointing at one conversation opens it.
+  const search = useLocation().search;
+  useEffect(() => {
+    const wanted = new URLSearchParams(search).get('c');
+    if (wanted) setActiveId(wanted);
+  }, [search]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);

@@ -34,20 +34,39 @@ messaging.onBackgroundMessage((payload) => {
   });
 });
 
-// Tapping the notification focuses an open tab if there is one, rather
-// than opening a second copy of the dashboard.
+// Tapping the notification takes you to the thing it was about.
+//
+// Three ways, in order of how well they work: tell the running app to
+// route there itself (instant, keeps the session), otherwise steer the
+// tab with navigate(), otherwise open a new window. The old code called
+// navigate() first and swallowed its failure — which is how a tap could
+// focus the site and go nowhere.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const link = (event.notification.data && event.notification.data.link) || '/admin';
+  const absolute = new URL(link, self.location.origin).href;
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    (async () => {
+      const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of list) {
-        if ('focus' in client) {
-          client.navigate(link);
-          return client.focus();
+        try {
+          client.postMessage({ type: 'alwaidh:navigate', link });
+          if ('focus' in client) await client.focus();
+          return;
+        } catch (e) {
+          /* that tab wouldn't listen — try the next one */
         }
       }
-      return self.clients.openWindow(link);
-    }),
+      for (const client of list) {
+        try {
+          await client.navigate(absolute);
+          if ('focus' in client) await client.focus();
+          return;
+        } catch (e) {
+          /* fall through to a fresh window */
+        }
+      }
+      await self.clients.openWindow(absolute);
+    })(),
   );
 });
