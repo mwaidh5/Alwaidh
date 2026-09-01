@@ -48,6 +48,7 @@ type FormState = CrmContact;
 const EMPTY: FormState = {
   id: '',
   remindAtMs: null,
+  source: '',
   section: 'solar',
   name: '',
   phone: '',
@@ -170,7 +171,7 @@ export default function AdminCrm() {
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter((c) =>
-        [c.name, c.phone, c.city, c.interest, ...c.notes.map((n) => n.text)].some((v) =>
+        [c.name, c.phone, c.city, c.interest, c.source, ...c.notes.map((n) => n.text)].some((v) =>
           v.toLowerCase().includes(q),
         ),
       );
@@ -201,19 +202,10 @@ export default function AdminCrm() {
   // The board pans with the mouse wheel and by grabbing empty space,
   // same as the jobs board.
   const boardRef = useRef<HTMLDivElement>(null);
-  const boardReady = contacts !== null;
-  useEffect(() => {
-    const el = boardRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      if (el.scrollWidth <= el.clientWidth) return;
-      el.scrollLeft += e.deltaY;
-      e.preventDefault();
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [boardReady]);
+  // No wheel hijack: turning a vertical wheel into sideways panning meant
+  // the page could not scroll at all with the pointer over the board, so
+  // anything below the fold was unreachable. Sideways panning stays on
+  // drag (below), shift+wheel and trackpad swipes — all native.
 
   function moveContact(contact: CrmContact, status: CrmStatus) {
     if (contact.status === status) return;
@@ -606,6 +598,11 @@ function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmCo
           {contact.interest && (
             <p className="mt-0.5 truncate text-xs text-slate-600">{contact.interest}</p>
           )}
+          {contact.source && (
+            <p className="mt-1 truncate text-[10px] font-bold text-slate-400" dir="ltr">
+              🔗 /lead/{contact.source}
+            </p>
+          )}
         </button>
         <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${tagChip(contact.tag)}`}>
           {contact.tag}
@@ -705,6 +702,11 @@ function MobileCrm({
                 <button type="button" onClick={() => onView(c)} className="min-w-0 flex-1 text-start">
                   <p className="truncate text-base font-bold text-slate-900">{c.name}</p>
                   {c.interest && <p className="mt-0.5 truncate text-sm text-slate-600">{c.interest}</p>}
+                  {c.source && (
+                    <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400" dir="ltr">
+                      🔗 /lead/{c.source}
+                    </p>
+                  )}
                 </button>
                 <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${tagChip(c.tag)}`}>
                   {c.tag}
@@ -982,6 +984,11 @@ function ContactDetails({
               </span>
             </div>
             {contact.interest && <p className="mt-0.5 text-sm text-slate-600">{contact.interest}</p>}
+            {contact.source && (
+              <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                🔗 <span dir="ltr">alwaidh.com/lead/{contact.source}</span>
+              </p>
+            )}
             {contact.city && <p className="mt-0.5 text-xs text-slate-500">📍 {contact.city}</p>}
           </div>
           <button type="button" onClick={onClose} className="flex-none text-slate-500 hover:text-slate-800">

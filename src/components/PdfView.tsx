@@ -6,12 +6,27 @@ import { useLang } from '../lib/i18n';
  * device's pixel density (browsers' built-in PDF frames come out blurry,
  * and the iOS webview shows only a low-res first page).
  */
+/**
+ * iPhones and iPads keep refusing the fonts pdf.js installs — Arabic came
+ * out shuffled, English came out with letters missing — and no rendering
+ * option fixed both. Their own PDF viewer draws every file perfectly, so
+ * on those devices we hand the file over instead of drawing it ourselves.
+ */
+function isApplePhone(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
 export default function PdfView({ url, className }: { url: string; className?: string }) {
   const { t } = useLang();
   const holder = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [handOver] = useState(isApplePhone);
 
   useEffect(() => {
+    if (handOver) return;
     let cancelled = false;
     (async () => {
       try {
@@ -20,22 +35,14 @@ export default function PdfView({ url, className }: { url: string; className?: s
           'pdfjs-dist/build/pdf.worker.min.mjs',
           import.meta.url,
         ).toString();
-        // iPhones showed Arabic PDFs as shuffled, unjoined letters: iOS
-        // refuses some of the fonts pdf.js installs through the FontFace
-        // API, and the fallback font cannot shape Arabic. disableFontFace
-        // makes pdf.js draw the glyph outlines itself — slower, but it
-        // owes nothing to the platform's font engine. Desktops keep the
-        // fast path; the cMaps and base-14 fonts are served from our own
-        // origin either way (see scripts/copy-pdf-assets.mjs).
-        const iOS =
-          /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        // The character maps and the base-14 fonts come from our own
+        // origin (see scripts/copy-pdf-assets.mjs), so a file that leans
+        // on either never depends on somebody else's CDN.
         const docPdf = await pdfjs.getDocument({
           url,
           cMapUrl: '/pdf-assets/cmaps/',
           cMapPacked: true,
           standardFontDataUrl: '/pdf-assets/standard_fonts/',
-          disableFontFace: iOS,
         }).promise;
         if (cancelled || !holder.current) return;
         const el = holder.current;
@@ -67,7 +74,26 @@ export default function PdfView({ url, className }: { url: string; className?: s
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [url, handOver]);
+
+  if (handOver) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-5xl">📕</p>
+        <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-slate-600">
+          {t('Open the file to read it — your phone shows PDFs best.')}
+        </p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+        >
+          {t('Open the file')} ↗
+        </a>
+      </div>
+    );
+  }
 
   if (status === 'error') {
     // Rendering failed (e.g. corrupted file) — fall back to the browser frame.

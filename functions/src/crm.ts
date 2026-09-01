@@ -36,6 +36,7 @@ export const leadToCrm = onDocumentCreated('leads/{leadId}', async (event) => {
     city: String(lead.city ?? '').slice(0, 80),
     tag: 'Facebook',
     interest: campaign,
+    source: campaign,
     status: 'new',
     notes: [],
     order: Date.now(),

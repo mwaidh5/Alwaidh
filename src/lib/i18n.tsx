@@ -1145,6 +1145,8 @@ const AR: Record<string, string> = {
   'Too many attempts — wait a few minutes, then try again.': 'محاولات كثيرة — انتظر دقائق وحاول مجدداً.',
   'Our team will call you with a free quote. Meanwhile, have a look around.': 'فريقنا راح يتصل بيك بعرض سعر مجاني. وبالوكت هذا، تفضل شوف شغلنا.',
   'Browse the shop': 'تصفح المتجر',
+  'Open the file to read it — your phone shows PDFs best.': 'افتح الملف حتى تقراه — هاتفك يعرض ملفات PDF أفضل.',
+  'Open the file': 'افتح الملف',
 };
 
 interface LanguageValue {

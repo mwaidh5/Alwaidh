@@ -64,6 +64,8 @@ export interface CrmContact {
   city: string; // area / address, free text
   tag: string; // source, one of CRM_TAGS
   interest: string; // what they asked about — "8kW system", "gaming laptop"
+  /** The ad link they arrived through — the campaign in alwaidh.com/lead/<x>. */
+  source: string;
   status: CrmStatus;
   notes: CrmNote[];
   order: number; // position weight within its column (newest first)
@@ -96,6 +98,7 @@ function normalize(data: Record<string, unknown>, id: string): CrmContact {
     city: String(data.city ?? ''),
     tag: String(data.tag ?? 'Other'),
     interest: String(data.interest ?? ''),
+    source: String(data.source ?? ''),
     status: (CRM_STATUSES.some((s) => s.key === data.status) ? data.status : 'new') as CrmStatus,
     notes: Array.isArray(data.notes)
       ? (data.notes as Record<string, unknown>[]).map((n) => ({
@@ -146,7 +149,7 @@ export function subscribeContacts(
 
 type ContactInput = Omit<
   CrmContact,
-  'id' | 'notes' | 'remindAtMs' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'
+  'id' | 'notes' | 'remindAtMs' | 'source' | 'createdBy' | 'createdAtMs' | 'updatedBy' | 'updatedAtMs'
 >;
 
 export async function createContact(input: ContactInput): Promise<void> {
