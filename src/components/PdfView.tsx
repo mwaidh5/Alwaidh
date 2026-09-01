@@ -6,27 +6,18 @@ import { useLang } from '../lib/i18n';
  * device's pixel density (browsers' built-in PDF frames come out blurry,
  * and the iOS webview shows only a low-res first page).
  */
-/**
- * iPhones and iPads keep refusing the fonts pdf.js installs — Arabic came
- * out shuffled, English came out with letters missing — and no rendering
- * option fixed both. Their own PDF viewer draws every file perfectly, so
- * on those devices we hand the file over instead of drawing it ourselves.
- */
-function isApplePhone(): boolean {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  );
+/** Phones get lighter pages: outline drawing is slower than handing
+ *  fonts to the browser, and a phone has less to spend. */
+function isPhone(): boolean {
+  return window.matchMedia('(pointer: coarse)').matches;
 }
 
 export default function PdfView({ url, className }: { url: string; className?: string }) {
   const { t } = useLang();
   const holder = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [handOver] = useState(isApplePhone);
 
   useEffect(() => {
-    if (handOver) return;
     let cancelled = false;
     (async () => {
       try {
@@ -61,8 +52,9 @@ export default function PdfView({ url, className }: { url: string; className?: s
         const el = holder.current;
         el.innerHTML = '';
         const width = el.clientWidth || 800;
-        // Render at up to 2x pixel density for crispness without huge memory.
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Crisp without being wasteful — and gentler on a phone, which is
+        // drawing every letter as an outline.
+        const dpr = Math.min(window.devicePixelRatio || 1, isPhone() ? 1.5 : 2);
         for (let n = 1; n <= docPdf.numPages; n++) {
           const page = await docPdf.getPage(n);
           if (cancelled) return;
@@ -87,26 +79,7 @@ export default function PdfView({ url, className }: { url: string; className?: s
     return () => {
       cancelled = true;
     };
-  }, [url, handOver]);
-
-  if (handOver) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-5xl">📕</p>
-        <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-slate-600">
-          {t('Open the file to read it — your phone shows PDFs best.')}
-        </p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
-        >
-          {t('Open the file')} ↗
-        </a>
-      </div>
-    );
-  }
+  }, [url]);
 
   if (status === 'error') {
     // Rendering failed (e.g. corrupted file) — fall back to the browser frame.
@@ -118,6 +91,18 @@ export default function PdfView({ url, className }: { url: string; className?: s
         <p className="p-8 text-center text-sm text-slate-500">{t('Loading…')}</p>
       )}
       <div ref={holder} />
+      {status === 'ready' && (
+        <div className="p-3 text-center">
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-brand-700 hover:underline"
+          >
+            {t('Open the file')} ↗
+          </a>
+        </div>
+      )}
     </div>
   );
 }
