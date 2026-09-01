@@ -205,7 +205,7 @@ function InstallmentsEditor() {
   const setField = (r: InstallmentRow, key: keyof InstallmentRow, value: string) =>
     setDrafts((d) => ({
       ...d,
-      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) * 1.21 : value },
+      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) * 1.225 : value },
     }));
   const save = (r: InstallmentRow) => {
     const draft = drafts[r.id];
@@ -231,8 +231,8 @@ function InstallmentsEditor() {
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Installments — مبادرة البنك المركزي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Enter the CASH price only — the 7-year bank price (× 1.21), every shorter plan (+3% per
-            year) and the monthly amounts are all calculated automatically.
+            Enter the CASH price only — the 7-year bank price (× 1.225), every shorter plan
+            (3% a year plus a flat 1.5%) and the monthly amounts are all calculated automatically.
           </p>
         </div>
         <button
@@ -284,7 +284,7 @@ function InstallmentsEditor() {
                           value={
                             c.key === 'price7'
                               ? r.price7
-                                ? String(Math.round(r.price7 / 1.21))
+                                ? String(Math.round(r.price7 / 1.225))
                                 : ''
                               : String(r[c.key] ?? '')
                           }
