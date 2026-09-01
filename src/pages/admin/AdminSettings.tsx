@@ -253,6 +253,7 @@ export default function AdminSettings() {
                 ...(settings.heroSlides ?? []),
                 {
                   image: '',
+                  accent: '',
                   mobileImage: '',
                   eyebrow: '',
                   eyebrowAr: '',
@@ -1088,6 +1089,22 @@ function HeroSlideEditor({
           onChange={(e) => set('subtitleAr', e.target.value)}
         />
       </Field>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <ColorField
+          label="Highlight colour"
+          value={slide.accent || '#fbbf24'}
+          onChange={(v) => set('accent', v)}
+        />
+        <Field label="&nbsp;">
+          <button
+            type="button"
+            onClick={() => set('accent', '')}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            {t('Use the default colour')}
+          </button>
+        </Field>
+      </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Field label="Button text">
           <input

@@ -1147,6 +1147,8 @@ const AR: Record<string, string> = {
   'Browse the shop': 'تصفح المتجر',
   'Open the file to read it — your phone shows PDFs best.': 'افتح الملف حتى تقراه — هاتفك يعرض ملفات PDF أفضل.',
   'Open the file': 'افتح الملف',
+  'Use the default colour': 'استخدم اللون الافتراضي',
+  'Highlight colour': 'لون التمييز',
 };
 
 interface LanguageValue {

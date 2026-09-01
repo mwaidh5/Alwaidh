@@ -24,6 +24,21 @@ const FALLBACK = {
     'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=1200&q=80',
 };
 
+/** A chosen accent, tinted the way the built-in ones are. */
+function customTheme(hex: string) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  // The chip is the same colour at low opacity; the text a lighter cast
+  // of it, so it stays readable on the photo's dark side.
+  const lift = (v: number) => Math.round(v + (255 - v) * 0.45);
+  return {
+    accent: hex,
+    chipBg: `rgba(${r},${g},${b},.2)`,
+    chipText: `rgb(${lift(r)},${lift(g)},${lift(b)})`,
+    chipRing: `rgba(${lift(r)},${lift(g)},${lift(b)},.45)`,
+  };
+}
+
 /** The hero's per-slide accent tints, matched to where the slide links. */
 function slideTheme(link: string) {
   if (/solar/.test(link))
@@ -213,7 +228,7 @@ export default function Home() {
             <div className="hero-shade absolute inset-0 hidden sm:block" />
             <div className="relative flex h-full flex-col justify-end gap-3 p-6 pb-16 sm:justify-center sm:gap-4 sm:px-14 sm:pb-0">
               {(() => {
-                const theme = slideTheme(s.buttonLink);
+                const theme = s.accent ? customTheme(s.accent) : slideTheme(s.buttonLink);
                 // Arabic banners come from the slide's own Arabic fields
                 // when the admin filled them; otherwise the English text
                 // runs through the dictionary like everything else.
