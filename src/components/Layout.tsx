@@ -18,6 +18,22 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller } = useAuth();
 
+  // A tapped browser notification: the service worker asks the running
+  // app to route, which keeps the session and lands on the right screen
+  // even when the tab was showing something else.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      const link = (e.data as { type?: string; link?: string } | null)?.type === 'alwaidh:navigate'
+        ? (e.data as { link?: string }).link
+        : null;
+      if (link && link.startsWith('/')) navigate(link);
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // A tapped notification opens its page — armed here, in the shell that
   // exists from the first frame, so even a tap that cold-starts the app
   // finds someone listening.
