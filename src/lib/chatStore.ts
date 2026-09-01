@@ -185,6 +185,23 @@ export async function sendStaffReply(
 }
 
 /** Live messages of one conversation, oldest first. */
+/**
+ * "Someone here is writing." Called as a colleague types, at most once
+ * every fifteen seconds; the assistant reads it and holds its tongue.
+ * Merely opening the page says nothing — only typing does.
+ */
+let lastTypingPing = 0;
+export function noteStaffTyping(chatId: string): void {
+  const database = db;
+  if (!database || !chatId) return;
+  const now = Date.now();
+  if (now - lastTypingPing < 15_000) return;
+  lastTypingPing = now;
+  setDoc(doc(database, COLLECTION, chatId), { staffTypingAt: serverTimestamp() }, { merge: true }).catch(
+    () => undefined,
+  );
+}
+
 /** The five-minute grace: a staff member fixing their own reply. */
 export async function editStaffMessage(chatId: string, messageId: string, text: string): Promise<void> {
   const database = db;

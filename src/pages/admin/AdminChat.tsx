@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   deleteChat,
+  noteStaffTyping,
   deleteStaffMessage,
   editStaffMessage,
   markStaffRead,
@@ -389,7 +390,11 @@ export default function AdminChat() {
                   </button>
                   <textarea
                     value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      // One letter is enough: the assistant steps back.
+                      if (e.target.value.trim() && activeId) noteStaffTyping(activeId);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -438,6 +443,7 @@ function ProductPicker({
 }) {
   const { t } = useLang();
   const { products, loading } = useProducts();
+  useScrollLock();
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
@@ -452,10 +458,19 @@ function ProductPicker({
     return list.slice(0, 40);
   }, [products, query]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+  // Out of the page and over everything: rendered in place, the sticky
+  // header covered its top and the floating tab bar sat on the list.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
+      onClick={onClose}
+    >
       <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:max-h-[80vh] sm:max-w-lg sm:rounded-xl"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
@@ -522,7 +537,8 @@ function ProductPicker({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -537,6 +553,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
   // Registers as a modal (hides the floating tab bar, freezes the page)
   // — without it the bar sat on top of the composer.
   useScrollLock();
+  const { t } = useLang();
   const [tab, setTab] = useState<'teach' | 'notes'>('teach');
   const [enabled, setEnabled] = useState(false);
   const [knowledge, setKnowledge] = useState('');
@@ -585,6 +602,38 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
       await saveAssistantConfig({ enabled: next, knowledge });
     } catch {
       /* the Save button in Notes still covers it */
+    }
+  }
+
+  /** Read the shop's own history and write down what it teaches. */
+  async function learnFromHistory() {
+    if (thinking) return;
+    setThinking(true);
+    setMsg('');
+    try {
+      const { firebaseApp } = await import('../../firebase');
+      if (!firebaseApp) throw new Error('Not connected.');
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const call = httpsCallable(getFunctions(firebaseApp, 'me-central1'), 'learnFromChats');
+      const res = await call({});
+      const data = res.data as { learned: string[]; reviewed: number; note?: string };
+      setTalk((t) => [
+        ...t,
+        { role: 'user', content: '📚 تعلّم من المحادثات السابقة' },
+        {
+          role: 'assistant',
+          content: data.learned?.length
+            ? `قرأت ${data.reviewed} محادثة وتعلمت ${data.learned.length} معلومة جديدة — شوفها بتبويب «دفتره» واحذف أي شي مو صحيح.`
+            : data.note || `قرأت ${data.reviewed} محادثة وما لكيت معلومة جديدة أضيفها.`,
+          learned: data.learned ?? [],
+        },
+      ]);
+      const cfg = await loadAssistantConfig();
+      setKnowledge(cfg.knowledge);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Could not read the old chats.');
+    } finally {
+      setThinking(false);
     }
   }
 
@@ -730,7 +779,20 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
             </div>
-            <div className="flex items-end gap-2 border-t border-slate-200 p-3">
+            <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-3 pt-2">
+              <button
+                type="button"
+                onClick={learnFromHistory}
+                disabled={thinking}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                📚 {t('Learn from past chats')}
+              </button>
+              <span className="text-[11px] text-slate-400">
+                {t('Reads what your team already answered')}
+              </span>
+            </div>
+            <div className="flex items-end gap-2 p-3 pt-2">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
