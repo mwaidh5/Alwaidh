@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLang } from '../lib/i18n';
@@ -16,7 +16,7 @@ import { useSeo } from '../lib/seo';
  */
 export default function Lead() {
   const { campaign = 'facebook' } = useParams();
-  const { t, lang, setLang } = useLang();
+  const { t, setLang } = useLang();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
@@ -80,19 +80,22 @@ export default function Lead() {
               {t('Got it — we will call you today!')}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {t('Our team will call you with a free quote. In a hurry? Talk to us on WhatsApp now.')}
+              {t('Our team will call you with a free quote. Meanwhile, have a look around.')}
             </p>
-            <a
-              href="https://wa.me/9647744205582"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700"
-            >
-              💬 WhatsApp
-            </a>
-            <a href="/solar-prices" className="mt-3 block text-sm font-semibold text-brand-700 hover:underline">
-              {t('See the systems and prices')} {lang === 'ar' ? '←' : '→'}
-            </a>
+            <div className="mt-5 grid gap-2.5">
+              <Link
+                to="/solar-prices"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white hover:bg-brand-700"
+              >
+                ☀️ {t('See the systems and prices')}
+              </Link>
+              <Link
+                to="/shop"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50"
+              >
+                🛍️ {t('Browse the shop')}
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="card overflow-hidden">

@@ -1143,6 +1143,8 @@ const AR: Record<string, string> = {
   'That phone number looks too short.': 'رقم الهاتف قصير — دقق عليه.',
   'Too many wrong attempts — try again in': 'محاولات خاطئة كثيرة — حاول مجدداً بعد',
   'Too many attempts — wait a few minutes, then try again.': 'محاولات كثيرة — انتظر دقائق وحاول مجدداً.',
+  'Our team will call you with a free quote. Meanwhile, have a look around.': 'فريقنا راح يتصل بيك بعرض سعر مجاني. وبالوكت هذا، تفضل شوف شغلنا.',
+  'Browse the shop': 'تصفح المتجر',
 };
 
 interface LanguageValue {
