@@ -209,6 +209,11 @@ export default function JobActivity({ job }: { job: Job }) {
   async function post() {
     const text = draft.trim();
     if (!text && !files.length) return;
+    // Empty the box first — the comment is already in the list, greyed
+    // until it reaches the server.
+    const sentFiles = files;
+    setDraft('');
+    setFiles([]);
     setBusy(true);
     setError('');
     try {
@@ -216,10 +221,10 @@ export default function JobActivity({ job }: { job: Job }) {
       const mentions = staff.filter((e) =>
         new RegExp(`@${handleOf(e)}\\b`, 'i').test(text),
       );
-      await addJobComment(job.id, text, mentions, files);
-      setDraft('');
-      setFiles([]);
+      await addJobComment(job.id, text, mentions, sentFiles);
     } catch (e) {
+      setDraft((d) => d || text);
+      setFiles(sentFiles);
       setError(e instanceof Error ? e.message : 'Could not post the comment.');
     } finally {
       setBusy(false);
@@ -257,7 +262,12 @@ export default function JobActivity({ job }: { job: Job }) {
             // The stored "created" line would duplicate the one above.
             .filter((e) => e.kind !== 'created')
             .map((e) => (
-              <li key={e.id} className="flex gap-2.5 text-sm">
+              <li
+                key={e.id}
+                className={`flex gap-2.5 text-sm transition-opacity ${
+                  e.atMs === null ? 'opacity-60' : 'opacity-100'
+                }`}
+              >
                 <span aria-hidden className="mt-0.5">
                   {ICON[e.kind]}
                 </span>
