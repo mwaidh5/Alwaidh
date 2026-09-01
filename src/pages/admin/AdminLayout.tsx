@@ -265,6 +265,9 @@ export default function AdminLayout() {
                 </ul>
                 ))}
                 <div className="border-t border-slate-200 p-3 text-xs text-slate-500">
+                  <p className="mb-1 text-[10px] text-slate-400" dir="ltr" title="The build this browser is running">
+                    v{__APP_BUILD__}
+                  </p>
                   <p className="truncate">
                     {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
                   </p>
