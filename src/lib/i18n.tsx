@@ -1159,6 +1159,10 @@ const AR: Record<string, string> = {
   'Learn from past chats': 'تعلّم من المحادثات السابقة',
   'Reads what your team already answered': 'يقرأ إجابات فريقك السابقة',
   'Send a solar system': 'أرسل منظومة شمسية',
+  'After the install': 'بعد التركيب',
+  'Watch your system from your phone': 'راقب منظومتك من هاتفك',
+  'Every system comes with its maker’s app: what the panels are producing, how full the battery is, and what the house is using — live, from anywhere.': 'كل منظومة تأتي مع تطبيق الشركة المصنّعة: شكد تنتج الألواح، شكد ممتلئة البطارية، وشكد يستهلك البيت — مباشرة، من أي مكان.',
+  'monitoring app': 'تطبيق المراقبة',
 };
 
 interface LanguageValue {
