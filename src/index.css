@@ -207,6 +207,88 @@
   .coach-bounce {
     animation: coach-bounce 1s ease-in-out 3;
   }
+
+  /* ---- Liquid glass ---------------------------------------------------
+     A slab of glass over the page: the page shows through, blurred and a
+     little more saturated, with light caught along the top edge and bent
+     around the rim. A real lens would refract the pixels behind it; no
+     phone browser can do that, so the edge is drawn — a hairline of white
+     that brightens where light would enter (top-left) and leave
+     (bottom-right), and a soft sheen across the upper third. */
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.38);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8) brightness(1.06);
+    backdrop-filter: blur(28px) saturate(1.8) brightness(1.06);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+      0 12px 40px rgba(15, 23, 42, 0.22),
+      0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+  .liquid-glass::before {
+    /* the bent-light rim: a gradient that lives only in a 1.5px border */
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.25) 30%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.3) 72%,
+      rgba(255, 255, 255, 0.85) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .liquid-glass::after {
+    /* the sheen: a window's worth of light across the top */
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(120% 70% at 28% -20%, rgba(255, 255, 255, 0.55), transparent 60%),
+      radial-gradient(60% 50% at 88% 120%, rgba(255, 255, 255, 0.28), transparent 60%);
+    pointer-events: none;
+  }
+  /* The lens under the current tab: the same glass, brighter and thicker,
+     and it slides rather than blinks. */
+  .liquid-pill {
+    background: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: blur(6px) saturate(1.4);
+    backdrop-filter: blur(6px) saturate(1.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+      0 3px 12px rgba(15, 23, 42, 0.16);
+    transition:
+      transform 360ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 200ms ease-out;
+  }
+  /* The bar rises into place when a screen first shows it. */
+  .bar-in {
+    animation: bar-in 360ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar-in {
+      animation: veil-in 160ms ease-out both;
+    }
+    .liquid-pill {
+      transition: opacity 160ms ease-out;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .modal-backdrop,
     .modal-backdrop > *,
@@ -379,6 +461,12 @@
     from {
       opacity: 0;
       transform: scale(0.96);
+    }
+  }
+  @keyframes bar-in {
+    from {
+      opacity: 0;
+      transform: translateY(120%) translateZ(0);
     }
   }
   @keyframes coach-bounce {

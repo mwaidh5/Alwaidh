@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { startTransition, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
@@ -13,10 +14,17 @@ import { toggleChat, useChatUnread } from '../lib/chatPanel';
  * underneath and the bar reads as a control rather than a page edge, and it
  * clears the iPhone home indicator on its own: `position: fixed` ignores
  * the padding on <body>, so the safe area is added here.
+ *
+ * The highlight answers the finger, not the router. A tap moves the pill
+ * at once and hands the page change to React as a transition, so a heavy
+ * screen rendering behind it — the shop, on a slow phone — can no longer
+ * hold the bar hostage for the better part of a second.
  */
 export default function BottomNav() {
   const { user, hasAdminAccess } = useAuth();
-  const { t } = useLang();
+  const { t, dir } = useLang();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   // A pop-up is a screen of its own: leaving the bar floating over it
   // makes the pop-up look like a card wedged between two bars, and puts
   // navigation under a thumb that is trying to close something.
@@ -42,11 +50,24 @@ export default function BottomNav() {
     { to: user ? '/account' : '/login', label: user ? 'Account' : 'Login', icon: UserIcon },
   ];
 
+  const routeIndex = items.findIndex((it) =>
+    'to' in it && (it.end ? pathname === it.to : pathname === it.to || pathname.startsWith(it.to + '/')),
+  );
+  // Where the pill is: the tab just tapped, until the route catches up.
+  const [pressed, setPressed] = useState<number | null>(null);
+  useEffect(() => setPressed(null), [pathname]);
+  const active = pressed ?? routeIndex;
+
   if (modalOpen) return null;
+
+  const slot = 100 / items.length;
+  // The pill travels in reading direction: to the right in English, to the
+  // left in Arabic, where the first tab sits at the right-hand end.
+  const shift = active < 0 ? 0 : active * 100 * (dir === 'rtl' ? -1 : 1);
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 md:hidden"
+      className="bar-in fixed inset-x-0 bottom-0 z-40 px-3 pb-3 md:hidden"
       // translateZ pins the bar to its own compositor layer: without it,
       // WebKit repaints fixed elements a frame late during momentum
       // scrolling and the bar visibly drifts up before snapping back.
@@ -57,14 +78,22 @@ export default function BottomNav() {
       }}
       aria-label={t('Main')}
     >
-      <div className="relative mx-auto flex max-w-md items-stretch justify-around gap-1 overflow-hidden rounded-[1.35rem] border border-white/50 bg-white/60 p-1.5 shadow-[0_10px_36px_rgba(15,23,42,.22)] ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150">
-        {/* the glass edge: a hairline of light along the top */}
+      <div className="liquid-glass relative mx-auto flex max-w-md items-stretch justify-around rounded-[1.5rem] p-1.5">
+        {/* The lens: a brighter slab of the same glass that slides under
+            whichever tab is current. */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent"
+          className={`liquid-pill absolute inset-y-1.5 start-1.5 rounded-[1.1rem] ${
+            active < 0 ? 'opacity-0' : 'opacity-100'
+          }`}
+          style={{
+            width: `calc((100% - 0.75rem) / ${items.length})`,
+            transform: `translateX(${shift}%)`,
+          }}
         />
-        {items.map((item) => {
+        {items.map((item, i) => {
           const { label, icon: Icon, badge } = item;
+          const current = i === active;
           const inside = (
             <>
               <span className="relative">
@@ -78,29 +107,33 @@ export default function BottomNav() {
               {t(label)}
             </>
           );
-          const shape =
-            'relative flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap rounded-xl py-2 text-[11px] font-semibold transition active:scale-95';
+          const shape = `relative z-10 flex flex-col items-center gap-0.5 whitespace-nowrap rounded-xl py-2 text-[11px] font-semibold transition-[color,transform] duration-200 active:scale-95 ${
+            current ? 'text-brand-700' : 'text-slate-600'
+          }`;
           return 'to' in item ? (
-            <NavLink
+            <Link
               key={item.to}
               to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `${shape} ${
-                  isActive
-                    ? 'bg-white/95 text-brand-700 shadow-[0_2px_10px_rgba(15,23,42,.14)]'
-                    : 'text-slate-600 active:bg-white/60'
-                }`
-              }
+              aria-current={current ? 'page' : undefined}
+              className={shape}
+              style={{ width: `${slot}%` }}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+                setPressed(i);
+                // The bar has already answered; the page may take its time.
+                startTransition(() => navigate(item.to));
+              }}
             >
               {inside}
-            </NavLink>
+            </Link>
           ) : (
             <button
               key={label}
               type="button"
               onClick={item.onClick}
-              className={`${shape} text-slate-600 active:bg-white/60`}
+              className={shape}
+              style={{ width: `${slot}%` }}
             >
               {inside}
             </button>
