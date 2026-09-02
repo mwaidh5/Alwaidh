@@ -1159,6 +1159,18 @@ const AR: Record<string, string> = {
   'Learn from past chats': 'تعلّم من المحادثات السابقة',
   'Reads what your team already answered': 'يقرأ إجابات فريقك السابقة',
   'Send a solar system': 'أرسل منظومة شمسية',
+  'Rated 5.0 on Google': 'تقييم 5.0 على Google',
+  'Read what customers say': 'اقرأ آراء الزبائن',
+  '5-year warranty': 'ضمان 5 سنوات',
+  'On the inverter and the batteries': 'على العاكسة والبطاريات',
+  'Delivery across Iraq': 'توصيل لكل العراق',
+  'Cash on delivery, nothing upfront': 'الدفع عند الاستلام، بدون مقدم',
+  'In Baghdad since 1992': 'في بغداد منذ 1992',
+  'A shop you can walk into': 'محل حقيقي تكدر تزوره',
+  'Talk to a person': 'تحدث مع شخص حقيقي',
+  'WhatsApp, phone, or the chat on this page — a human answers.': 'واتساب، هاتف، أو الدردشة بهذه الصفحة — يجاوبك إنسان.',
+  'Cash, or bank installments up to 7 years': 'نقداً، أو أقساط مصرفية حتى 7 سنوات',
+  'Pay monthly, up to 7 years': 'ادفع شهرياً، حتى 7 سنوات',
 };
 
 interface LanguageValue {

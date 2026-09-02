@@ -5,12 +5,10 @@ import { allBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
 import { useSettingsStatus } from '../lib/useSettings';
 import { hasSettingsCache } from '../lib/settingsStore';
-import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import { openChat } from '../lib/chatPanel';
 import { pName } from '../lib/localizeProduct';
 import { formatPrice } from '../lib/format';
-import SolarSceneLite from '../components/SolarSceneLite';
 import type { CategorySlug, Product } from '../types/product';
 import type { PromoTile } from '../lib/settingsStore';
 import { useSeo, organizationJsonLd } from '../lib/seo';
@@ -68,11 +66,15 @@ function tileFlavour(link: string): TileFlavour {
 
 /** The canvas design's use cases: a situation each, not a category. */
 const USE_CASES = [
-  { eyebrow: 'Home office', title: 'Setting up to work', blurb: 'A laptop, monitor and the cables that fit it.', cta: 'See bundles', to: '/shop?category=computers', accent: '#2563eb' },
-  { eyebrow: 'Power cuts', title: 'Keeping the lights on', blurb: 'Tell us what must stay running and we size it.', cta: 'Size my system', to: '/solar-prices', accent: '#f59e0b' },
-  { eyebrow: 'Security', title: 'Watching the shop', blurb: 'Cameras, recorder and cabling from your plan.', cta: 'Plan a system', to: '/shop?category=tiandy-cameras', accent: '#2ea830' },
-  { eyebrow: 'Business', title: 'Buying wholesale', blurb: 'Quantity pricing to every Iraqi province.', cta: 'Request pricing', to: '/about', accent: '#0f172a' },
+  { eyebrow: 'Home office', title: 'Setting up to work', blurb: 'A laptop, monitor and the cables that fit it.', cta: 'See bundles', to: '/shop?category=computers' },
+  { eyebrow: 'Power cuts', title: 'Keeping the lights on', blurb: 'Tell us what must stay running and we size it.', cta: 'Size my system', to: '/solar-prices' },
+  { eyebrow: 'Security', title: 'Watching the shop', blurb: 'Cameras, recorder and cabling from your plan.', cta: 'Plan a system', to: '/shop?category=tiandy-cameras' },
+  { eyebrow: 'Business', title: 'Buying wholesale', blurb: 'Quantity pricing to every Iraqi province.', cta: 'Request pricing', to: '/about' },
 ];
+
+/** The shop on Google Maps — where the 5.0 comes from. */
+const GOOGLE_REVIEWS =
+  'https://www.google.com/maps/search/?api=1&query=33.3114556%2C44.443511&query_place_id=ChIJS-oOsqeBVxURnLpKX56_pCU';
 
 export default function Home() {
   const { t, lang } = useLang();
@@ -146,10 +148,9 @@ export default function Home() {
         .sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0)),
     [products],
   );
+  // One row. The rest is what the shop is for — a homepage that keeps
+  // going with product grids stops being a homepage.
   const newest = inStock.slice(0, 4);
-  // A second strip further down, so the page shows more of the shop
-  // without repeating what's already above it.
-  const more = inStock.slice(4, 12);
 
   useSeo({
     title:
@@ -333,16 +334,53 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------------- Proof ---------------- */}
+      {/* The reasons to trust the shop, where a first-time visitor actually
+          looks: right under the banner, not at the foot of the page. The
+          Google rating is a link — anyone can go and read the reviews. */}
+      <section className="container-page pt-5">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 lg:grid-cols-4">
+          {[
+            { icon: '★', title: 'Rated 5.0 on Google', body: 'Read what customers say', to: GOOGLE_REVIEWS },
+            { icon: '🛡', title: '5-year warranty', body: 'On the inverter and the batteries' },
+            { icon: '🚚', title: 'Delivery across Iraq', body: 'Cash on delivery, nothing upfront' },
+            { icon: '🏬', title: 'In Baghdad since 1992', body: 'A shop you can walk into' },
+          ].map((v) => {
+            const inner = (
+              <>
+                <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-50 text-base text-brand-700">
+                  {v.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-extrabold text-slate-900">{t(v.title)}</span>
+                  <span className="block truncate text-xs text-slate-500">{t(v.body)}</span>
+                </span>
+              </>
+            );
+            const cls = 'flex items-center gap-3 bg-white px-4 py-3.5';
+            return v.to ? (
+              <a key={v.title} href={v.to} target="_blank" rel="noreferrer" className={`${cls} hover:bg-brand-50/40`}>
+                {inner}
+              </a>
+            ) : (
+              <div key={v.title} className={cls}>
+                {inner}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ---------------- Start here ---------------- */}
       {/* The canvas design's use-case cards: people don't shop for a
           category, they shop for a situation. Scrolls sideways on phones,
           a row of four on desktop. */}
-      <section className="pt-12">
-        <div className="container-page mb-4">
-          <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">
+      <section className="pt-16 lg:pt-20">
+        <div className="container-page mb-6">
+          <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
             {t('Start here')}
           </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             {t('What do you need it for?')}
           </h2>
         </div>
@@ -351,17 +389,17 @@ export default function Home() {
             <Link
               key={c.title}
               to={c.to}
-              className="flex w-56 flex-none snap-start flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-4 transition hover:shadow-lg lg:w-auto"
-              style={{ borderTop: `3px solid ${c.accent}` }}
+              className="flex w-60 flex-none snap-start flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-brand-300 hover:shadow-lg hover:shadow-slate-900/5 lg:w-auto"
             >
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: c.accent }}>
+              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600">
                 {t(c.eyebrow)}
               </div>
-              <div className="text-base font-extrabold leading-snug text-slate-900">{t(c.title)}</div>
-              <div className="text-xs leading-relaxed text-slate-500">{t(c.blurb)}</div>
-              <span className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs font-bold" style={{ color: c.accent }}>
+              <div className="text-lg font-extrabold leading-snug text-slate-900">{t(c.title)}</div>
+              <div className="text-[13px] leading-relaxed text-slate-500">{t(c.blurb)}</div>
+              <span className="mt-auto flex items-center gap-1.5 pt-2 text-[13px] font-bold text-brand-700">
                 <span>{t(c.cta)}</span>
-                <span>→</span>
+                <span className="rtl:hidden">→</span>
+                <span className="hidden rtl:inline">←</span>
               </span>
             </Link>
           ))}
@@ -370,7 +408,7 @@ export default function Home() {
 
       {/* ---------------- Promo banners ---------------- */}
       {!settingsReady && (
-        <section className="container-page pt-12" aria-hidden>
+        <section className="container-page pt-16 lg:pt-20" aria-hidden>
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="skeleton h-72 rounded-3xl lg:col-span-2" />
             <div className="grid grid-rows-2 gap-4">
@@ -380,7 +418,7 @@ export default function Home() {
           </div>
         </section>
       )}
-      <section className="container-page pt-12">
+      <section className="container-page pt-16 lg:pt-20">
         {/* Phones follow the canvas: the first tile is a tall card with
             its wording on white below the photo, the rest are split rows.
             The grid stays for larger screens. Photos and links come from
@@ -408,8 +446,8 @@ export default function Home() {
 
       {/* ---------------- New arrivals ---------------- */}
       {productsLoading && (
-        <section className="mt-14 border-y border-slate-200 bg-slate-50" aria-hidden>
-          <div className="container-page py-14">
+        <section className="mt-16 border-y border-slate-200 bg-slate-50 lg:mt-20" aria-hidden>
+          <div className="container-page py-16">
             <div className="skeleton mb-6 h-8 w-48 rounded-lg" />
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <div className="skeleton h-64 rounded-2xl" />
@@ -421,8 +459,8 @@ export default function Home() {
         </section>
       )}
       {newest.length > 0 && (
-        <section className="mt-14 border-y border-slate-200 bg-slate-50">
-          <div className="container-page py-14">
+        <section className="mt-16 border-y border-slate-200 bg-slate-50 lg:mt-20">
+          <div className="container-page py-16">
             <SectionHead eyebrow="In stock now" title="New arrivals" linkTo="/shop" linkLabel="Shop all" />
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {newest.map((p) => (
@@ -433,46 +471,41 @@ export default function Home() {
         </section>
       )}
 
-      {/* ---------------- Solar quote ---------------- */}
-      <SolarQuote logo={settings.solarLogo} />
-
-      {/* ---------------- More products ---------------- */}
-      {more.length > 0 && (
-        <section className="container-page pt-14">
-          <SectionHead
-            eyebrow="From the shop"
-            title="More to explore"
-            linkTo="/shop"
-            linkLabel="Browse everything"
-          />
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {more.slice(0, 8).map((p) => (
-              <ArrivalCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ---------------- Solar ---------------- */}
+      {/* A real rooftop, not a drawing: the solar tile's photo, or the
+          solar banner, or the stock rooftop — whichever the shop has. */}
+      <SolarQuote
+        logo={settings.solarLogo}
+        photo={
+          (solarIdx >= 0 && tiles[solarIdx].image) ||
+          settings.solarBannerImage ||
+          imageFor('solar') ||
+          FALLBACK.solar
+        }
+      />
 
       {/* ---------------- Brands ---------------- */}
-      <section className="container-page pt-14">
+      {/* Every logo in the same box at the same height, in grey until it is
+          looked at — a row of partners, not a row of adverts. */}
+      <section className="container-page pt-16 lg:pt-20">
         <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
           {t('Partners')}
         </div>
-        <h2 className="mb-5 text-3xl font-extrabold tracking-tight text-slate-900">
+        <h2 className="mb-6 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
           {t('Brands we carry')}
         </h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
           {brandList.map((b, i) => {
             const logo = b.image;
             return (
               <div
                 key={`${b.name}-${i}`}
-                className="grid h-20 place-items-center rounded-xl border border-slate-200 bg-white px-3"
+                className="grid h-16 place-items-center rounded-xl border border-slate-200 bg-white px-4 grayscale transition hover:grayscale-0"
               >
                 {logo ? (
-                  <img src={logo} alt={b.name} loading="lazy" className="max-h-12 w-auto object-contain" />
+                  <img src={logo} alt={b.name} loading="lazy" className="max-h-8 w-auto object-contain opacity-80" />
                 ) : (
-                  <span className="text-center text-sm font-bold text-slate-500">{b.name}</span>
+                  <span className="text-center text-xs font-bold text-slate-500">{b.name}</span>
                 )}
               </div>
             );
@@ -480,35 +513,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---------------- Why us ---------------- */}
-      <section className="container-page py-14">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 border-t border-slate-200 pt-8 lg:grid-cols-4">
+      {/* ---------------- Genuine ---------------- */}
+      <section className="container-page py-16 lg:py-20">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-t border-slate-200 pt-8 sm:grid-cols-3">
           {[
-            {
-              icon: '🚚',
-              title: 'Fast delivery',
-              body: 'Same-day dispatch in Baghdad, and across Iraq within days.',
-            },
-            {
-              icon: '💵',
-              title: 'Cash on delivery',
-              body: 'Pay when the order reaches your door — nothing upfront.',
-            },
-            {
-              icon: '🔄',
-              title: 'Easy replacement',
-              body: 'Wrong item or changed your mind? Swap or return it.',
-            },
-            {
-              icon: '✅',
-              title: 'Genuine products',
-              body: 'Everything we sell comes from the authorised source.',
-            },
+            { title: 'Genuine products', body: 'Everything we sell comes from the authorised source.' },
+            { title: 'Easy replacement', body: 'Wrong item or changed your mind? Swap or return it.' },
+            { title: 'Talk to a person', body: 'WhatsApp, phone, or the chat on this page — a human answers.' },
           ].map((v) => (
             <div key={v.title}>
-              <div className="mb-2 text-2xl" aria-hidden>
-                {v.icon}
-              </div>
               <div className="mb-1.5 font-bold text-slate-900">{t(v.title)}</div>
               <div className="text-sm leading-relaxed text-slate-500">{t(v.body)}</div>
             </div>
@@ -685,74 +698,65 @@ function SectionHead({
         <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
           {t(eyebrow)}
         </div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">{t(title)}</h2>
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{t(title)}</h2>
       </div>
       <Link
         to={linkTo}
         className="flex flex-none items-center gap-2 text-sm font-bold text-brand-700 hover:underline"
       >
         <span>{t(linkLabel)}</span>
-        <span>→</span>
+        <span className="rtl:hidden">→</span>
+        <span className="hidden rtl:inline">←</span>
       </Link>
     </div>
   );
 }
 
+/** A product shown, not sold: the whole card opens it, the price sits
+    with a quiet arrow, and the add-to-cart button waits in the shop. A
+    homepage with a dozen identical blue buttons reads as a catalogue. */
 function ArrivalCard({ product }: { product: Product }) {
-  const { lang } = useLang();
-  const { t } = useLang();
-  const { add } = useCart();
-  const [added, setAdded] = useState(false);
+  const { lang, t } = useLang();
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-slate-200 bg-white p-3.5">
-      <Link
-        to={`/product/${product.id}`}
-        className="relative aspect-square overflow-hidden rounded-xl bg-slate-100"
-      >
+    <Link
+      to={`/product/${product.id}`}
+      className="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition hover:border-brand-300 hover:shadow-lg hover:shadow-slate-900/5"
+    >
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
         <img
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
-      </Link>
-      <Link
-        to={`/product/${product.id}`}
-        className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-slate-800 hover:text-brand-700"
-      >
+      </div>
+      {product.brand && (
+        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{product.brand}</div>
+      )}
+      <div className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-slate-800 group-hover:text-brand-700">
         {pName(product, lang)}
-      </Link>
-      <div className="flex items-baseline gap-1.5">
+      </div>
+      <div className="mt-auto flex items-center justify-between gap-2">
         <span className="text-lg font-extrabold text-slate-900">
           {formatPrice(product.price, product.currency)}
         </span>
+        <span className="text-xs font-bold text-brand-700">
+          {t('View')} <span className="rtl:hidden">→</span>
+          <span className="hidden rtl:inline">←</span>
+        </span>
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          add(product.id, 1);
-          setAdded(true);
-          setTimeout(() => setAdded(false), 1500);
-        }}
-        className="mt-0.5 w-full rounded-xl bg-brand-600 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
-      >
-        {added ? t('Added ✓') : t('Add to cart')}
-      </button>
-    </div>
+    </Link>
   );
 }
 
-/** "Tell us your bill" — a real enquiry, landing in Admin → Submissions. */
-function SolarQuote({ logo }: { logo?: string }) {
+/** The solar pitch: a real roof, the promise, and one door to the prices. */
+function SolarQuote({ logo, photo }: { logo?: string; photo: string }) {
   const { t } = useLang();
 
   return (
-    <section
-      id="quote"
-      className="mt-14 border-y border-sky-100 bg-gradient-to-br from-sky-50 via-white to-brand-50"
-    >
-      <div className="container-page grid items-center gap-12 py-16 lg:grid-cols-[1.05fr_.95fr]">
+    <section id="quote" className="mt-16 border-y border-slate-200 bg-slate-50 lg:mt-20">
+      <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-2 lg:gap-16 lg:py-20">
         <div>
           {logo ? (
             <img
@@ -767,7 +771,7 @@ function SolarQuote({ logo }: { logo?: string }) {
           <span className="inline-block rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-inset ring-brand-200">
             {t('Free site survey')}
           </span>
-          <h2 className="mb-3 mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900">
+          <h2 className="mb-4 mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
             <span className="block">{t('Forget your electricity problems —')}</span>
             <span className="block text-brand-600">{t('live without power cuts')}</span>
           </h2>
@@ -776,11 +780,11 @@ function SolarQuote({ logo }: { logo?: string }) {
               'Most homes we fit run their essentials through the night and pay back the system in under three years.',
             )}
           </p>
-          <ul className="flex flex-col gap-3">
+          <ul className="mb-8 flex flex-col gap-3">
             {[
               'Free survey and load assessment',
               'Panels, inverter, batteries and install in one quote',
-              'Two-year workmanship warranty',
+              'Cash, or bank installments up to 7 years',
             ].map((line) => (
               <li key={line} className="flex items-center gap-3 text-sm font-medium text-slate-700">
                 <span className="grid h-5 w-5 flex-none place-items-center rounded-full bg-brand-100 text-xs font-extrabold text-brand-700">
@@ -790,19 +794,24 @@ function SolarQuote({ logo }: { logo?: string }) {
               </li>
             ))}
           </ul>
-        </div>
-
-        {/* The install in miniature, and one plain door to the prices —
-            the quote form used to live here, and asked more questions than
-            a price list answers. */}
-        <div className="flex flex-col gap-5">
-          <SolarSceneLite />
           <Link
             to="/solar-prices"
-            className="block rounded-2xl bg-brand-600 py-4 text-center text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700"
           >
-            {t('See solar prices')} →
+            <span>{t('See solar prices')}</span>
+            <span className="rtl:hidden">→</span>
+            <span className="hidden rtl:inline">←</span>
           </Link>
+        </div>
+
+        <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-slate-900 shadow-xl shadow-slate-900/10">
+          <img src={photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/70 to-transparent p-5 text-white">
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300">
+              {t('Central Bank initiative')}
+            </div>
+            <div className="mt-1 text-lg font-extrabold">{t('Pay monthly, up to 7 years')}</div>
+          </div>
         </div>
       </div>
     </section>
