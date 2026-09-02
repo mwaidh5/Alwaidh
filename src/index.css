@@ -278,12 +278,14 @@
       opacity 200ms ease-out;
   }
   /* The bar rises into place when a screen first shows it. */
+  /* backwards, not both: once the rise is over the animation lets go of
+     transform, so the bar's own slide (aside for the menu) can move it. */
   .bar-in {
-    animation: bar-in 360ms cubic-bezier(0.23, 1, 0.32, 1) both;
+    animation: bar-in 360ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   }
   @media (prefers-reduced-motion: reduce) {
     .bar-in {
-      animation: veil-in 160ms ease-out both;
+      animation: veil-in 160ms ease-out backwards;
     }
     .liquid-pill {
       transition: opacity 160ms ease-out;
