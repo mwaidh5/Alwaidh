@@ -17,6 +17,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered by hand in src/lib/swUpdate.ts, which also keeps checking
+      // for a newer build and reloads once it has taken over.
+      injectRegister: false,
       includeAssets: ['apple-touch-icon.png', 'favicon.svg'],
       manifest: {
         name: 'Alwaidh Staff',
