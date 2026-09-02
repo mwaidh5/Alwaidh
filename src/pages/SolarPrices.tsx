@@ -13,6 +13,7 @@ import { saveFile } from '../lib/savePdf';
 import { openChat } from '../lib/chatPanel';
 import { useSeo, organizationJsonLd } from '../lib/seo';
 import { useLang } from '../lib/i18n';
+import SolarAppPreviews from '../components/SolarAppPreviews';
 
 /* The sheet's data lives in the admin dashboard as Arabic text. For the
    English site we translate at display time: column names by key, and the
@@ -479,6 +480,14 @@ export default function SolarPrices() {
             {saveError}
           </p>
         )}
+
+        {/* What the customer sees afterwards: the monitoring apps. */}
+        <SolarAppPreviews
+          logos={{
+            sinexcel: (settings.brands ?? []).find((b) => /sinexcel/i.test(b.name))?.image,
+            saj: (settings.brands ?? []).find((b) => /^saj$/i.test(b.name.trim()))?.image,
+          }}
+        />
 
         {/* The poster itself. Kept in the page rather than hidden,
             because "Download PDF" photographs this element and

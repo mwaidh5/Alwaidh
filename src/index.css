@@ -318,6 +318,24 @@
     text-align: start;
   }
 
+  /* The monitoring-app mock-ups on the prices page: energy as a dashed
+     line whose dashes travel. Sinexcel's runs brisk; SAJ's takes its
+     time, the way each app animates it. */
+  .sx-flow,
+  .sj-flow {
+    stroke-dasharray: 3 4;
+    animation: alw-current 1.1s linear infinite;
+  }
+  .sj-flow {
+    animation-duration: 2.4s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sx-flow,
+    .sj-flow {
+      animation: none;
+    }
+  }
+
   /* A horizontal scroller that doesn't show its scrollbar. */
   .scrollbar-none {
     scrollbar-width: none;
