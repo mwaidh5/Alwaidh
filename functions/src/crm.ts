@@ -55,7 +55,6 @@ export const leadToCrm = onDocumentCreated('leads/{leadId}', async (event) => {
     `📇 New Facebook lead: ${name}`,
     [phone, String(lead.city ?? '').trim(), campaign].filter(Boolean).join(' · ').slice(0, 90),
     '/admin/crm',
-    'staff-messages',
   );
 });
 
@@ -89,7 +88,6 @@ export const crmReminderSweep = onSchedule('every 60 minutes', async () => {
       `🔔 Follow up: ${name}`,
       detail || 'CRM reminder',
       '/admin/crm',
-      'staff-messages',
     );
     await d.ref.set({ remindedAtMs: now }, { merge: true });
   }

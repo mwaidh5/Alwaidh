@@ -19,6 +19,7 @@ import { loadAssistantConfig, saveAssistantConfig } from '../../lib/assistantSto
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useScrollLock } from '../../lib/useScrollLock';
+import { usePresence } from '../../lib/presence';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
@@ -79,6 +80,8 @@ export default function AdminChat() {
   const [attached, setAttached] = useState<ProductCard | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [systemOpen, setSystemOpen] = useState(false);
+  // This screen is the inbox — or one conversation. Other devices stay quiet.
+  usePresence(activeId ? `chat:${activeId}` : 'messages');
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(

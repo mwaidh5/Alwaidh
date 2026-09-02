@@ -19,7 +19,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
 import { buildEmail, buildOrderEmail, buildStockEmail, type EmailKind } from './emails';
-import { push, pushUsers, staffLists, userTopic } from './notify';
+import { push, pushUsers, staffLists, userTopic, viewersOf } from './notify';
 
 initializeApp();
 
@@ -34,20 +34,6 @@ setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
  * the database it watches (nam5, in the United States).
  */
 export const NEAR = 'me-central1';
-
-/** Legacy broadcast topics — nothing publishes to these any more.
- *  A broadcast cannot leave out the person who caused it, so every send
- *  now goes to per-person channel topics instead; devices drop these on
- *  their next launch (see src/lib/push.ts). */
-export const TOPICS = {
-  jobs: 'staff-jobs',
-  jobActivity: 'staff-job-activity',
-  orders: 'staff-orders',
-  messages: 'staff-messages',
-} as const;
-
-
-
 
 /** Trim customer text so it fits a notification without leaking an essay. */
 function preview(text: unknown, max = 80): string {
@@ -97,7 +83,7 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
     `🛠️ ${kind}: ${customer}`,
     [system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
     '/admin/jobs',
-    TOPICS.jobs,
+    ['jobs'],
   );
 });
 
@@ -125,7 +111,7 @@ export const notifyJobActivity = onDocumentCreated(
         ? `${who}: ${preview(entry.text)}`
         : `${who} — ${preview(entry.text) || 'updated this job'}`,
       '/admin/jobs',
-      TOPICS.jobActivity,
+      [`job:${event.params.jobId}`],
     );
   },
 );
@@ -143,7 +129,7 @@ export const notifyOrderUpdate = onDocumentUpdated('orders/{orderId}', async (ev
     `🧾 Order ${preview(after.status, 20)}`,
     `${name}${after.customerPhone ? ` · ${preview(after.customerPhone, 20)}` : ''}`,
     '/admin/orders',
-    TOPICS.orders,
+    ['orders'],
   );
 });
 
@@ -160,7 +146,7 @@ export const notifyNewOrder = onDocumentCreated('orders/{orderId}', async (event
     `🧾 New order from ${name}`,
     `${total} ${currency}${order.customerPhone ? ` · ${preview(order.customerPhone, 20)}` : ''}`,
     '/admin/orders',
-    TOPICS.orders,
+    ['orders'],
   );
 });
 
@@ -177,7 +163,7 @@ export const notifyNewChatMessage = onDocumentCreated(
       '💬 New chat message',
       preview(msg.text) || 'A visitor wrote in the website chat',
       `/admin/chat?c=${event.params.chatId}`,
-      TOPICS.messages,
+      ['messages', `chat:${event.params.chatId}`],
     );
   },
 );
@@ -208,9 +194,10 @@ export const notifyTeamMessage = onDocumentCreated(
       (msg.job ? `🛠️ ${preview((msg.job as { customer?: string }).customer, 40)}` : '') ||
       'New message';
 
+    const viewing = await viewersOf(['team', `team:${chatId}`]);
     await Promise.all(
       members
-        .filter((m) => m && m !== author)
+        .filter((m) => m && m !== author && !viewing.has(m.toLowerCase()))
         .map((m) =>
           push(
             userTopic(m),
@@ -234,7 +221,7 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
     `✉️ Message from ${name}`,
     preview(msg.subject) || preview(msg.message) || 'New enquiry',
     '/admin/submissions',
-    TOPICS.messages,
+    ['submissions'],
   );
 });
 

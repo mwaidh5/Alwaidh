@@ -316,8 +316,8 @@ export const assistantReply = onDocumentCreated(
         'messages',
         '📣 Customer needs staff',
         question || 'The assistant handed a chat to the team',
-        '/admin/chat',
-        'staff-messages',
+        `/admin/chat?c=${chatId}`,
+        ['messages', `chat:${chatId}`],
       );
     }
   },

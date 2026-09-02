@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ADMIN_EMAILS, auth } from '../../firebase';
 import { subscribeSettings, type SiteSettings } from '../../lib/settingsStore';
 import { useLang } from '../../lib/i18n';
+import { useOthersViewing } from '../../lib/presence';
 import { markSeen, useStaffAlerts, type AlertKey } from '../../lib/useStaffAlerts';
 import {
   clearDeliveredNotifications,
@@ -87,6 +88,12 @@ export default function AdminLayout() {
   // Website notifications: while a dashboard tab is open (even in the
   // background), anything new fires a browser notification, honouring the
   // same switches as the app. The native app skips this — FCM pings it.
+  // What this person's other devices are showing: the phone with the
+  // chat open means the laptop's alert about that chat can stay silent.
+  const others = useOthersViewing();
+  const othersRef = useRef(others);
+  othersRef.current = others;
+
   const previous = useRef<Record<AlertKey, number> | null>(null);
   useEffect(() => {
     const prev = previous.current;
@@ -107,6 +114,8 @@ export default function AdminLayout() {
       if (!isChannelOn(rule.channel)) continue; // switched off
       // Looking at that page right now — no need to interrupt.
       if (location.pathname === rule.path && !document.hidden) continue;
+      // Or looking at it on another device.
+      if (seenElsewhere(rule.key, othersRef.current)) continue;
       try {
         const n = new Notification(t(rule.title), {
           body: t('Open the dashboard to take a look.'),
@@ -444,4 +453,16 @@ function NotAuthorized({ email, extraAdmins }: { email: string | null; extraAdmi
       </div>
     </section>
   );
+}
+
+/** True when another of this person's devices is showing what the alert is about. */
+function seenElsewhere(key: string, keys: Set<string>): boolean {
+  for (const k of keys) {
+    if (key === 'chat' && (k === 'messages' || k.startsWith('chat:'))) return true;
+    if (key === 'jobs' && (k === 'jobs' || k.startsWith('job:'))) return true;
+    if (key === 'team' && (k === 'team' || k.startsWith('team:'))) return true;
+    if (key === 'submissions' && k === 'submissions') return true;
+    if (key === 'orders' && k === 'orders') return true;
+  }
+  return false;
 }
