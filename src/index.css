@@ -60,10 +60,10 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-700 active:bg-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97] active:bg-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
   }
   .card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md;
@@ -185,6 +185,43 @@
   @media (prefers-reduced-motion: reduce) {
     .page-enter {
       animation: none;
+    }
+  }
+
+  /* Every pop-up arrives the same way: the veil fades, the panel settles
+     in from 96% — 200ms on a strong ease-out, so it feels like it was
+     always there rather than snapping into existence. One class on the
+     veil; the panel is its child. */
+  .modal-backdrop {
+    animation: veil-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  .modal-backdrop > * {
+    animation: panel-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  /* The chat panel grows from the bubble in the corner it belongs to. */
+  .chat-in {
+    transform-origin: bottom right;
+    animation: panel-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  /* The hint bobs three times, then sits still — a nudge, not a nag. */
+  .coach-bounce {
+    animation: coach-bounce 1s ease-in-out 3;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop,
+    .modal-backdrop > *,
+    .chat-in {
+      animation: veil-in 120ms ease-out both;
+    }
+    .coach-bounce {
+      animation: none;
+    }
+    /* The menu: the same places, without the journey. */
+    .drawer-card,
+    .drawer-frame,
+    .drawer-item {
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
     }
   }
 
@@ -333,6 +370,26 @@
   .marquee-pause:hover .marquee-track {
     animation-play-state: paused;
   }
+  @keyframes veil-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  @keyframes coach-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
   @keyframes page-enter {
   from {
     opacity: 0;
@@ -432,14 +489,31 @@
 
 /* Live-content placeholder: a soft shimmer where words and pictures are
    still on their way — better than stock defaults popping in over slow
-   internet and being swapped under the visitor's eyes. */
+   internet and being swapped under the visitor's eyes.
+   The shine is a layer slid across with a transform, so it costs the GPU
+   and not a repaint — during load, the busiest moment of the page. */
 .skeleton {
-  background: linear-gradient(100deg, #eef2f7 30%, #e2e8f0 45%, #eef2f7 60%);
-  background-size: 300% 100%;
+  overflow: hidden;
+  background: #eef2f7;
+}
+.skeleton:not(.absolute):not(.fixed) {
+  position: relative;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, #e2e8f0 50%, transparent 70%);
+  transform: translateX(-100%);
   animation: skeleton-slide 1.4s ease-in-out infinite;
 }
 @keyframes skeleton-slide {
   to {
-    background-position: -200% 0;
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
   }
 }

@@ -122,7 +122,7 @@ export default function ChatWidget() {
         />
       )}
       {open && (
-        <div className="fixed bottom-28 right-4 z-40 flex max-h-[70vh] md:bottom-24 w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="chat-in fixed bottom-28 right-4 z-40 flex max-h-[70vh] md:bottom-24 w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-brand-700 px-4 py-3 text-white">
             <div>
               <p className="text-sm font-bold">{t('Chat with us')}</p>

@@ -64,7 +64,7 @@ function AttachmentList({ items }: { items: JobAttachment[] }) {
 
       {open !== null && photos[open] && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4"
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4"
           onClick={() => setOpen(null)}
         >
           <img

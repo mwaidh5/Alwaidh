@@ -314,7 +314,7 @@ export default function Home() {
                     setSlide(i);
                   }}
                   aria-label={`${t('Slide')} ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${
+                  className={`h-1.5 rounded-full transition-colors ${
                     i === slide ? 'w-6 bg-brand-600' : 'w-1.5 bg-slate-300'
                   }`}
                 />
@@ -556,7 +556,7 @@ function BigTileCard({ tile, img, tall }: { tile: PromoTile; img: string; tall?:
           src={img}
           alt=""
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
         <TileLogo logo={tile.logo} />
       </div>
@@ -596,7 +596,7 @@ function SplitTileCard({ tile, img }: { tile: PromoTile; img: string }) {
           src={img}
           alt=""
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
         <TileLogo logo={tile.logo} small />
       </div>

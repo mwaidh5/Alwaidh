@@ -20,14 +20,14 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
     >
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out"
+        className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 [transition-timing-function:cubic-bezier(.23,1,.32,1)]"
         style={{ transform: `translateX(${idx * 100}%)` }}
       />
       <button
         type="button"
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
-        className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-300 ${
+        className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-200 ${
           lang === 'en' ? 'text-slate-900' : 'text-white/80'
         }`}
       >
@@ -37,7 +37,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
         type="button"
         onClick={() => setLang('ar')}
         aria-pressed={lang === 'ar'}
-        className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-300 ${
+        className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-200 ${
           lang === 'ar' ? 'text-slate-900' : 'text-white/80'
         }`}
       >

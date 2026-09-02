@@ -62,3 +62,8 @@ vite.config.js.timestamp-*.mjs
 
 # A separate project that lives in this folder — never part of this repo.
 balloon-tasks/
+
+# Agent skills installed with `npx skills add` — a local tool, not part of the site.
+.agents/
+.claude/skills/
+skills-lock.json

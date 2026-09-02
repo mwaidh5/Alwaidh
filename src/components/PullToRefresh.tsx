@@ -43,6 +43,10 @@ export default function PullToRefresh() {
   const { t } = useLang();
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // While the finger is down the pill tracks it exactly; once it lifts,
+  // the pill eases home instead of vanishing from under it.
+  const [dragging, setDragging] = useState(false);
+  const [settling, setSettling] = useState(false);
   const start = useRef<number | null>(null);
   // While a pop-up is open (adding a job, editing a product), its inner
   // scrolling was being read as a pull — the gesture is simply off then.
@@ -80,12 +84,16 @@ export default function PullToRefresh() {
         return;
       }
       // Resistance: the further it goes the less it gives.
+      setDragging(true);
       setPull(Math.min(MAX, delta * 0.4));
     }
 
     function onEnd() {
       if (start.current === null) return;
       start.current = null;
+      setDragging(false);
+      setSettling(true);
+      window.setTimeout(() => setSettling(false), 220);
       setPull((current) => {
         if (current >= THRESHOLD) {
           setRefreshing(true);
@@ -109,13 +117,16 @@ export default function PullToRefresh() {
     };
   }, [refreshing, modalOpen, drawerOpen]);
 
-  if (pull <= 0 && !refreshing) return null;
+  if (pull <= 0 && !refreshing && !settling) return null;
 
   const ready = pull >= THRESHOLD;
   return (
     <div
       className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center md:hidden"
-      style={{ transform: `translateY(${Math.max(pull, refreshing ? THRESHOLD : 0) - 20}px)` }}
+      style={{
+        transform: `translateY(${Math.max(pull, refreshing ? THRESHOLD : 0) - 20}px)`,
+        transition: dragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+      }}
       aria-live="polite"
     >
       <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-lg backdrop-blur">
