@@ -284,12 +284,18 @@ export default function Layout() {
         <Footer />
       </div>
       <ChatWidget />
-      <BottomNav />
       {/* The bar floats over the page, so the end of it needs room to be
           scrolled clear of. */}
       <div aria-hidden className="h-24 md:hidden" />
       </div>
       </div>
+      {/* Outside the card on purpose. Inside it, `position: fixed` measures
+          from the transformed wrapper — the whole document tall — so while
+          the menu was open the bar sat at the bottom of the document,
+          off-screen, and only snapped back once the card had finished
+          sliding home half a second later. Out here it is fixed to the
+          screen and steps aside on its own, on the same curve. */}
+      <BottomNav />
     </>
   );
 }

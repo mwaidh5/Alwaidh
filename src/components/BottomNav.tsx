@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { toggleChat, useChatUnread } from '../lib/chatPanel';
+import { useDrawerOpen } from '../lib/drawer';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -30,6 +31,10 @@ export default function BottomNav() {
   // navigation under a thumb that is trying to close something.
   const modalOpen = useAnyModalOpen();
   const chatUnread = useChatUnread();
+  // While the menu is up the page is a card beside it and the bar has no
+  // business floating over the menu: it slides down out of the way and
+  // back up as the card returns — the same half-second, the same curve.
+  const drawerOpen = useDrawerOpen();
 
   // No Cart: it already sits in the header on every screen, with its count,
   // and five is where a bar of these stops being readable.
@@ -73,9 +78,11 @@ export default function BottomNav() {
       // scrolling and the bar visibly drifts up before snapping back.
       style={{
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)',
-        transform: 'translateZ(0)',
+        transform: drawerOpen ? 'translateY(130%) translateZ(0)' : 'translateY(0) translateZ(0)',
+        transition: 'transform 500ms cubic-bezier(.32,.72,0,1)',
         willChange: 'transform',
       }}
+      aria-hidden={drawerOpen || undefined}
       aria-label={t('Main')}
     >
       <div className="liquid-glass relative mx-auto flex max-w-md items-stretch justify-around rounded-[1.5rem] p-1.5">
