@@ -33,6 +33,19 @@
         "4700"
       ],
       "port": 4700
+    },
+    {
+      "name": "alwaidh-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-s",
+        "dist",
+        "-l",
+        "4173"
+      ],
+      "port": 4173
     }
   ]
 }

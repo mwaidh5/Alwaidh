@@ -6,6 +6,7 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './lib/i18n';
 import './index.css';
+import { keepFresh } from './lib/swUpdate';
 
 // After a deploy, a page that was already open still references lazy-loaded
 // chunks from the previous build, which no longer exist on the server. Vite
@@ -19,6 +20,8 @@ window.addEventListener('vite:preloadError', (event) => {
     window.location.reload();
   }
 });
+
+keepFresh();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
