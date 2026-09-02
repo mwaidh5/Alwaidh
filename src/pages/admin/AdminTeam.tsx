@@ -23,6 +23,7 @@ import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
+import { usePresence } from '../../lib/presence';
 import ChatProductCard from '../../components/ChatProductCard';
 import Reactions from '../../components/Reactions';
 import type { ChatProductCard as ProductCard } from '../../lib/chatStore';
@@ -53,6 +54,7 @@ export default function AdminTeam() {
   const [chats, setChats] = useState<TeamChat[] | null>(null);
   const [error, setError] = useState('');
   const [activeId, setActiveId] = useState('');
+  usePresence(activeId ? `team:${activeId}` : 'team');
   const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);

@@ -67,15 +67,44 @@ export async function staffLists(): Promise<{ admins: string[]; jobs: string[]; 
   };
 }
 
+/** A presence record older than this is a device that has gone quiet. */
+const FRESH_MS = 75_000;
+
 /**
- * One channel's note to each person's own topic — never the author's:
- * nobody needs their phone to announce the comment they just typed.
+ * Who is already looking at the thing about to be announced.
  *
- * `legacyTopic` also broadcasts to the channel's old shared topic, for
- * devices still running the app version that subscribed to those. They
- * drop it on their next sync; until then this keeps them hearing (with
- * no author exclusion — the price of the old scheme). Updated devices
- * left the legacy topic, so nobody is pinged twice.
+ * Every signed-in device writes what it is viewing (src/lib/presence.ts):
+ * `messages`, `chat:<id>`, `jobs`, `job:<id>`, `team`, `team:<id>`. A
+ * person with a fresh record matching any of `keys` has the news on a
+ * screen in front of them — their other devices need not buzz.
+ */
+export async function viewersOf(keys: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!keys.length) return out;
+  try {
+    const since = Date.now() - FRESH_MS;
+    const snap = await getFirestore()
+      .collection('presence')
+      .where('key', 'in', keys.slice(0, 30))
+      .get();
+    snap.forEach((d) => {
+      const x = d.data();
+      const at = x.at && typeof x.at.toMillis === 'function' ? x.at.toMillis() : 0;
+      if (at >= since && x.email) out.add(String(x.email).toLowerCase());
+    });
+  } catch (err) {
+    logger.warn('presence lookup failed; notifying everyone', err);
+  }
+  return out;
+}
+
+/**
+ * One channel's note to each person's own topic — never the author's
+ * (nobody needs their phone to announce the comment they just typed),
+ * and never to someone already looking at it on another screen.
+ *
+ * The old shared-topic broadcast is gone: it could exclude nobody, which
+ * is how the owner kept hearing his own job updates on his phone.
  */
 export async function pushUsers(
   emails: string[],
@@ -84,13 +113,11 @@ export async function pushUsers(
   title: string,
   body: string,
   link: string,
-  legacyTopic?: string,
+  focus: string[] = [],
 ): Promise<void> {
   const skip = String(author ?? '').trim().toLowerCase();
-  await Promise.all([
-    ...(legacyTopic ? [push(legacyTopic, title, body, link)] : []),
-    ...[...new Set(emails)]
-      .filter((e) => e && e !== skip)
-      .map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)),
-  ]);
+  const viewing = await viewersOf(focus);
+  const targets = [...new Set(emails)].filter((e) => e && e !== skip && !viewing.has(e));
+  if (viewing.size) logger.info(`${channel}: ${viewing.size} already viewing, skipped`);
+  await Promise.all(targets.map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)));
 }

@@ -31,6 +31,7 @@ import {
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
 import { useLang } from '../../lib/i18n';
+import { usePresence } from '../../lib/presence';
 import { useStaffName } from '../../lib/staffDirectory';
 import { useScrollLock } from '../../lib/useScrollLock';
 import { changedAt, markJobSeen, useSeenJobs } from '../../lib/seenJobs';
@@ -144,6 +145,8 @@ export default function AdminJobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
+  // The board, or one job's details. Other devices stay quiet about it.
+  usePresence(viewing ? `job:${viewing.id}` : 'jobs');
   const boardRef = useRef<HTMLDivElement>(null);
 
   // The mouse wheel pans the board sideways. A native listener, because
