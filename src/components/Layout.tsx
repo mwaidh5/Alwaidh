@@ -252,6 +252,8 @@ export default function Layout() {
                 // the whole ride — re-rasterizing mid-slide is the white
                 // flicker iPhones sometimes show, worst with Arabic fonts.
                 willChange: 'transform',
+                // A finger on the card must not scroll the page beneath it.
+                touchAction: 'none',
               }
             : undefined
         }

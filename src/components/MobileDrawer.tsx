@@ -31,6 +31,12 @@ export default function MobileDrawer() {
   // lock has to outlive the close by the length of the slide home: freeing
   // it immediately lets iOS scroll or rubber-band the page while it is
   // still translated, which shows as a sideways jump mid-animation.
+  //
+  // overflow: hidden on the body is not a lock on iPhones — the finger
+  // still scrolls the page, and the card slid up out of its frame with the
+  // menu open (the frame is measured once, at opening). So the touch
+  // itself is refused while the menu is up, except inside the menu's own
+  // list, which must still scroll when there are more links than screen.
   const unlockTimer = useRef(0);
   useEffect(() => {
     if (!open) return;
@@ -39,12 +45,21 @@ export default function MobileDrawer() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeDrawer();
     };
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.target;
+      if (t instanceof Element && t.closest('[data-drawer-scroll]')) return;
+      e.preventDefault();
+    };
     window.addEventListener('keydown', onKey);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
+      window.removeEventListener('keydown', onKey);
+      // The touch lock, like the overflow lock, outlives the close by the
+      // length of the slide home.
       unlockTimer.current = window.setTimeout(() => {
         document.body.style.overflow = '';
+        document.removeEventListener('touchmove', onTouchMove);
       }, 560);
-      window.removeEventListener('keydown', onKey);
     };
   }, [open]);
 
@@ -100,7 +115,7 @@ export default function MobileDrawer() {
           </button>
         </div>
 
-        <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+        <nav data-drawer-scroll className="mt-8 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
           {items.map((item, i) => (
             <Link
               key={item.to}
