@@ -111,7 +111,7 @@ export default function Layout() {
     const [right, left] = dir === 'rtl' ? [inner, 0] : [0, inner];
     return {
       clipPath: `inset(${t}px ${right}px ${b}px ${left}px round ${open ? 24 : 0}px)`,
-      transition: 'clip-path 500ms cubic-bezier(.32,.72,.28,1)',
+      transition: 'clip-path 500ms cubic-bezier(.32,.72,0,1)',
       // The clip makes this wrapper its own stacking layer, which would
       // fall behind the fixed drawer — lift the whole framed card above.
       position: 'relative' as const,
@@ -229,9 +229,9 @@ export default function Layout() {
           container and kill the sticky header) keeps the slid-out card
           from widening the page: without it, RTL iOS can scroll into the
           card's off-screen side. */}
-      <div style={{ overflowX: 'clip', ...frame }}>
+      <div className="drawer-frame" style={{ overflowX: 'clip', ...frame }}>
       <div
-        className="flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,.28,1)]"
+        className="drawer-card flex min-h-screen flex-col bg-white transition-transform duration-500 [transition-timing-function:cubic-bezier(.32,.72,0,1)]"
         style={
           drawerOpen || settling
             ? {

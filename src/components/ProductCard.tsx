@@ -22,7 +22,7 @@ export default function ProductCard({ product }: { product: Product }) {
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">

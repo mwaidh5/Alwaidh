@@ -588,7 +588,7 @@ function NewChatDialog({
     setPicked((p) => (p.includes(email) ? p.filter((e) => e !== email) : [...p, email]));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -806,7 +806,7 @@ function PickerShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}

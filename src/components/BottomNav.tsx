@@ -79,7 +79,7 @@ export default function BottomNav() {
             </>
           );
           const shape =
-            'relative flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap rounded-xl py-2 text-[11px] font-semibold transition';
+            'relative flex flex-1 flex-col items-center gap-0.5 whitespace-nowrap rounded-xl py-2 text-[11px] font-semibold transition active:scale-95';
           return 'to' in item ? (
             <NavLink
               key={item.to}

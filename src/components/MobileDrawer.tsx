@@ -64,7 +64,7 @@ export default function MobileDrawer() {
   return (
     <div
       aria-hidden={!open}
-      className={`fixed inset-0 z-30 bg-gradient-to-br from-slate-900 via-brand-900 to-brand-700 transition-opacity duration-300 md:hidden ${
+      className={`fixed inset-0 z-30 bg-gradient-to-br from-slate-900 via-brand-900 to-brand-700 transition-opacity duration-500 [transition-timing-function:cubic-bezier(.32,.72,0,1)] md:hidden ${
         open ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
@@ -115,10 +115,10 @@ export default function MobileDrawer() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={`flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-all duration-300 active:bg-white/10 ${
+              className={`drawer-item flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
                 open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
               }`}
-              style={{ transitionDelay: open ? `${120 + i * 45}ms` : '0ms' }}
+              style={{ transitionDelay: open ? `${60 + i * 30}ms` : '0ms' }}
             >
               <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-white/10 text-white/90">
                 {item.icon}
@@ -134,10 +134,10 @@ export default function MobileDrawer() {
         </nav>
 
         <div
-          className={`flex flex-col gap-2 border-t border-white/15 pt-4 transition-all duration-300 ${
+          className={`drawer-item flex flex-col gap-2 border-t border-white/15 pt-4 transition-[transform,opacity] duration-[240ms] ease-out ${
             open ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
           }`}
-          style={{ transitionDelay: open ? '380ms' : '0ms' }}
+          style={{ transitionDelay: open ? '240ms' : '0ms' }}
         >
           <Link
             to={user ? '/account' : '/login'}

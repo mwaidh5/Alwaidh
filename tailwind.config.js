@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // hover: styles only where a pointer can hover. A finger's tap fires a
+  // false hover that sticks — cards stayed lifted and photos zoomed until
+  // the next tap somewhere else.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {

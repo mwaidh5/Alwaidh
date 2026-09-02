@@ -132,7 +132,7 @@ function Sheet({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/40" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex flex-col bg-slate-900/40" onClick={onClose}>
       <div
         className="mt-auto flex max-h-[88vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

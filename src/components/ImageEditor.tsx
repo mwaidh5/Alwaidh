@@ -349,7 +349,7 @@ export default function ImageEditor({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4"
       onClick={busy === 'loading' ? undefined : onCancel}
     >
       <div

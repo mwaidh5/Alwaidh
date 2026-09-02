@@ -746,7 +746,7 @@ function GridCard({ product, onAdd }: { product: Product; onAdd: () => void }) {
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
+          className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
         />
       </Link>
       <div className="flex flex-1 flex-col items-center gap-1.5 p-3 sm:gap-2 sm:p-4">

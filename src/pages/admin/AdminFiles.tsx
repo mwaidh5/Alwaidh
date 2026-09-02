@@ -291,7 +291,7 @@ function FilePreview({ item, onClose }: { item: LibraryFile; onClose: () => void
   const image = item.contentType.startsWith('image/');
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/85 p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/85 p-4"
       onClick={onClose}
     >
       <div

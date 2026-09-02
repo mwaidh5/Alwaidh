@@ -462,7 +462,7 @@ function ProductPicker({
   // header covered its top and the floating tab bar sat on the list.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
       onClick={onClose}
     >
       <div
@@ -676,7 +676,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
   // header and the tab bar on phones.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 sm:p-4"
       onClick={onClose}
     >
       {/* A phone gets the whole screen — 88vh of dialog left the composer

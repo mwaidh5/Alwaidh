@@ -642,7 +642,7 @@ function JobsTrashModal({ onClose }: { onClose: () => void }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -1239,7 +1239,7 @@ function JobDetailsModal({
   // address sends drivers wherever Google guesses, which isn't navigation.
   const gmaps = job.mapUrl.trim();
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -1402,7 +1402,7 @@ function JobDialog({
     setState({ ...state, installerEmails: next, installer: next.map(installerName).join(', ') });
   }
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white shadow-xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
           <h2 className="font-bold text-slate-900">{state.id ? t('Edit job') : t('New job')}</h2>
@@ -1710,7 +1710,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
   useScrollLock();
   const { t } = useLang();
   return createPortal(
-    <div className="fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
       <div
         className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white"
         onClick={(e) => e.stopPropagation()}

@@ -203,7 +203,7 @@ export default function SolarPrices() {
             </button>
             <div className="relative">
             {showHint && (
-              <div className="absolute bottom-full right-0 z-10 mb-3 w-60 animate-bounce">
+              <div className="coach-bounce absolute bottom-full right-0 z-10 mb-3 w-60">
                 <div className="relative rounded-xl bg-brand-600 px-3.5 py-2.5 pe-8 text-[13px] font-semibold leading-snug text-white shadow-lg">
                   {t('From here you can switch between cash prices and installment plans 👇')}
                   <button
