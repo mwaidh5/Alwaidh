@@ -16,6 +16,7 @@ import { useAnyModalOpen } from '../lib/useScrollLock';
 import { consumeChatDraft, setChatUnread, useChatOpenSignal, useChatToggleSignal } from '../lib/chatPanel';
 import ChatProductCard from './ChatProductCard';
 import ChatPlaceCard from './ChatPlaceCard';
+import ChatSystemCard from './ChatSystemCard';
 
 function timeText(ms: number | null): string {
   if (!ms) return '';
@@ -161,6 +162,7 @@ export default function ChatWidget() {
                     <ChatProductCard product={m.product} onOpen={() => setOpen(false)} />
                   )}
                   {m.place && <ChatPlaceCard place={m.place} />}
+                  {m.system && <ChatSystemCard system={m.system} onOpen={() => setOpen(false)} />}
                   <p
                     className={`mt-0.5 text-[10px] ${
                       m.from === 'guest' ? 'text-brand-100' : 'text-slate-400'

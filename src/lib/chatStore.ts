@@ -57,6 +57,7 @@ export interface ChatMessage {
   editedMs: number | null; // when the sender last fixed the wording
   product: ChatProductCard | null; // product card attached to the message
   place: ChatPlaceCard | null; // the shop's location, sent as a card
+  system: ChatSystemCard | null; // a solar system from the price sheets
 }
 
 const COLLECTION = 'chats';
@@ -149,19 +150,37 @@ export interface ChatPlaceCard {
   waze: string;
 }
 
-/** Staff replies in a conversation, optionally sharing a product or the
- *  shop's location. */
+/**
+ * One system from the solar price sheets, frozen at the moment it was
+ * sent: the customer keeps the numbers they were quoted even if the
+ * sheet changes tomorrow. Written in Arabic — that is who it is for.
+ */
+export interface ChatSystemCard {
+  kind: 'cash' | 'plan';
+  title: string;
+  rows: { label: string; value: string }[];
+  /** The headline price line. */
+  price: string;
+  /** A second line under it — the IP65 price, or nothing. */
+  extra: string;
+  /** Installment plans, when it is one of those. */
+  plans: { years: number; total: number; monthly: number }[];
+}
+
+/** Staff replies in a conversation, optionally sharing a product, the
+ *  shop's location, or a solar system. */
 export async function sendStaffReply(
   chatId: string,
   text: string,
   product: ChatProductCard | null = null,
   place: ChatPlaceCard | null = null,
+  system: ChatSystemCard | null = null,
 ): Promise<void> {
   const database = db;
   if (!database) throw new Error('Chat needs a database connection.');
   const body = text.trim();
-  // A product card — or a location — on its own is a complete reply.
-  if (!body && !product && !place) return;
+  // A card on its own is a complete reply.
+  if (!body && !product && !place && !system) return;
   await addDoc(messagesRef(database, chatId), {
     text: body,
     from: 'staff',
@@ -170,11 +189,12 @@ export async function sendStaffReply(
     at: serverTimestamp(),
     ...(product ? { product } : {}),
     ...(place ? { place } : {}),
+    ...(system ? { system } : {}),
   });
   await setDoc(
     doc(database, COLLECTION, chatId),
     {
-      lastText: body || `📦 ${product?.name ?? ''}`,
+      lastText: body || (system ? `☀️ ${system.title}` : place ? '📍' : `📦 ${product?.name ?? ''}`),
       lastFrom: 'staff',
       lastAt: serverTimestamp(),
       unreadForGuest: increment(1),
@@ -250,6 +270,26 @@ export function subscribeChatMessages(
             byName: String(data.byName ?? ''),
             atMs: toMillis(data.at),
             editedMs: toMillis(data.editedAt),
+            system: (() => {
+              const sys = data.system as Partial<ChatSystemCard> | undefined;
+              if (!sys?.title) return null;
+              return {
+                kind: sys.kind === 'plan' ? ('plan' as const) : ('cash' as const),
+                title: String(sys.title),
+                rows: Array.isArray(sys.rows)
+                  ? sys.rows.map((r) => ({ label: String(r.label ?? ''), value: String(r.value ?? '') }))
+                  : [],
+                price: String(sys.price ?? ''),
+                extra: String(sys.extra ?? ''),
+                plans: Array.isArray(sys.plans)
+                  ? sys.plans.map((p) => ({
+                      years: Number(p.years ?? 0),
+                      total: Number(p.total ?? 0),
+                      monthly: Number(p.monthly ?? 0),
+                    }))
+                  : [],
+              };
+            })(),
             place: (data.place as ChatPlaceCard | undefined)?.maps
               ? {
                   label: String((data.place as ChatPlaceCard).label ?? ''),

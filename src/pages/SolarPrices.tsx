@@ -106,6 +106,25 @@ export default function SolarPrices() {
 
   useEffect(() => subscribePriceRows(setLive), []);
   useEffect(() => subscribeInstallmentRows(setInstLive), []);
+
+  // The PDF is drawn by two libraries that are fetched on demand. Fetch
+  // them now, while the page is idle, rather than at the tap: a page left
+  // open across a deploy could not find the old build's copies at tap
+  // time, and the app's stale-chunk guard reloaded the whole page — which
+  // read as "the download button just reloads, and works the second
+  // time". Fetched here, a stale copy surfaces at load, where a reload is
+  // invisible, and the tap itself never waits on the network.
+  useEffect(() => {
+    const warm = () => {
+      void import('html2canvas');
+      void import('jspdf');
+    };
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    const id = idle ? idle(warm) : window.setTimeout(warm, 1200);
+    return () => {
+      if (!idle) window.clearTimeout(id);
+    };
+  }, []);
   const rows = live.length ? live : SEED_PRICE_ROWS;
   const instRows = instLive.length ? instLive : SEED_INSTALLMENT_ROWS;
   const money = (n: number) => n.toLocaleString('en-GB');

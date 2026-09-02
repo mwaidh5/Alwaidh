@@ -23,6 +23,9 @@ import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
 import ChatPlaceCard from '../../components/ChatPlaceCard';
+import ChatSystemCard from '../../components/ChatSystemCard';
+import SystemPicker from '../../components/SystemPicker';
+import type { ChatSystemCard as SystemCard } from '../../lib/chatStore';
 import { SHOP_LOCATION } from '../../lib/shopLocation';
 
 function whenText(ms: number | null): string {
@@ -75,6 +78,7 @@ export default function AdminChat() {
   // A product staged to go with the next reply, and the picker itself.
   const [attached, setAttached] = useState<ProductCard | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [systemOpen, setSystemOpen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(
@@ -121,6 +125,21 @@ export default function AdminChat() {
       setDraft((d) => d || text);
       setAttached(sentAttachment);
       setError(e instanceof Error ? e.message : 'Could not send the reply.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** A system from the price sheets, as a card the customer can keep. */
+  async function sendSystem(card: SystemCard) {
+    setSystemOpen(false);
+    if (!activeId || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await sendStaffReply(activeId, '', null, null, card);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not send the system.');
     } finally {
       setBusy(false);
     }
@@ -314,6 +333,7 @@ export default function AdminChat() {
                       )}
                       {m.product && <ChatProductCard product={m.product} newTab />}
                       {m.place && <ChatPlaceCard place={m.place} />}
+                      {m.system && <ChatSystemCard system={m.system} newTab />}
                       <p
                         className={`mt-0.5 text-[10px] ${
                           m.from === 'staff' ? 'text-brand-100' : 'text-slate-400'
@@ -388,6 +408,15 @@ export default function AdminChat() {
                   >
                     📍
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setSystemOpen(true)}
+                    disabled={busy}
+                    title={t('Send a solar system')}
+                    className="btn-secondary flex-none px-3 py-2 text-sm disabled:opacity-50"
+                  >
+                    ☀️
+                  </button>
                   <textarea
                     value={draft}
                     onChange={(e) => {
@@ -420,6 +449,7 @@ export default function AdminChat() {
         </div>
       </div>
 
+      {systemOpen && <SystemPicker onPick={sendSystem} onClose={() => setSystemOpen(false)} />}
       {pickerOpen && (
         <ProductPicker
           onClose={() => setPickerOpen(false)}
