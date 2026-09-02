@@ -444,10 +444,46 @@
     transform: translateY(0) scale(1);
   }
   .alw-win {
-    transition: fill 0.5s ease;
+    transition: opacity 0.6s ease;
   }
   .alw-powered .alw-win {
-    fill: #fcd34d;
+    opacity: 0.28 !important;
+  }
+  /* The house comes alive on power: the television, the lamp, the
+     air-conditioner — and the family on the sofa, cheering. */
+  .alw-tv,
+  .alw-lamp-glow,
+  .alw-shade,
+  .alw-ac-wind {
+    transition: fill 0.5s ease, opacity 0.6s ease;
+  }
+  .alw-powered .alw-tv {
+    fill: #7dd3fc;
+    animation: alw-tv 0.9s steps(2, jump-none) infinite;
+  }
+  .alw-powered .alw-lamp-glow {
+    opacity: 0.85 !important;
+  }
+  .alw-powered .alw-shade {
+    fill: #fde68a;
+  }
+  .alw-powered .alw-ac-wind {
+    opacity: 1 !important;
+    animation: alw-breath 1.4s ease-in-out infinite;
+  }
+  .alw-arms {
+    transform-box: fill-box;
+    transform-origin: center top;
+  }
+  .alw-powered .alw-arms {
+    animation: alw-cheer 0.55s ease-in-out infinite alternate;
+  }
+  .alw-person {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+  }
+  .alw-powered .alw-person {
+    animation: alw-hop 0.55s ease-in-out infinite alternate;
   }
   @media (prefers-reduced-motion: reduce) {
     .alw-panel {
@@ -463,7 +499,11 @@
     .alw-cloud-b,
     .alw-birds,
     .alw-panel.alw-on .alw-shine,
-    .alw-gear.alw-live .alw-cable-flow {
+    .alw-gear.alw-live .alw-cable-flow,
+    .alw-powered .alw-tv,
+    .alw-powered .alw-ac-wind,
+    .alw-powered .alw-arms,
+    .alw-powered .alw-person {
       animation: none;
     }
   }
@@ -480,6 +520,41 @@
   }
   .marquee-pause:hover .marquee-track {
     animation-play-state: paused;
+  }
+  @keyframes alw-tv {
+    from {
+      fill: #7dd3fc;
+    }
+    to {
+      fill: #bae6fd;
+    }
+  }
+  @keyframes alw-breath {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.9;
+    }
+    50% {
+      transform: translateY(1.5px);
+      opacity: 0.45;
+    }
+  }
+  @keyframes alw-cheer {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-150deg);
+    }
+  }
+  @keyframes alw-hop {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-1.6px);
+    }
   }
   @keyframes veil-in {
     from {
