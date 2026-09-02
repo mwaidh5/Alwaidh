@@ -309,6 +309,15 @@
     }
   }
 
+  /* Mixed-direction text — an Arabic sentence with Latin brand names in
+     it — laid out by its own first letter, not the page's direction.
+     Without this a left-to-right bubble reorders the Arabic runs and the
+     sentence arrives jumbled. */
+  .bidi {
+    unicode-bidi: plaintext;
+    text-align: start;
+  }
+
   /* A horizontal scroller that doesn't show its scrollbar. */
   .scrollbar-none {
     scrollbar-width: none;

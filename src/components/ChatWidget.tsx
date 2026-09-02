@@ -157,7 +157,7 @@ export default function ChatWidget() {
                       : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
                   } ${m.atMs === null ? 'opacity-60' : 'opacity-100'}`}
                 >
-                  {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
+                  {m.text && <p dir="auto" className="bidi whitespace-pre-wrap break-words">{m.text}</p>}
                   {m.product && (
                     <ChatProductCard product={m.product} onOpen={() => setOpen(false)} />
                   )}

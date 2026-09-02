@@ -236,7 +236,8 @@ export default function AdminChat() {
                         </span>
                       </span>
                       <span
-                        className={`block truncate text-xs ${
+                        dir="auto"
+                        className={`bidi block truncate text-xs ${
                           c.unreadForStaff ? 'font-semibold text-slate-800' : 'text-slate-500'
                         }`}
                       >
@@ -332,7 +333,7 @@ export default function AdminChat() {
                           </div>
                         </div>
                       ) : (
-                        m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                        m.text && <p dir="auto" className="bidi whitespace-pre-wrap break-words">{m.text}</p>
                       )}
                       {m.product && <ChatProductCard product={m.product} newTab />}
                       {m.place && <ChatPlaceCard place={m.place} />}
@@ -788,7 +789,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
                         : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                    <p dir="auto" className="bidi whitespace-pre-wrap break-words">{m.content}</p>
                     {!!m.learned?.length && (
                       <div className="mt-1.5 space-y-1">
                         {m.learned.map((f, n) => (

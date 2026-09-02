@@ -222,7 +222,8 @@ export default function AdminTeam() {
                           </span>
                         </span>
                         <span
-                          className={`block truncate text-xs ${
+                          dir="auto"
+                          className={`bidi block truncate text-xs ${
                             unread ? 'font-semibold text-slate-800' : 'text-slate-500'
                           }`}
                         >
@@ -352,7 +353,7 @@ export default function AdminTeam() {
                           </div>
                         )}
                         {editingMsg?.id !== m.id && m.text && (
-                          <p className="whitespace-pre-wrap break-words">
+                          <p dir="auto" className="bidi whitespace-pre-wrap break-words">
                             {m.text.split(/(@[\w.-]+)/).map((part, i) =>
                               part.startsWith('@') ? (
                                 <span

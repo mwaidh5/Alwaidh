@@ -1109,7 +1109,7 @@ function ContactDetails({
               <div className="space-y-2">
                 {contact.notes.map((n) => (
                   <div key={n.id || `${n.atMs}`} className="rounded-xl bg-slate-50 p-3">
-                    <p className="whitespace-pre-wrap break-words text-sm text-slate-800">{n.text}</p>
+                    <p dir="auto" className="bidi whitespace-pre-wrap break-words text-sm text-slate-800">{n.text}</p>
                     <p className="mt-1 text-[11px] text-slate-400">
                       {staffName(n.by)} · {fmtWhen(n.atMs)}
                     </p>
