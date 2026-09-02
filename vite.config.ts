@@ -25,6 +25,8 @@ export default defineConfig({
         start_url: '/admin',
         scope: '/',
         display: 'standalone',
+        // A shop in your hand is held upright; the installed web app says so too.
+        orientation: 'portrait',
         background_color: '#ffffff',
         theme_color: '#2563eb',
         icons: [
