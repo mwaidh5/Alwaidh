@@ -7,7 +7,11 @@ export default defineConfig({
   // Stamped at build time so the dashboard can show which version a device
   // is actually running — the quickest way to spot a stale one.
   define: {
-    __APP_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+    // Baghdad time, not UTC: the stamp exists so the owner can match "the
+    // build at 4am" to what he sees, and he reads his clock, not Greenwich.
+    __APP_BUILD__: JSON.stringify(
+      new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Baghdad' }).slice(0, 16),
+    ),
   },
   plugins: [
     react(),
