@@ -490,7 +490,8 @@ export const teachAssistant = onCall(
     if (learned.length) {
       const knowledge = String(cfg.knowledge ?? '').trimEnd();
       const next = (knowledge ? knowledge + '\n' : '') + learned.join('\n');
-      await cfgRef.set({ knowledge: next }, { merge: true });
+      // The previous text rides along, so one bad save is never the end of it.
+      await cfgRef.set({ knowledge: next, knowledgeBackup: knowledge }, { merge: true });
     }
 
     return { reply: reply || (learned.length ? 'تم، حفظتها. 👍' : ''), learned };
@@ -587,7 +588,7 @@ export const learnFromChats = onCall(
 
     if (learned.length) {
       const next = (known.trimEnd() ? known.trimEnd() + '\n' : '') + learned.join('\n');
-      await cfgRef.set({ knowledge: next }, { merge: true });
+      await cfgRef.set({ knowledge: next, knowledgeBackup: known }, { merge: true });
     }
     return { learned, reviewed: transcripts.length };
   },
