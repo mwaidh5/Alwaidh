@@ -15,7 +15,7 @@ import {
 } from '../../lib/chatStore';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { loadAssistantConfig, saveAssistantConfig } from '../../lib/assistantStore';
+import { loadAssistantConfig, saveAssistantEnabled, saveAssistantKnowledge } from '../../lib/assistantStore';
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useScrollLock } from '../../lib/useScrollLock';
@@ -621,7 +621,8 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setMsg('');
     try {
-      await saveAssistantConfig({ enabled, knowledge });
+      if (!loaded) throw new Error('The notes have not loaded yet.');
+      await saveAssistantKnowledge(knowledge);
       setMsg('Saved. The assistant uses the new notes on its very next reply.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Save failed.');
@@ -633,7 +634,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
   async function saveEnabled(next: boolean) {
     setEnabled(next);
     try {
-      await saveAssistantConfig({ enabled: next, knowledge });
+      await saveAssistantEnabled(next);
     } catch {
       /* the Save button in Notes still covers it */
     }

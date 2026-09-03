@@ -24,7 +24,31 @@ export async function loadAssistantConfig(): Promise<AssistantConfig> {
   };
 }
 
-export async function saveAssistantConfig(cfg: AssistantConfig): Promise<void> {
+/** The switch alone. It never touches the notes, so flipping it before
+ *  they have loaded cannot wipe them - which is exactly how twenty lines
+ *  of notes vanished once. */
+export async function saveAssistantEnabled(enabled: boolean): Promise<void> {
   if (!db) throw new Error('Not connected.');
-  await setDoc(doc(db, ...REF), cfg, { merge: true });
+  await setDoc(doc(db, ...REF), { enabled }, { merge: true });
+}
+
+/**
+ * The notes. The text they replace is kept alongside as a backup, so one
+ * bad save is never the end of it - and an empty box never overwrites
+ * notes that exist: clearing them has to be deliberate.
+ */
+export async function saveAssistantKnowledge(knowledge: string, { allowEmpty = false } = {}): Promise<void> {
+  if (!db) throw new Error('Not connected.');
+  const ref = doc(db, ...REF);
+  const current = String((await getDoc(ref)).data()?.knowledge ?? '');
+  if (!knowledge.trim() && current.trim() && !allowEmpty) {
+    throw new Error('The notes box is empty. Reload the page to see the saved notes; to erase them on purpose, delete them line by line.');
+  }
+  await setDoc(ref, { knowledge, knowledgeBackup: current }, { merge: true });
+}
+
+/** @deprecated kept for older call sites; prefer the two above. */
+export async function saveAssistantConfig(cfg: AssistantConfig): Promise<void> {
+  await saveAssistantEnabled(cfg.enabled);
+  await saveAssistantKnowledge(cfg.knowledge);
 }
