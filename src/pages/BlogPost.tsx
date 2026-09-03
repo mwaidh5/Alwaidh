@@ -66,6 +66,8 @@ export default function BlogPost() {
           text: 'See our camera prices, or ask us anything — the site survey is free.',
           button: 'See camera prices',
           to: '/shop?category=tiandy-cameras',
+          box: 'border-tiandy-300 bg-tiandy-50',
+          buttonClass: 'bg-tiandy-600 text-white hover:bg-tiandy-700',
         }
       : loaded?.topic === 'computers'
         ? {
@@ -73,12 +75,16 @@ export default function BlogPost() {
             text: 'See our computers, or ask us which one fits your work.',
             button: 'See computer prices',
             to: '/shop?category=computers',
+            box: 'border-brand-200 bg-brand-50',
+            buttonClass: 'bg-brand-600 text-white hover:bg-brand-700',
           }
         : {
             title: 'Thinking about solar for your home or business?',
             text: 'See our system prices, or ask us anything — the survey is free.',
             button: 'See solar prices',
             to: '/solar-prices',
+            box: 'border-amber-200 bg-amber-50',
+            buttonClass: 'bg-amber-500 text-amber-950 hover:bg-amber-400',
           };
   const pick = (en: string, ar: string) => (lang === 'ar' && ar ? ar : en);
 
@@ -145,13 +151,16 @@ export default function BlogPost() {
         )}
         <div>{renderBody(pick(post.body, post.bodyAr))}</div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-6">
+        <div className={`mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-6 ${cta.box}`}>
           <div>
             <p className="font-extrabold text-slate-900">{t(cta.title)}</p>
             <p className="mt-1 text-sm text-slate-600">{t(cta.text)}</p>
           </div>
           <div className="flex gap-2">
-            <Link to={cta.to} className="btn-primary">
+            <Link
+              to={cta.to}
+              className={`inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition ${cta.buttonClass}`}
+            >
               {t(cta.button)}
             </Link>
             <button type="button" onClick={() => openChat()} className="btn-secondary">
