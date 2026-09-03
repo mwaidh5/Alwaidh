@@ -2,7 +2,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { getFirestore, FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
-import { pushUsers, staffLists } from './notify';
+import { pushUsers, staffLists, viewersOf } from './notify';
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
@@ -82,9 +82,13 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
  * the shop's own words — and the assistant's own replies are excluded,
  * so it never learns from itself.
  */
+let examplesCache: { at: number; text: string } | null = null;
+const EXAMPLES_TTL = 5 * 60_000;
+
 async function recentStaffExamples(db: Firestore): Promise<string> {
+  if (examplesCache && Date.now() - examplesCache.at < EXAMPLES_TTL) return examplesCache.text;
   try {
-    const chats = await db.collection('chats').orderBy('lastAt', 'desc').limit(25).get();
+    const chats = await db.collection('chats').orderBy('lastAt', 'desc').limit(12).get();
     const pairs: string[] = [];
     for (const chat of chats.docs) {
       if (pairs.length >= 8) break;
@@ -103,12 +107,46 @@ async function recentStaffExamples(db: Firestore): Promise<string> {
         }
       }
     }
-    return pairs.length
+    const text = pairs.length
       ? ['', 'HOW THE TEAM ANSWERS (real exchanges — copy this tone, not these prices):', ...pairs].join('\n')
       : '';
+    examplesCache = { at: Date.now(), text };
+    return text;
   } catch {
     return '';
   }
+}
+
+/**
+ * Is a colleague in this conversation right now? Typing within the last
+ * minute and a half, or a message of theirs since `sinceMs`. Asked before
+ * the assistant starts, and again before it speaks — an answer that took
+ * ten seconds to write may have been overtaken by a person.
+ */
+async function humanActive(db: Firestore, chatId: string, sinceMs: number): Promise<boolean> {
+  const chatDoc = await db.doc(`chats/${chatId}`).get();
+  const typingAt = chatDoc.get('staffTypingAt');
+  if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return true;
+  const recent = await db
+    .collection(`chats/${chatId}/messages`)
+    .orderBy('at', 'desc')
+    .limit(6)
+    .get();
+  return recent.docs.some((d) => {
+    const m = d.data();
+    return (
+      m.from === 'staff' && m.by !== ASSISTANT_BY && m.at instanceof Timestamp && m.at.toMillis() > sinceMs
+    );
+  });
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** The one sentence that hands a customer to the team, in their language. */
+function handoffLine(sample: string): string {
+  return /[\u0600-\u06FF]/.test(sample)
+    ? 'هذا السؤال لازم زميلي بالفريق يجاوبك عليه، رح يرد عليك هنا بأقرب وقت.'
+    : 'A colleague from the team will answer this one — they will reply here shortly.';
 }
 
 const IDENTITY =
@@ -153,7 +191,8 @@ export const assistantReply = onDocumentCreated(
   {
     document: 'chats/{chatId}/messages/{messageId}',
     secrets: [ANTHROPIC_API_KEY],
-    timeoutSeconds: 60,
+    // Room for the head start below plus a slow model turn.
+    timeoutSeconds: 120,
     // A cold start puts several seconds between a customer's question and
     // the first word of the answer. Keeping one instance awake
     // (minInstances: 1) removes that, at the cost of a small standing
@@ -184,25 +223,34 @@ export const assistantReply = onDocumentCreated(
       .get();
     const history = msgsSnap.docs.map((d) => d.data()).reverse();
 
-    // Silence belongs to whoever is actually writing. Reading the thread
-    // is not a claim on it — the assistant stands down the moment a
-    // colleague types a letter, and for a minute after they send, so a
-    // two-part answer isn't interrupted mid-thought.
+    // A conversation a colleague has joined is theirs. Typing silences the
+    // assistant at once; a human reply keeps it silent for ten minutes —
+    // people answer in two- and four-minute gaps, and a bot that jumps in
+    // between them gives the customer two answers to one question.
     const chatDoc = await db.doc(`chats/${chatId}`).get();
     const typingAt = chatDoc.get('staffTypingAt');
     if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return;
 
-    const aMinuteAgo = Date.now() - 60_000;
+    const tenMinAgo = Date.now() - 10 * 60_000;
     if (
       history.some(
         (m) =>
           m.from === 'staff' &&
           m.by !== ASSISTANT_BY &&
           m.at instanceof Timestamp &&
-          m.at.toMillis() > aMinuteAgo,
+          m.at.toMillis() > tenMinAgo,
       )
     ) {
       return;
+    }
+
+    // A colleague has this very chat open on a screen: give them a head
+    // start. If they start typing or answer in the meantime, stand down.
+    const askedAt = msg.at instanceof Timestamp ? msg.at.toMillis() : Date.now();
+    const watching = await viewersOf([`chat:${chatId}`]);
+    if (watching.size) {
+      await sleep(25_000);
+      if (await humanActive(db, chatId, askedAt)) return;
     }
 
     const knowledge = String(cfg.knowledge ?? '');
@@ -254,12 +302,10 @@ export const assistantReply = onDocumentCreated(
       console.warn('assistant:', e instanceof Error ? e.message : e);
       return;
     }
-    if (!reply) return;
-
     // A PRODUCT: <id> line at the tail becomes a real product card — the
     // same attachment staff send by hand.
     let card: Record<string, unknown> | null = null;
-    let needsStaff = false;
+    let needsStaff = !reply;
     const kept: string[] = [];
     for (const line of reply.split('\n')) {
       if (/^\s*NOTIFY_STAFF\s*$/.test(line)) {
@@ -283,8 +329,18 @@ export const assistantReply = onDocumentCreated(
       }
       kept.push(line);
     }
-    const body = kept.join('\n').trim();
-    if (!body && !card) return;
+    // The hand-off is always the same single sentence: the model wrote
+    // its own version twice in one reply, and once wrote only the marker
+    // — which used to mean the customer got nothing at all.
+    let body = kept.join('\n').trim();
+    if (needsStaff || !body) {
+      needsStaff = true;
+      body = handoffLine(String(msg.text ?? ''));
+    }
+
+    // One last look before speaking: a person may have taken over while
+    // the answer was being written.
+    if (await humanActive(db, chatId, askedAt)) return;
 
     // Filed as staff so the widget styles it like a team reply; the staff
     // unread count is left alone so a person still reviews the thread.
