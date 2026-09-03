@@ -128,7 +128,8 @@ export default function Lead() {
               <input
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder={t('Your area (optional)')}
+                placeholder={t('Your area')}
+                required
                 className="input"
               />
               {/* honeypot — invisible to people, irresistible to bots */}
@@ -142,10 +143,10 @@ export default function Lead() {
               />
               {error && <p className="text-sm font-semibold text-red-700">{error}</p>}
               <button type="submit" disabled={busy} className="btn-primary w-full py-3 disabled:opacity-60">
-                {busy ? '…' : `📞 ${t('Call me back')}`}
+                {busy ? '…' : `📞 ${t('Register and we will contact you')}`}
               </button>
               <p className="text-center text-[11px] text-slate-400">
-                {t('Free consultation · 2-year installation warranty · Baghdad and all provinces')}
+                {t('Solar system with a 5-year warranty · Baghdad and all provinces')}
               </p>
             </form>
           </div>
