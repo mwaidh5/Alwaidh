@@ -57,11 +57,18 @@ export async function push(topic: string, title: string, body: string, link: str
  * as the author's own.
  */
 export async function aliasGroups(): Promise<string[][]> {
+  // One group per entry, written "a@x.com = b@y.com" (Firestore cannot
+  // hold a list inside a list). Commas, semicolons and spaces also split.
   const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
   const raw = Array.isArray(site.staffAliases) ? site.staffAliases : [];
   return raw
-    .filter((g: unknown) => Array.isArray(g))
-    .map((g: unknown[]) => g.map((e) => String(e).trim().toLowerCase()).filter(Boolean));
+    .map((g: unknown) =>
+      String(g ?? '')
+        .split(/[=,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.includes('@')),
+    )
+    .filter((g: string[]) => g.length > 1);
 }
 
 /** Every address that is the same person as any address in `emails`. */

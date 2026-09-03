@@ -19,7 +19,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
 import { buildEmail, buildOrderEmail, buildStockEmail, type EmailKind } from './emails';
-import { push, pushUsers, staffLists, userTopic, viewersOf } from './notify';
+import { push, pushUsers, sameAs, staffLists, userTopic, viewersOf } from './notify';
 
 initializeApp();
 
@@ -195,10 +195,11 @@ export const notifyTeamMessage = onDocumentCreated(
       (msg.job ? `🛠️ ${preview((msg.job as { customer?: string }).customer, 40)}` : '') ||
       'New message';
 
-    const viewing = await viewersOf(['team', `team:${chatId}`]);
+    const viewing = await sameAs(await viewersOf(['team', `team:${chatId}`]));
+    const selves = await sameAs([author]);
     await Promise.all(
       members
-        .filter((m) => m && m !== author && !viewing.has(m.toLowerCase()))
+        .filter((m) => m && !selves.has(m.toLowerCase()) && !viewing.has(m.toLowerCase()))
         .map((m) =>
           push(
             userTopic(m),
