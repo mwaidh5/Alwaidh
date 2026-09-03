@@ -14,16 +14,16 @@ import { db } from '../firebase';
 
 /**
  * The Central Bank initiative systems: sold on installments, priced from
- * one number — the 7-year total the bank's table publishes. Everything
- * else derives from it:
+ * one number — the cash price staff type in, kept exactly as typed.
+ * Everything else derives from it:
  *
- *   cash price      = 7-year total ÷ 1.225  (3% a year, plus a flat 1.5%)
  *   N-year total    = cash × (1 + 0.03 × N + 0.015)
  *   monthly payment = N-year total ÷ (N × 12)
  *
  * So a one-year plan costs 4.5% over cash and the seven-year plan 22.5%.
- * Everything is rounded to the nearest thousand dinars — nobody quotes
- * hundreds on a fifteen-million-dinar system.
+ * The derived numbers are rounded to the nearest thousand dinars — nobody
+ * quotes hundreds on a fifteen-million-dinar system — but the typed cash
+ * price is never touched.
  */
 export interface InstallmentRow {
   id: string;
@@ -37,7 +37,10 @@ export interface InstallmentRow {
   batteryKwh: string;
   batteryLabel: string;
   backupHours: string;
-  /** The published 7-year total, in dinars. */
+  /** The cash price, in dinars, exactly as staff typed it. */
+  cash: number;
+  /** The 7-year total, derived from the cash price and kept for older
+   *  readers of the collection. */
   price7: number;
 }
 
@@ -55,22 +58,26 @@ export function planRate(years: number): number {
   return 1 + YEAR_RATE * years + BASE_RATE;
 }
 
-export function cashPrice(price7: number): number {
-  return round1k(price7 / planRate(FULL_YEARS));
+/** The cash price is the typed number itself. */
+export function cashPrice(cash: number): number {
+  return cash;
 }
-export function planTotal(price7: number, years: number): number {
-  if (years >= FULL_YEARS) return round1k(price7);
-  return round1k(cashPrice(price7) * planRate(years));
+export function planTotal(cash: number, years: number): number {
+  return round1k(cash * planRate(years));
 }
-export function planMonthly(price7: number, years: number): number {
-  return round1k(planTotal(price7, years) / (years * 12));
+export function planMonthly(cash: number, years: number): number {
+  return round1k(planTotal(cash, years) / (years * 12));
+}
+/** The bank's 7-year figure for a cash price, unrounded. */
+export function price7Of(cash: number): number {
+  return Math.round(cash * planRate(FULL_YEARS));
 }
 
 const COLLECTION = 'solarInstallments';
 const LS_KEY = 'alwaidh.solarInstallments.v1';
 
 /** The bank's table, as published (August 2026). */
-const SEED: Omit<InstallmentRow, 'id'>[] = [
+const SEED: Omit<InstallmentRow, 'id' | 'cash'>[] = [
   { order: 0, sizeKw: '3', sizeAmp: '13', inverterKw: '6', panelsKwp: '4.55', panelsCount: '7', batteryKwh: '16', batteryLabel: 'بطارية واحدة', backupHours: '4.25', price7: 8470000 },
   { order: 1, sizeKw: '5', sizeAmp: '22', inverterKw: '8', panelsKwp: '7.8', panelsCount: '12', batteryKwh: '32', batteryLabel: 'بطاريتين', backupHours: '5', price7: 14520000 },
   { order: 2, sizeKw: '6', sizeAmp: '26', inverterKw: '8', panelsKwp: '9.1', panelsCount: '14', batteryKwh: '32', batteryLabel: 'بطاريتين', backupHours: '4.25', price7: 15488000 },
@@ -79,7 +86,11 @@ const SEED: Omit<InstallmentRow, 'id'>[] = [
   { order: 5, sizeKw: '10', sizeAmp: '45', inverterKw: '12', panelsKwp: '15.6', panelsCount: '24', batteryKwh: '48', batteryLabel: 'ثلاث بطاريات', backupHours: '4', price7: 24200000 },
 ];
 
-export const SEED_INSTALLMENT_ROWS: InstallmentRow[] = SEED.map((r, i) => ({ ...r, id: `sample-${i}` }));
+export const SEED_INSTALLMENT_ROWS: InstallmentRow[] = SEED.map((r, i) => ({
+  ...r,
+  id: `sample-${i}`,
+  cash: round1k(r.price7 / planRate(FULL_YEARS)),
+}));
 
 function normalize(data: Record<string, unknown>, id: string): InstallmentRow {
   return {
@@ -93,6 +104,14 @@ function normalize(data: Record<string, unknown>, id: string): InstallmentRow {
     batteryKwh: String(data.batteryKwh ?? ''),
     batteryLabel: String(data.batteryLabel ?? ''),
     backupHours: String(data.backupHours ?? ''),
+    // Rows saved before the cash price was stored carry only the bank's
+    // 7-year figure; their cash price is read back from it, to the
+    // thousand, the way the bank's table lists it.
+    cash: Number(data.cash) > 0
+      ? Number(data.cash)
+      : Number(data.price7) > 0
+        ? round1k(Number(data.price7) / planRate(FULL_YEARS))
+        : 0,
     price7: Number(data.price7 ?? 0),
   };
 }
@@ -132,7 +151,7 @@ export async function listInstallmentRows(): Promise<InstallmentRow[]> {
 
 export async function createInstallmentRow(order: number): Promise<void> {
   const database = db;
-  const row = { ...SEED[0], order, sizeKw: '', sizeAmp: '', inverterKw: '', panelsKwp: '', panelsCount: '', batteryKwh: '', batteryLabel: '', backupHours: '', price7: 0 };
+  const row = { ...SEED[0], order, sizeKw: '', sizeAmp: '', inverterKw: '', panelsKwp: '', panelsCount: '', batteryKwh: '', batteryLabel: '', backupHours: '', cash: 0, price7: 0 };
   if (database) {
     await addDoc(collection(database, COLLECTION), { ...row, createdAt: serverTimestamp() });
     return;
@@ -146,7 +165,12 @@ export async function upsertInstallmentRow(row: InstallmentRow): Promise<void> {
   const database = db;
   if (database) {
     const { id, ...rest } = row;
-    await setDoc(doc(database, COLLECTION, id), { ...rest, updatedAt: serverTimestamp() });
+    await setDoc(doc(database, COLLECTION, id), {
+      ...rest,
+      cash: row.cash,
+      price7: price7Of(row.cash),
+      updatedAt: serverTimestamp(),
+    });
     return;
   }
   const list = readLocal();
