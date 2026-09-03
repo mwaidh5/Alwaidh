@@ -611,24 +611,34 @@ export default function SolarPrices() {
             }}
             className="mx-auto flex min-h-[877px] w-[1240px] max-w-none flex-col bg-white p-8 text-slate-900"
           >
-            <div className="flex items-center justify-between gap-6">
-              <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
-                ⚡ {t('Installments')}
-              </span>
-              <div className="flex flex-none items-center gap-4">
+            {/* One header line: the chip, the company name in the site's own
+                Arabic face, and the logos — all on the same baseline. */}
+            <div className="grid items-center gap-6" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+              <div className="flex items-center">
+                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-5 py-2 text-base font-bold text-brand-700">
+                  ⚡ {t('Installments')}
+                </span>
+              </div>
+              <p
+                dir="rtl"
+                className="text-center text-4xl font-black leading-tight text-slate-900"
+                style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
+              >
+                شركة تقنية الواعظ
+              </p>
+              <div className="flex items-center justify-end gap-6">
                 {settings.solarLogo ? (
-                  <img src={settings.solarLogo} alt="SolarMax" className="h-10 w-auto" />
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-16 w-auto" />
                 ) : (
                   <div dir="ltr" className="text-start leading-tight">
-                    <p className="text-xl font-black text-slate-900">SolarMax®</p>
-                    <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
+                    <p className="text-2xl font-black text-slate-900">SolarMax®</p>
+                    <p className="text-base font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-14 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-20 w-auto" />}
               </div>
             </div>
-            <p className="mt-2 text-center text-lg font-black text-slate-800">شركة تقنية الواعظ</p>
-            <h2 className="mb-1 mt-1 text-2xl font-black leading-snug text-slate-900">
+            <h2 className="mb-1 mt-4 text-2xl font-black leading-snug text-slate-900">
               {t('Installment systems — Central Bank initiative')}
             </h2>
             <p className="text-sm leading-relaxed text-slate-500">
@@ -661,13 +671,14 @@ export default function SolarPrices() {
                   className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-1.5 last:border-b-0"
                   style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
                 >
-                  <div className="flex items-center justify-center gap-2.5">
-                    <span className="h-6 w-1 flex-none rounded-full bg-brand-600" />
-                    <span dir="ltr" className="text-xl font-black text-slate-900">
-                      {row.sizeAmp} A
-                    </span>
+                  <div dir="ltr" className="text-center text-xl font-black text-slate-900">
+                    {row.sizeAmp} A
                   </div>
-                  <div dir="ltr" className="text-center text-[15px] text-slate-600">{row.inverterKw} KW IP65</div>
+                  {/* Shown as typed: a bare number gets its unit, anything
+                      else (an IP rating, two inverters) is the staff's own words. */}
+                  <div dir="ltr" className="text-center text-[15px] text-slate-600">
+                    {/^\d+(\.\d+)?$/.test(row.inverterKw.trim()) ? `${row.inverterKw} KW` : row.inverterKw}
+                  </div>
                   <div dir="ltr" className="text-center text-[15px] text-slate-600">
                     {row.panelsCount}
                   </div>
@@ -716,11 +727,11 @@ export default function SolarPrices() {
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-8 border-t border-slate-200 pt-3">
+            <div className="mt-3 flex items-center justify-center gap-14 border-t border-slate-200 pt-3">
               {(settings.brands ?? [])
                 .filter((b) => /jinko|saj|hailei/i.test(b.name) && b.image)
                 .map((b) => (
-                  <img key={b.name} src={b.image} alt={b.name} className="h-7 w-auto object-contain" />
+                  <img key={b.name} src={b.image} alt={b.name} className="h-12 w-auto object-contain" />
                 ))}
             </div>
 
@@ -735,7 +746,7 @@ export default function SolarPrices() {
                   · <span className="font-bold text-brand-700">{WEBSITE}</span>
                 </p>
               </div>
-              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-10 w-auto opacity-90" />}
+              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-14 w-auto opacity-90" />}
             </div>
           </div>
         </div>
