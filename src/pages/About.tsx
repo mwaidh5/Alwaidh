@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { submitContact, storageMode } from '../lib/contactSubmissions';
 import { allBrands } from '../data/brands';
 import { useSettings } from '../lib/useSettings';
+import { useAuth } from '../context/AuthContext';
+import { updateSettingsField } from '../lib/settingsStore';
+import { uploadImage } from '../lib/imageUpload';
+import MediaPicker from '../components/MediaPicker';
 import { useLang } from '../lib/i18n';
 import { useSeo, organizationJsonLd } from '../lib/seo';
 
@@ -113,15 +117,50 @@ export default function About() {
   const { t, lang } = useLang();
   const [errorMsg, setErrorMsg] = useState('');
   const settings = useSettings();
+  const { isAdmin } = useAuth();
 
   // Each card's own photo from Settings first; the homepage banners and
-  // stock shots only fill in until those are uploaded.
+  // stock shots only fill in until those are uploaded. The cameras card
+  // never borrows a homepage banner - that slot shows laptops.
   const ABOUT_KEYS = ['computers', 'solar', 'cameras'];
   const cardImage = (i: number) =>
     settings.aboutImages?.[ABOUT_KEYS[i]] ||
-    settings.heroSlides?.[i]?.image ||
+    (i === 2 ? '' : settings.heroSlides?.[i]?.image) ||
     (i === 0 ? settings.heroImage : i === 1 ? settings.solarBannerImage : '') ||
     STOCK[i];
+
+  // An admin changes a card's photo right here - upload one, or pick one
+  // already on the site - and it is saved to the same Settings field.
+  const [picking, setPicking] = useState<number | null>(null);
+  const [photoBusy, setPhotoBusy] = useState<number | null>(null);
+  const [photoError, setPhotoError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
+  const uploadTarget = useRef(0);
+  async function setCardImage(i: number, url: string) {
+    setPhotoBusy(i);
+    setPhotoError('');
+    try {
+      await updateSettingsField('aboutImages', { ...(settings.aboutImages ?? {}), [ABOUT_KEYS[i]]: url });
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : 'Could not save the photo.');
+    } finally {
+      setPhotoBusy(null);
+    }
+  }
+  async function uploadCardImage(file: File) {
+    const i = uploadTarget.current;
+    setPhotoBusy(i);
+    setPhotoError('');
+    try {
+      const { url } = await uploadImage(file, 'site');
+      await setCardImage(i, url);
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : 'Upload failed.');
+      setPhotoBusy(null);
+    } finally {
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -242,6 +281,30 @@ export default function About() {
           </p>
         </div>
 
+        {isAdmin && (
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void uploadCardImage(f);
+              }}
+            />
+            <MediaPicker
+              open={picking !== null}
+              onClose={() => setPicking(null)}
+              onSelect={(urls) => {
+                const i = picking;
+                setPicking(null);
+                if (i !== null && urls[0]) void setCardImage(i, urls[0]);
+              }}
+            />
+            {photoError && <p className="mb-3 text-sm font-semibold text-red-700">{photoError}</p>}
+          </>
+        )}
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {IDENTITIES.map((c, i) => (
             <article
@@ -255,6 +318,29 @@ export default function About() {
                 <span className="absolute top-3.5 rounded-full bg-slate-950/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur-sm ltr:left-3.5 rtl:right-3.5">
                   {t(c.badge)}
                 </span>
+                {isAdmin && (
+                  <div className="absolute bottom-3 flex gap-1.5 ltr:right-3 rtl:left-3">
+                    <button
+                      type="button"
+                      disabled={photoBusy === i}
+                      onClick={() => {
+                        uploadTarget.current = i;
+                        fileInput.current?.click();
+                      }}
+                      className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow backdrop-blur-sm hover:bg-white disabled:opacity-60"
+                    >
+                      {photoBusy === i ? t('Uploading…') : `📷 ${t('Upload photo')}`}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={photoBusy === i}
+                      onClick={() => setPicking(i)}
+                      className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow backdrop-blur-sm hover:bg-white disabled:opacity-60"
+                    >
+                      🖼 {t('Choose')}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex flex-1 flex-col gap-4 p-6">
                 <div>
