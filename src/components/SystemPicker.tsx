@@ -43,12 +43,12 @@ function planCard(row: InstallmentRow): ChatSystemCard {
       { label: 'البطاريات', value: `${row.batteryKwh} كيلو واط ساعة — ${row.batteryLabel}` },
       { label: 'ساعات التغذية', value: `${row.backupHours} ساعة` },
     ],
-    price: `نقداً: ${money(cashPrice(row.price7))} دينار`,
+    price: `نقداً: ${money(cashPrice(row.cash))} دينار`,
     extra: 'السعر يشمل التنصيب والتشغيل',
     plans: [3, 5, 7].map((y) => ({
       years: y,
-      total: planTotal(row.price7, y),
-      monthly: planMonthly(row.price7, y),
+      total: planTotal(row.cash, y),
+      monthly: planMonthly(row.cash, y),
     })),
   };
 }
@@ -156,9 +156,9 @@ export default function SystemPicker({
                     </span>
                     <span className="flex-none text-end text-xs font-bold text-slate-700">
                       <span className="block text-sm font-extrabold text-brand-700">
-                        {money(planMonthly(row.price7, 7))} / شهر
+                        {money(planMonthly(row.cash, 7))} / شهر
                       </span>
-                      نقداً {money(cashPrice(row.price7))}
+                      نقداً {money(cashPrice(row.cash))}
                     </span>
                   </button>
                 </li>

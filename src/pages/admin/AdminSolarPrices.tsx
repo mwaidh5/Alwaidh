@@ -13,6 +13,7 @@ import {
   upsertInstallmentRow,
   deleteInstallmentRow,
   planMonthly,
+  planTotal,
   type InstallmentRow,
 } from '../../lib/solarInstallmentsStore';
 import { useSettings } from '../../lib/useSettings';
@@ -188,11 +189,10 @@ export default function AdminSolarPrices() {
 
 /**
  * The Central Bank initiative systems, sold on installments. Staff edit
- * the specs and the published 7-year total; every other number on the
- * public page derives from that one price — cash is the total divided by
- * 1.21 (3% per year over 7 years), an N-year plan is cash times
- * (1 + 0.03 x N), and the monthly payment is the plan divided by its
- * months.
+ * the specs and the cash price; the cash price is stored exactly as
+ * typed, and every other number on the public page derives from it — an
+ * N-year plan is cash times (1 + 0.03 x N + 0.015), the monthly payment
+ * is the plan divided by its months.
  */
 function InstallmentsEditor() {
   const [rows, setRows] = useState<InstallmentRow[]>([]);
@@ -205,12 +205,12 @@ function InstallmentsEditor() {
   const setField = (r: InstallmentRow, key: keyof InstallmentRow, value: string) =>
     setDrafts((d) => ({
       ...d,
-      [r.id]: { ...view(r), [key]: key === 'price7' ? Number(value.replace(/[^0-9]/g, '')) * 1.225 : value },
+      [r.id]: { ...view(r), [key]: key === 'cash' ? Number(value.replace(/[^0-9]/g, '')) : value },
     }));
   const save = (r: InstallmentRow) => {
     const draft = drafts[r.id];
     if (!draft) return;
-    upsertInstallmentRow({ ...draft, price7: Math.round(draft.price7) }).catch(fail);
+    upsertInstallmentRow(draft).catch(fail);
   };
 
   // No system-kW and no panel-kWp: amperes name the system and the panel
@@ -222,7 +222,7 @@ function InstallmentsEditor() {
     { key: 'batteryKwh', label: 'البطارية KWh' },
     { key: 'batteryLabel', label: 'وصف البطاريات', width: 'min-w-[130px]' },
     { key: 'backupHours', label: 'ساعات التغذية' },
-    { key: 'price7', label: 'السعر النقدي', width: 'min-w-[110px]' },
+    { key: 'cash', label: 'السعر النقدي', width: 'min-w-[110px]' },
   ];
 
   return (
@@ -231,8 +231,9 @@ function InstallmentsEditor() {
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Installments — مبادرة البنك المركزي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Enter the CASH price only — the 7-year bank price (× 1.225), every shorter plan
-            (3% a year plus a flat 1.5%) and the monthly amounts are all calculated automatically.
+            Enter the CASH price only, and it is kept exactly as you type it. The 7-year bank
+            price (× 1.225), every shorter plan (3% a year plus a flat 1.5%) and the monthly
+            amounts are calculated from it.
           </p>
         </div>
         <button
@@ -281,13 +282,7 @@ function InstallmentsEditor() {
                     {COLS.map((c) => (
                       <td key={c.key} className="border-b border-slate-100 p-1">
                         <input
-                          value={
-                            c.key === 'price7'
-                              ? r.price7
-                                ? String(Math.round(r.price7 / 1.225))
-                                : ''
-                              : String(r[c.key] ?? '')
-                          }
+                          value={c.key === 'cash' ? (r.cash ? String(r.cash) : '') : String(r[c.key] ?? '')}
                           onChange={(e) => setField(row, c.key, e.target.value)}
                           onBlur={() => save(row)}
                           dir="auto"
@@ -296,10 +291,10 @@ function InstallmentsEditor() {
                       </td>
                     ))}
                     <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
-                      {r.price7 ? Math.round(r.price7).toLocaleString('en-GB') : '—'}
+                      {r.cash ? planTotal(r.cash, 7).toLocaleString('en-GB') : '—'}
                     </td>
                     <td dir="ltr" className="border-b border-slate-100 p-2 text-xs font-bold text-slate-500">
-                      {r.price7 ? planMonthly(r.price7, 7).toLocaleString('en-GB') : '—'}
+                      {r.cash ? planMonthly(r.cash, 7).toLocaleString('en-GB') : '—'}
                     </td>
                     <td className="border-b border-slate-100 text-center">
                       <button

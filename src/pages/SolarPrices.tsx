@@ -341,7 +341,7 @@ export default function SolarPrices() {
                   <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-4">
                     <div className="flex items-baseline gap-1.5">
                       <span dir="ltr" className="text-[26px] font-extrabold tracking-tight text-brand-600">
-                        {money(planMonthly(row.price7, years))}
+                        {money(planMonthly(row.cash, years))}
                       </span>
                       <span className="text-xs font-semibold text-slate-400">
                         {t('IQD')} / {t('monthly')}
@@ -350,7 +350,7 @@ export default function SolarPrices() {
                     <div className="text-xs text-slate-500">
                       {t('Total price')}:{' '}
                       <span dir="ltr" className="font-extrabold text-slate-800">
-                        {money(planTotal(row.price7, years))}
+                        {money(planTotal(row.cash, years))}
                       </span>
                     </div>
                     <button
@@ -685,10 +685,10 @@ export default function SolarPrices() {
                           y === 7 ? 'text-brand-700' : 'text-slate-900'
                         }`}
                       >
-                        {money(planTotal(row.price7, y))}
+                        {money(planTotal(row.cash, y))}
                       </div>
                       <div className="text-[13px] font-bold text-brand-600">
-                        {money(planMonthly(row.price7, y))} / {t('month')}
+                        {money(planMonthly(row.cash, y))} / {t('month')}
                       </div>
                     </div>
                   ))}
