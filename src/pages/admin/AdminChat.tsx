@@ -20,6 +20,7 @@ import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useScrollLock } from '../../lib/useScrollLock';
 import { usePresence } from '../../lib/presence';
+import { clearDeliveredNotifications } from '../../lib/push';
 import { useProducts } from '../../lib/useProducts';
 import { formatPrice } from '../../lib/format';
 import ChatProductCard from '../../components/ChatProductCard';
@@ -105,7 +106,11 @@ export default function AdminChat() {
 
   // Opening a conversation (or receiving into an open one) marks it read.
   useEffect(() => {
-    if (active && active.unreadForStaff > 0) markStaffRead(active.id);
+    if (active && active.unreadForStaff > 0) {
+      markStaffRead(active.id);
+      // The message has been seen here; the tray should not keep saying otherwise.
+      clearDeliveredNotifications();
+    }
   }, [active]);
 
   useEffect(() => {

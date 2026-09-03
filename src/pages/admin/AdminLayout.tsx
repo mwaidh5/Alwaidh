@@ -164,6 +164,21 @@ export default function AdminLayout() {
     clearDeliveredNotifications();
   }, [location.pathname]);
 
+  // And again whenever the dashboard comes back into view: a phone that
+  // was already on the chat page and is simply brought to the front never
+  // changes route, and its tray stayed full.
+  useEffect(() => {
+    const onShow = () => {
+      if (document.visibilityState === 'visible') clearDeliveredNotifications();
+    };
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('focus', onShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onShow);
+      window.removeEventListener('focus', onShow);
+    };
+  }, []);
+
   if (loading) {
     return <p className="container-page py-16 text-center text-slate-500">Loading…</p>;
   }

@@ -118,6 +118,6 @@ export async function pushUsers(
   const skip = String(author ?? '').trim().toLowerCase();
   const viewing = await viewersOf(focus);
   const targets = [...new Set(emails)].filter((e) => e && e !== skip && !viewing.has(e));
-  if (viewing.size) logger.info(`${channel}: ${viewing.size} already viewing, skipped`);
+  if (viewing.size) logger.info(`${channel}: already viewing, skipped: ${[...viewing].join(', ')}`);
   await Promise.all(targets.map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)));
 }

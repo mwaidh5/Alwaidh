@@ -111,7 +111,8 @@ export const notifyJobActivity = onDocumentCreated(
         ? `${who}: ${preview(entry.text)}`
         : `${who} — ${preview(entry.text) || 'updated this job'}`,
       '/admin/jobs',
-      [`job:${event.params.jobId}`],
+      // The board shows the card change live; the details show the entry.
+      ['jobs', `job:${event.params.jobId}`],
     );
   },
 );
