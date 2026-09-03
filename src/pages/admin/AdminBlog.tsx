@@ -22,6 +22,7 @@ const EMPTY: BlogPost = {
   body: '',
   bodyAr: '',
   cover: '',
+  topic: 'solar',
   published: false,
   createdAtMs: 0,
 };
@@ -89,6 +90,14 @@ export default function AdminBlog() {
             <label className="block text-sm">
               <span className="font-medium text-slate-700">Cover image URL (optional)</span>
               <input className="input mt-1" dir="ltr" value={editing.cover} onChange={(e) => set('cover', e.target.value)} />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-slate-700">Topic (decides the button under the article)</span>
+              <select className="input mt-1" value={editing.topic} onChange={(e) => set('topic', e.target.value as BlogPost['topic'])}>
+                <option value="solar">Solar energy: See solar prices</option>
+                <option value="cameras">Security cameras: See camera prices</option>
+                <option value="computers">Computers: See computer prices</option>
+              </select>
             </label>
             <label className="block text-sm">
               <span className="font-medium text-slate-700">Title (English)</span>

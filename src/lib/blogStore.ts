@@ -20,6 +20,18 @@ import { db } from '../firebase';
  * starting "- " become list items — rendered by BlogPost, so no markdown
  * dependency rides along.
  */
+export type BlogTopic = 'solar' | 'cameras' | 'computers';
+export const BLOG_TOPICS: BlogTopic[] = ['solar', 'cameras', 'computers'];
+
+/** Older articles carry no topic; their slug and title say what they
+ *  are about. */
+export function guessTopic(slug: string, title: string): BlogTopic {
+  const text = `${slug} ${title}`;
+  if (/camera|cctv|nvr|tiandy|thermal|surveill/i.test(text)) return 'cameras';
+  if (/laptop|lenovo|computer|desktop|printer/i.test(text)) return 'computers';
+  return 'solar';
+}
+
 export interface BlogPost {
   id: string;
   /** The address: /blog/<slug>. Lowercase, dashes. */
@@ -31,6 +43,8 @@ export interface BlogPost {
   body: string;
   bodyAr: string;
   cover: string;
+  /** What the article is about - picks the call-to-action beneath it. */
+  topic: BlogTopic;
   published: boolean;
   createdAtMs: number;
 }
@@ -54,6 +68,9 @@ function normalize(data: Record<string, unknown>, id: string): BlogPost {
     body: String(data.body ?? ''),
     bodyAr: String(data.bodyAr ?? ''),
     cover: String(data.cover ?? ''),
+    topic: BLOG_TOPICS.includes(data.topic as BlogTopic)
+      ? (data.topic as BlogTopic)
+      : guessTopic(String(data.slug ?? id), String(data.title ?? '')),
     published: Boolean(data.published ?? false),
     createdAtMs: toMillis(data.createdAt),
   };

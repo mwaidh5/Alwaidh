@@ -57,6 +57,29 @@ export default function BlogPost() {
   }, [slug]);
 
   const loaded = post !== null && post !== 'missing' ? post : null;
+
+  // The invitation beneath the article matches what it was about.
+  const cta =
+    loaded?.topic === 'cameras'
+      ? {
+          title: 'Thinking about cameras for your home or shop?',
+          text: 'See our camera prices, or ask us anything — the site survey is free.',
+          button: 'See camera prices',
+          to: '/shop?category=tiandy-cameras',
+        }
+      : loaded?.topic === 'computers'
+        ? {
+            title: 'Looking for a laptop or desktop that lasts?',
+            text: 'See our computers, or ask us which one fits your work.',
+            button: 'See computer prices',
+            to: '/shop?category=computers',
+          }
+        : {
+            title: 'Thinking about solar for your home or business?',
+            text: 'See our system prices, or ask us anything — the survey is free.',
+            button: 'See solar prices',
+            to: '/solar-prices',
+          };
   const pick = (en: string, ar: string) => (lang === 'ar' && ar ? ar : en);
 
   useSeo({
@@ -124,12 +147,12 @@ export default function BlogPost() {
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-6">
           <div>
-            <p className="font-extrabold text-slate-900">{t('Thinking about solar for your home or business?')}</p>
-            <p className="mt-1 text-sm text-slate-600">{t('See our system prices, or ask us anything — the survey is free.')}</p>
+            <p className="font-extrabold text-slate-900">{t(cta.title)}</p>
+            <p className="mt-1 text-sm text-slate-600">{t(cta.text)}</p>
           </div>
           <div className="flex gap-2">
-            <Link to="/solar-prices" className="btn-primary">
-              {t('See solar prices')}
+            <Link to={cta.to} className="btn-primary">
+              {t(cta.button)}
             </Link>
             <button type="button" onClick={() => openChat()} className="btn-secondary">
               {t('Talk to us')}
