@@ -142,6 +142,25 @@ async function humanActive(db: Firestore, chatId: string, sinceMs: number): Prom
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * After a wait, is this still the message to answer? Not if the customer
+ * has written again since (that message's own run will answer), and not
+ * if the assistant already has.
+ */
+async function stillLatest(db: Firestore, chatId: string, messageId: string, sinceMs: number): Promise<boolean> {
+  const recent = await db
+    .collection(`chats/${chatId}/messages`)
+    .orderBy('at', 'desc')
+    .limit(4)
+    .get();
+  for (const d of recent.docs) {
+    const m = d.data();
+    if (m.from === 'guest') return d.id === messageId;
+    if (m.by === ASSISTANT_BY && m.at instanceof Timestamp && m.at.toMillis() > sinceMs) return false;
+  }
+  return true;
+}
+
 /** The one sentence that hands a customer to the team, in their language. */
 function handoffLine(sample: string): string {
   return /[\u0600-\u06FF]/.test(sample)
@@ -191,8 +210,8 @@ export const assistantReply = onDocumentCreated(
   {
     document: 'chats/{chatId}/messages/{messageId}',
     secrets: [ANTHROPIC_API_KEY],
-    // Room for the head start below plus a slow model turn.
-    timeoutSeconds: 120,
+    // Room for the three-minute wait below plus a slow model turn.
+    timeoutSeconds: 300,
     // A cold start puts several seconds between a customer's question and
     // the first word of the answer. Keeping one instance awake
     // (minInstances: 1) removes that, at the cost of a small standing
@@ -223,34 +242,40 @@ export const assistantReply = onDocumentCreated(
       .get();
     const history = msgsSnap.docs.map((d) => d.data()).reverse();
 
-    // A conversation a colleague has joined is theirs. Typing silences the
-    // assistant at once; a human reply keeps it silent for ten minutes —
-    // people answer in two- and four-minute gaps, and a bot that jumps in
-    // between them gives the customer two answers to one question.
+    // Typing silences the assistant at once.
     const chatDoc = await db.doc(`chats/${chatId}`).get();
     const typingAt = chatDoc.get('staffTypingAt');
     if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return;
 
-    const tenMinAgo = Date.now() - 10 * 60_000;
-    if (
-      history.some(
-        (m) =>
-          m.from === 'staff' &&
-          m.by !== ASSISTANT_BY &&
-          m.at instanceof Timestamp &&
-          m.at.toMillis() > tenMinAgo,
-      )
-    ) {
-      return;
-    }
-
-    // A colleague has this very chat open on a screen: give them a head
-    // start. If they start typing or answer in the meantime, stand down.
     const askedAt = msg.at instanceof Timestamp ? msg.at.toMillis() : Date.now();
-    const watching = await viewersOf([`chat:${chatId}`]);
-    if (watching.size) {
-      await sleep(25_000);
+    const tenMinAgo = Date.now() - 10 * 60_000;
+    const colleagueHere = history.some(
+      (m) =>
+        m.from === 'staff' &&
+        m.by !== ASSISTANT_BY &&
+        m.at instanceof Timestamp &&
+        m.at.toMillis() > tenMinAgo,
+    );
+
+    if (colleagueHere) {
+      // A colleague is in this conversation, so the next answer is theirs
+      // — for three minutes. If nobody has typed or replied by then, the
+      // customer should not be left waiting: the assistant steps in. A
+      // customer who wrote again meanwhile is answered by that message's
+      // own run, not this one.
+      await sleep(3 * 60_000);
       if (await humanActive(db, chatId, askedAt)) return;
+      if (!(await stillLatest(db, chatId, event.params.messageId, askedAt))) return;
+    } else {
+      // Nobody has joined yet, but a colleague has this chat open on a
+      // screen: give them a head start. If they start typing or answer in
+      // the meantime, stand down.
+      const watching = await viewersOf([`chat:${chatId}`]);
+      if (watching.size) {
+        await sleep(25_000);
+        if (await humanActive(db, chatId, askedAt)) return;
+        if (!(await stillLatest(db, chatId, event.params.messageId, askedAt))) return;
+      }
     }
 
     const knowledge = String(cfg.knowledge ?? '');
@@ -339,8 +364,9 @@ export const assistantReply = onDocumentCreated(
     }
 
     // One last look before speaking: a person may have taken over while
-    // the answer was being written.
+    // the answer was being written, or the customer may have moved on.
     if (await humanActive(db, chatId, askedAt)) return;
+    if (!(await stillLatest(db, chatId, event.params.messageId, askedAt))) return;
 
     // Filed as staff so the widget styles it like a team reply; the staff
     // unread count is left alone so a person still reviews the thread.
