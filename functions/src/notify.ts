@@ -48,6 +48,31 @@ export async function push(topic: string, title: string, body: string, link: str
   }
 }
 
+/**
+ * One person, several sign-ins. The owner's laptop uses one address and
+ * his phone another; to the topics they are two people, and one of them
+ * kept buzzing while the other was reading. Groups listed in
+ * settings/site.staffAliases are treated as a single person: viewing on
+ * any of them silences all of them, and a reply from any of them counts
+ * as the author's own.
+ */
+export async function aliasGroups(): Promise<string[][]> {
+  const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
+  const raw = Array.isArray(site.staffAliases) ? site.staffAliases : [];
+  return raw
+    .filter((g: unknown) => Array.isArray(g))
+    .map((g: unknown[]) => g.map((e) => String(e).trim().toLowerCase()).filter(Boolean));
+}
+
+/** Every address that is the same person as any address in `emails`. */
+export async function sameAs(emails: Iterable<string>): Promise<Set<string>> {
+  const out = new Set<string>([...emails].map((e) => e.toLowerCase()).filter(Boolean));
+  for (const group of await aliasGroups()) {
+    if (group.some((e) => out.has(e))) group.forEach((e) => out.add(e));
+  }
+  return out;
+}
+
 /** The role lists, read fresh so newly added staff get pings immediately. */
 export async function staffLists(): Promise<{ admins: string[]; jobs: string[]; messages: string[] }> {
   const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
@@ -115,9 +140,9 @@ export async function pushUsers(
   link: string,
   focus: string[] = [],
 ): Promise<void> {
-  const skip = String(author ?? '').trim().toLowerCase();
-  const viewing = await viewersOf(focus);
-  const targets = [...new Set(emails)].filter((e) => e && e !== skip && !viewing.has(e));
+  const authorSelves = await sameAs([String(author ?? '')]);
+  const viewing = await sameAs(await viewersOf(focus));
+  const targets = [...new Set(emails)].filter((e) => e && !authorSelves.has(e) && !viewing.has(e));
   if (viewing.size) logger.info(`${channel}: already viewing, skipped: ${[...viewing].join(', ')}`);
   await Promise.all(targets.map((e) => push(`${userTopic(e)}__${channel}`, title, body, link)));
 }
