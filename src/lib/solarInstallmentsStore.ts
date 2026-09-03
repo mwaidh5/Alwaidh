@@ -68,6 +68,22 @@ export function planTotal(cash: number, years: number): number {
 export function planMonthly(cash: number, years: number): number {
   return round1k(planTotal(cash, years) / (years * 12));
 }
+/**
+ * A row saved by an older version of the site carries only the 7-year
+ * figure. Two rates have been in use - 1.225 now, 1.21 before - and staff
+ * type round thousands, so the divisor that lands on a round thousand is
+ * the one that row was saved with. Failing both, the current rate, to
+ * the thousand.
+ */
+function legacyCash(price7: number): number {
+  if (!(price7 > 0)) return 0;
+  for (const rate of [planRate(FULL_YEARS), 1.21]) {
+    const cash = price7 / rate;
+    if (Math.abs(cash - Math.round(cash)) < 1e-6 && Math.round(cash) % 1000 === 0) return Math.round(cash);
+  }
+  return round1k(price7 / planRate(FULL_YEARS));
+}
+
 /** The bank's 7-year figure for a cash price, unrounded. */
 export function price7Of(cash: number): number {
   return Math.round(cash * planRate(FULL_YEARS));
@@ -104,14 +120,7 @@ function normalize(data: Record<string, unknown>, id: string): InstallmentRow {
     batteryKwh: String(data.batteryKwh ?? ''),
     batteryLabel: String(data.batteryLabel ?? ''),
     backupHours: String(data.backupHours ?? ''),
-    // Rows saved before the cash price was stored carry only the bank's
-    // 7-year figure; their cash price is read back from it, to the
-    // thousand, the way the bank's table lists it.
-    cash: Number(data.cash) > 0
-      ? Number(data.cash)
-      : Number(data.price7) > 0
-        ? round1k(Number(data.price7) / planRate(FULL_YEARS))
-        : 0,
+    cash: Number(data.cash) > 0 ? Number(data.cash) : legacyCash(Number(data.price7)),
     price7: Number(data.price7 ?? 0),
   };
 }
