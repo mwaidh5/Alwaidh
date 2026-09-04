@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -33,6 +33,44 @@ import { createJob } from '../../lib/jobsStore';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../lib/i18n';
 import { useStaffName } from '../../lib/staffDirectory';
+import { useSettings } from '../../lib/useSettings';
+import { assignContact, bulkUpdateContacts, bulkDeleteContacts } from '../../lib/crmStore';
+
+/** Who may be handed a lead in a book: the admins and the people given
+ *  that book on the Users page - the same lists the rules read. */
+const OWNER_EMAIL = 'mwaidh5@gmail.com';
+
+/** Selection mode, shared with every card without threading props. */
+const Selection = createContext<{
+  on: boolean;
+  has: (id: string) => boolean;
+  toggle: (id: string) => void;
+}>({ on: false, has: () => false, toggle: () => {} });
+
+function SelectBox({ id }: { id: string }) {
+  const sel = useContext(Selection);
+  if (!sel.on) return null;
+  return (
+    <input
+      type="checkbox"
+      checked={sel.has(id)}
+      onChange={() => sel.toggle(id)}
+      onPointerDown={(e) => e.stopPropagation()}
+      aria-label="select"
+      className="mt-0.5 h-4 w-4 flex-none accent-brand-600"
+    />
+  );
+}
+
+function AssigneeChip({ email }: { email: string }) {
+  const staffName = useStaffName();
+  if (!email) return null;
+  return (
+    <span className="inline-flex max-w-[9rem] items-center gap-1 truncate rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700 ring-1 ring-inset ring-brand-200">
+      👤 <span className="truncate">{staffName(email)}</span>
+    </span>
+  );
+}
 import { useScrollLock } from '../../lib/useScrollLock';
 
 /**
@@ -56,6 +94,7 @@ const EMPTY: FormState = {
   tag: 'Facebook',
   interest: '',
   status: 'new',
+  assignedTo: '',
   notes: [],
   order: 0,
   createdBy: '',
@@ -142,6 +181,39 @@ export default function AdminCrm() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [tagFilter, setTagFilter] = useState('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<CrmStatus | 'all'>('all');
+  const [selectOn, setSelectOn] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const settings = useSettings();
+  const { user } = useAuth();
+  const me = (user?.email ?? '').toLowerCase();
+  const staffName = useStaffName();
+  // People who can be handed a lead in this book.
+  const assignees = useMemo(() => {
+    const book = section === 'solar' ? settings.crmSolarEmails : settings.crmComputerEmails;
+    const all = [OWNER_EMAIL, ...(settings.extraAdminEmails ?? []), ...(book ?? [])].map((e) =>
+      String(e).trim().toLowerCase(),
+    );
+    return [...new Set(all.filter(Boolean))];
+  }, [section, settings.crmSolarEmails, settings.crmComputerEmails, settings.extraAdminEmails]);
+  const selection = useMemo(
+    () => ({
+      on: selectOn,
+      has: (id: string) => selected.has(id),
+      toggle: (id: string) =>
+        setSelected((prev) => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+        }),
+    }),
+    [selectOn, selected],
+  );
+  useEffect(() => {
+    if (!selectOn) setSelected(new Set());
+  }, [selectOn, section]);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -168,6 +240,10 @@ export default function AdminCrm() {
   const filtered = useMemo(() => {
     let list = contacts ?? [];
     if (tagFilter !== 'all') list = list.filter((c) => c.tag === tagFilter);
+    if (statusFilter !== 'all') list = list.filter((c) => c.status === statusFilter);
+    if (assigneeFilter === 'unassigned') list = list.filter((c) => !c.assignedTo);
+    else if (assigneeFilter === 'me') list = list.filter((c) => c.assignedTo === me);
+    else if (assigneeFilter !== 'all') list = list.filter((c) => c.assignedTo === assigneeFilter);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter((c) =>
@@ -177,7 +253,7 @@ export default function AdminCrm() {
       );
     }
     return list;
-  }, [contacts, tagFilter, query]);
+  }, [contacts, tagFilter, query, statusFilter, assigneeFilter, me]);
 
   const byStatus = useMemo(() => {
     const map = Object.fromEntries(CRM_STATUSES.map((s) => [s.key, [] as CrmContact[]])) as Record<
@@ -235,6 +311,7 @@ export default function AdminCrm() {
         tag: editing.tag,
         interest: editing.interest.trim(),
         status: editing.status,
+        assignedTo: editing.assignedTo ?? '',
         order: editing.order || Date.now(),
       };
       if (!payload.name) throw new Error('The customer needs a name.');
@@ -386,16 +463,136 @@ export default function AdminCrm() {
             </option>
           ))}
         </select>
-        {(query || tagFilter !== 'all') && (
+        <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="input w-auto">
+          <option value="all">{t('Everyone')}</option>
+          <option value="me">{t('Mine')}</option>
+          <option value="unassigned">{t('Unassigned')}</option>
+          {assignees.map((e) => (
+            <option key={e} value={e}>
+              👤 {staffName(e)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as CrmStatus | 'all')}
+          className="input w-auto"
+        >
+          <option value="all">{t('All statuses')}</option>
+          {CRM_STATUSES.map((st) => (
+            <option key={st.key} value={st.key}>
+              {t(st.label)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => setSelectOn((v) => !v)}
+          className={`rounded-lg border px-3.5 py-2 text-sm font-semibold ${
+            selectOn ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          ☑ {selectOn ? t('Done') : t('Select')}
+        </button>
+        {(query || tagFilter !== 'all' || statusFilter !== 'all' || assigneeFilter !== 'all') && (
           <p className="text-sm text-slate-500">
             {t('Showing')} {filtered.length} {t('of')} {contacts?.length ?? 0}
           </p>
         )}
       </div>
 
+      {selectOn && (
+        <div className="sticky bottom-20 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-brand-200 bg-white/95 p-3 shadow-xl shadow-slate-900/10 backdrop-blur sm:bottom-4">
+          <span className="text-sm font-bold text-slate-900">
+            {selected.size} {t('selected')}
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            {t('Select all')} ({filtered.length})
+          </button>
+          <select
+            value=""
+            disabled={!selected.size}
+            onChange={async (e) => {
+              const v = e.target.value;
+              if (!v) return;
+              setError('');
+              try {
+                await bulkUpdateContacts([...selected], { assignedTo: v === '__none' ? '' : v });
+                setSelected(new Set());
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not assign.');
+              }
+            }}
+            className="input w-auto py-1.5 text-sm"
+          >
+            <option value="">👤 {t('Assign to…')}</option>
+            <option value="__none">{t('Nobody')}</option>
+            {assignees.map((em) => (
+              <option key={em} value={em}>
+                {staffName(em)}
+              </option>
+            ))}
+          </select>
+          <select
+            value=""
+            disabled={!selected.size}
+            onChange={async (e) => {
+              const v = e.target.value as CrmStatus | '';
+              if (!v) return;
+              setError('');
+              try {
+                await bulkUpdateContacts([...selected], { status: v });
+                setSelected(new Set());
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not change the status.');
+              }
+            }}
+            className="input w-auto py-1.5 text-sm"
+          >
+            <option value="">{t('Change status…')}</option>
+            {CRM_STATUSES.map((st) => (
+              <option key={st.key} value={st.key}>
+                {t(st.label)}
+              </option>
+            ))}
+          </select>
+          {isAdmin && (
+            <button
+              type="button"
+              disabled={!selected.size}
+              onClick={async () => {
+                if (!confirm(`${t('Delete selected')} (${selected.size})?`)) return;
+                setError('');
+                try {
+                  await bulkDeleteContacts([...selected]);
+                  setSelected(new Set());
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Could not delete.');
+                }
+              }}
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            >
+              🗑 {t('Delete selected')}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSelectOn(false)}
+            className="ms-auto rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+          >
+            ✕ {t('Cancel')}
+          </button>
+        </div>
+      )}
+
       {contacts === null ? (
         <p className="text-center text-sm text-slate-500">{t('Loading…')}</p>
       ) : (
+        <Selection.Provider value={selection}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -442,7 +639,7 @@ export default function AdminCrm() {
             }}
             className="-mx-1 hidden items-start gap-4 overflow-x-auto px-1 pb-3 sm:flex"
           >
-            {CRM_STATUSES.map((col) => (
+            {CRM_STATUSES.filter((col) => statusFilter === 'all' || col.key === statusFilter).map((col) => (
               <div key={col.key} className="w-[280px] flex-none snap-start">
                 <Column
                   status={col.key}
@@ -462,6 +659,7 @@ export default function AdminCrm() {
             ) : null}
           </DragOverlay>
         </DndContext>
+        </Selection.Provider>
       )}
 
       {editing && (
@@ -479,6 +677,15 @@ export default function AdminCrm() {
         <ContactDetails
           contact={viewing}
           canDelete={isAdmin}
+          assignees={assignees}
+          onAssign={async (email) => {
+            setError('');
+            try {
+              await assignContact(viewing.id, email);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not assign.');
+            }
+          }}
           onSendToJobs={
             viewing.section === 'solar' && viewing.status === 'won' && isSolarStaff
               ? () => sendToJobs(viewing)
@@ -589,6 +796,7 @@ function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmCo
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-start justify-between gap-2">
+        <SelectBox id={contact.id} />
         <button
           type="button"
           onClick={() => onView?.(contact)}
@@ -635,6 +843,7 @@ function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmCo
       )}
 
       <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
+        <AssigneeChip email={contact.assignedTo} />
         {contact.notes.length > 0 && <span>🗒 {contact.notes.length}</span>}
         {lastNote && <span className="min-w-0 flex-1 truncate">{lastNote.text}</span>}
         <span className="ms-auto flex-none">{fmtShort(contact.updatedAtMs ?? contact.createdAtMs)}</span>
@@ -699,6 +908,7 @@ function MobileCrm({
           byStatus[s.key].map((c) => (
             <div key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
               <div className="flex items-start justify-between gap-2">
+                <SelectBox id={c.id} />
                 <button type="button" onClick={() => onView(c)} className="min-w-0 flex-1 text-start">
                   <p className="truncate text-base font-bold text-slate-900">{c.name}</p>
                   {c.interest && <p className="mt-0.5 truncate text-sm text-slate-600">{c.interest}</p>}
@@ -717,6 +927,11 @@ function MobileCrm({
                   </span>
                 )}
               </div>
+              {c.assignedTo && (
+                <p className="mt-1.5">
+                  <AssigneeChip email={c.assignedTo} />
+                </p>
+              )}
               {c.phone && (
                 <p dir="ltr" className="mt-2 text-start text-[13px] font-bold text-slate-700">
                   📞 {c.phone}
@@ -934,10 +1149,15 @@ function ContactDetails({
   onEdit,
   onMove,
   onDelete,
+  assignees,
+  onAssign,
 }: {
   contact: CrmContact;
   /** Only admins may erase a lead; the rules refuse everyone else anyway. */
   canDelete: boolean;
+  /** The people this lead may be handed to. */
+  assignees: string[];
+  onAssign: (email: string) => void;
   /** Set when this lead is won solar business and the viewer can make
    *  jobs — turns the sale into a card on the jobs board. */
   onSendToJobs: (() => void) | null;
@@ -1024,22 +1244,37 @@ function ContactDetails({
             </div>
           )}
 
-          <label className="block">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
-              {t('Status')}
-            </span>
-            <select
-              value={contact.status}
-              onChange={(e) => onMove(e.target.value as CrmStatus)}
-              className="input"
-            >
-              {CRM_STATUSES.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {t(s.label)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                {t('Status')}
+              </span>
+              <select
+                value={contact.status}
+                onChange={(e) => onMove(e.target.value as CrmStatus)}
+                className="input"
+              >
+                {CRM_STATUSES.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {t(s.label)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                👤 {t('Assigned to')}
+              </span>
+              <select value={contact.assignedTo} onChange={(e) => onAssign(e.target.value)} className="input">
+                <option value="">{t('Nobody')}</option>
+                {[...new Set([...assignees, ...(contact.assignedTo ? [contact.assignedTo] : [])])].map((em) => (
+                  <option key={em} value={em}>
+                    {staffName(em)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div>
             <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
