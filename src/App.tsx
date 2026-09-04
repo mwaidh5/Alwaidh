@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { recordPageView } from './lib/analyticsStore';
 import { logPageView } from './firebase';
 import Layout from './components/Layout';
-import Home from './pages/Home';
+import Home from './pages/HomeV2';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
