@@ -55,12 +55,14 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
   const instSheet = instSnap.docs
     .map((d) => {
       const r = d.data();
-      return `${r.sizeKw}kW (${r.sizeAmp}A): inverter ${r.inverterKw}kW, ${r.panelsCount} panels (${r.panelsKwp}kWp), battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, price7=${Number(r.price7 ?? 0).toLocaleString('en-US')} IQD`;
+      const cash = Number(r.cash) > 0 ? Number(r.cash) : Math.round(Number(r.price7 ?? 0) / 1.225 / 1000) * 1000;
+      return `${r.sizeAmp}A: inverter ${r.inverterKw}kW, ${r.panelsCount} panels, battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, cash=${cash.toLocaleString('en-US')} IQD`;
     })
     .join('\n');
 
   return [
-    '- Solar installments (Central Bank initiative, 1–7 year plans): the listed price7 is the 7-year total. Cash price = price7 ÷ 1.225. An N-year plan totals cash × (1 + 0.03 × N + 0.015); monthly = total ÷ (12 × N). Round every figure to the nearest thousand dinars.',
+    '- Solar installments (Central Bank initiative, 1–7 year plans): the listed cash is the cash price. An N-year plan totals cash × (1 + 0.03 × N + 0.015) — so 3 years ×1.105, 5 years ×1.165, 7 years ×1.225; monthly = total ÷ (12 × N). Round every derived figure to the nearest thousand dinars.',
+    '- Extra backup on any solar system: each additional 16 KWh battery costs 2,700,000 IQD and adds about (60 ÷ system amps) hours of backup — roughly 3 hours on a 20 A system, 1 hour on a 60 A system.',
     '',
     "OWNER'S NOTES (highest authority — follow these over anything else):",
     knowledge || '(none yet)',
@@ -296,7 +298,7 @@ export const assistantReply = onDocumentCreated(
       '- Use ONLY the facts below. NEVER invent prices, stock, discounts or promises.',
       '- If the answer is not in the facts, or the customer wants to negotiate, complain, place an order through chat, or clearly needs a person — say a colleague from the team will reply here soon, and stop. Whenever you say that, ALSO add a line at the very start of your reply, exactly:',
       'NOTIFY_STAFF',
-      '- Prices are in Iraqi dinar (IQD), always rounded to the nearest thousand.',
+      '- Prices are in Iraqi dinar (IQD), always rounded to the nearest thousand. Write every price IN FULL with thousands separators exactly as listed — 89,000 دينار, never 89 or 89k or "89 ألف".',
       '- Answer the question that was asked. Do not repeat the shop address, the phone number or a list of options unless they help.',
       examples,
       '- When you recommend ONE specific product from the PRODUCTS list, attach its card: put a line at the very START of your reply, before any other text, exactly:',

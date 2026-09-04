@@ -5,6 +5,10 @@ import {
   SEED_INSTALLMENT_ROWS,
   planTotal,
   planMonthly,
+  EXTRA_BATTERY_PRICE,
+  EXTRA_BATTERY_KWH,
+  MAX_EXTRA_BATTERIES,
+  extraBatteryHours,
   FULL_YEARS,
   type InstallmentRow,
 } from '../lib/solarInstallmentsStore';
@@ -87,6 +91,7 @@ export default function SolarPrices() {
     }
   }
   const [years, setYears] = useState(FULL_YEARS);
+  const [extra, setExtra] = useState<Record<string, number>>({});
   const [downloading, setDownloading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const settings = useSettings();
@@ -296,7 +301,19 @@ export default function SolarPrices() {
             </div>
 
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {instRows.map((row) => (
+              {instRows.map((row) => {
+                // Extra batteries chosen on this card: more storage, more
+                // hours, more money — all three shown as they change.
+                const n = extra[row.id] ?? 0;
+                const perHours = extraBatteryHours(row.sizeAmp);
+                const cash = row.cash + n * EXTRA_BATTERY_PRICE;
+                const kwh = Number(row.batteryKwh) + n * EXTRA_BATTERY_KWH;
+                const hours = Math.round((Number(row.backupHours) + n * perHours) * 2) / 2;
+                const batteryLine = n
+                  ? `${Number.isFinite(kwh) ? kwh : row.batteryKwh} KWh`
+                  : `${row.batteryKwh} KWh`;
+                const hoursLine = n && Number.isFinite(hours) ? `${hours} ${t('hours')}` : `${row.backupHours} ${t('hours')}`;
+                return (
                 <article
                   key={row.id}
                   className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10"
@@ -314,8 +331,8 @@ export default function SolarPrices() {
                         [t('Panels'), `${row.panelsCount} × Jinko 650W`, ''],
                         // The size leads; how many batteries make it up is
                         // the small print underneath.
-                        [t('Batteries'), `${row.batteryKwh} KWh`, localize(row.batteryLabel)],
-                        [t('Backup hours'), `${row.backupHours} ${t('hours')}`, ''],
+                        [t('Batteries'), batteryLine, n ? `${localize(row.batteryLabel)} + ${n}` : localize(row.batteryLabel)],
+                        [t('Backup hours'), hoursLine, ''],
                       ] as [string, string, string][]
                     ).map(([k, v, sub]) => (
                       <div
@@ -338,10 +355,43 @@ export default function SolarPrices() {
                       </div>
                     ))}
                   </dl>
+                  {/* More backup, right on the card */}
+                  <div className="rounded-2xl bg-slate-50 px-3.5 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[13px] font-bold text-slate-700">{t('Extra batteries')}</span>
+                      <div dir="ltr" className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label="-"
+                          disabled={n === 0}
+                          onClick={() => setExtra((e) => ({ ...e, [row.id]: Math.max(0, n - 1) }))}
+                          className="h-8 w-8 rounded-full border border-slate-300 bg-white text-lg font-bold leading-none text-slate-700 disabled:opacity-40"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-base font-extrabold text-slate-900">{n}</span>
+                        <button
+                          type="button"
+                          aria-label="+"
+                          disabled={n >= MAX_EXTRA_BATTERIES}
+                          onClick={() => setExtra((e) => ({ ...e, [row.id]: Math.min(MAX_EXTRA_BATTERIES, n + 1) }))}
+                          className="h-8 w-8 rounded-full border border-brand-600 bg-brand-600 text-lg font-bold leading-none text-white disabled:opacity-40"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                      {t('Each adds {kwh} KWh and about {hours} more hours, for {price} IQD.')
+                        .replace('{kwh}', String(EXTRA_BATTERY_KWH))
+                        .replace('{hours}', String(perHours))
+                        .replace('{price}', money(EXTRA_BATTERY_PRICE))}
+                    </p>
+                  </div>
                   <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-4">
                     <div className="flex items-baseline gap-1.5">
                       <span dir="ltr" className="text-[26px] font-extrabold tracking-tight text-brand-600">
-                        {money(planMonthly(row.cash, years))}
+                        {money(planMonthly(cash, years))}
                       </span>
                       <span className="text-xs font-semibold text-slate-400">
                         {t('IQD')} / {t('monthly')}
@@ -350,7 +400,7 @@ export default function SolarPrices() {
                     <div className="text-xs text-slate-500">
                       {t('Total price')}:{' '}
                       <span dir="ltr" className="font-extrabold text-slate-800">
-                        {money(planTotal(row.cash, years))}
+                        {money(planTotal(cash, years))}
                       </span>
                     </div>
                     <button
@@ -358,7 +408,7 @@ export default function SolarPrices() {
                       onClick={() =>
                         openChat(
                           t('Hi! I am interested in the {system} installment system on a {years}-year plan — could you give me the details?')
-                            .replace('{system}', `${row.sizeKw} KW / ${row.sizeAmp} A`)
+                            .replace('{system}', `${row.sizeKw} KW / ${row.sizeAmp} A${n ? ` + ${n} ${t('extra battery')}` : ''}`)
                             .replace('{years}', String(years)),
                         )
                       }
@@ -368,7 +418,8 @@ export default function SolarPrices() {
                     </button>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
 
             <p className="mt-5 text-center text-xs leading-relaxed text-slate-500">
@@ -425,6 +476,15 @@ export default function SolarPrices() {
                       );
                     })}
                 </dl>
+                {extraBatteryHours(cap.n) > 0 && (
+                  <p className="rounded-2xl bg-slate-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
+                    🔋{' '}
+                    {t('Extra {kwh} KWh battery: {price} IQD, about {hours} more backup hours.')
+                      .replace('{kwh}', String(EXTRA_BATTERY_KWH))
+                      .replace('{price}', money(EXTRA_BATTERY_PRICE))
+                      .replace('{hours}', String(extraBatteryHours(cap.n)))}
+                  </p>
+                )}
                 <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-4">
                   {main && (
                     <div className="flex items-baseline gap-1.5">

@@ -44,6 +44,20 @@ export interface InstallmentRow {
   price7: number;
 }
 
+/**
+ * More backup: each extra 16 KWh battery costs the same, and how many
+ * hours it adds depends on how big the system is — about three on a
+ * 20 A system, one on a 60 A system. That is 60 ÷ amps, to the half hour.
+ */
+export const EXTRA_BATTERY_PRICE = 2_700_000;
+export const EXTRA_BATTERY_KWH = 16;
+export const MAX_EXTRA_BATTERIES = 4;
+export function extraBatteryHours(sizeAmp: string | number): number {
+  const amps = Number(String(sizeAmp).replace(/[^\d.]/g, ''));
+  if (!(amps > 0)) return 0;
+  return Math.max(0.5, Math.round((60 / amps) * 2) / 2);
+}
+
 export const YEAR_RATE = 0.03;
 /** The bank's flat charge on top of the yearly rate. */
 export const BASE_RATE = 0.015;
