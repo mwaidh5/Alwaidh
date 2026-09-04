@@ -34,7 +34,7 @@ const AR: Record<string, string> = {
   'or monthly over 7 years': 'أو شهرياً على 7 سنوات',
   'IQD': 'دينار',
   'All systems and plans': 'كل المنظومات والخطط',
-  'Ask about this one': 'اسأل عن هذي',
+  'Ask about this one': 'اسألنا عن تفاصيلها',
   'Hi! I am interested in the {amps} A installment system — could you give me the details?': 'مرحباً! مهتم بمنظومة {amps} أمبير بالتقسيط — ممكن التفاصيل؟',
   'Watch your shop from your phone': 'راقب محلك من موبايلك',
   'Cameras that see colour at night, a recorder that keeps two weeks, and a setup that only you can open.': 'كاميرات تشوف بالألوان بالليل، مسجل يحفظ أسبوعين، وإعداد ما يفتحه غيرك.',
@@ -68,6 +68,7 @@ const money = (n: number) => n.toLocaleString('en-US');
  */
 export function SolarDial() {
   const t = useT();
+  const { lang } = useLang();
   const [rows, setRows] = useState<InstallmentRow[]>(SEED_INSTALLMENT_ROWS);
   useEffect(() => subscribeInstallmentRows((list) => list.length && setRows(list)), []);
   const sized = useMemo(
@@ -98,8 +99,8 @@ export function SolarDial() {
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6">
       <div className="grid grid-cols-[auto_1fr] gap-6 sm:gap-8">
         {/* the dial */}
-        <div dir="ltr" className="flex select-none items-stretch gap-3 pt-6">
-          <div className="relative w-8 text-end text-[13px] font-bold text-slate-400">
+        <div dir="ltr" className={`flex select-none items-stretch gap-3 pt-6 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+          <div className={`relative w-8 text-[13px] font-bold text-slate-400 ${lang === 'ar' ? 'text-start' : 'text-end'}`}>
             <div className="absolute inset-x-0 -top-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
               {t('Amp')}
             </div>
@@ -108,7 +109,7 @@ export function SolarDial() {
                 key={r.id}
                 type="button"
                 onClick={() => setPick(i)}
-                className="absolute inset-x-0 -translate-y-1/2 text-end transition"
+                className={`absolute inset-x-0 -translate-y-1/2 transition ${lang === 'ar' ? 'text-start' : 'text-end'}`}
                 style={{ top: `${(1 - at(i)) * 100}%`, color: i === idx ? '#1d4ed8' : undefined }}
               >
                 {r.sizeAmp}
@@ -163,20 +164,6 @@ export function SolarDial() {
               className="sr-only"
             />
           </div>
-          <div className="relative w-10 text-[12px] font-semibold text-slate-400">
-            <div className="absolute inset-x-0 -top-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              {t('Backup')}
-            </div>
-            {sized.map((r, i) => (
-              <span
-                key={r.id}
-                className="absolute inset-x-0 -translate-y-1/2"
-                style={{ top: `${(1 - at(i)) * 100}%`, color: i === idx ? '#0f172a' : undefined }}
-              >
-                {r.backupHours} {t('h')}
-              </span>
-            ))}
-          </div>
         </div>
 
         {/* the readout */}
@@ -197,7 +184,7 @@ export function SolarDial() {
             ].map(([k, v]) => (
               <div key={k} className="min-w-0">
                 <dt className="text-[11px] text-slate-400">{k}</dt>
-                <dd dir="ltr" className="truncate text-base font-extrabold text-slate-900">
+                <dd dir="ltr" style={{ textAlign: lang === 'ar' ? 'right' : 'left' }} className="truncate text-base font-extrabold text-slate-900">
                   {v}
                 </dd>
               </div>
@@ -205,7 +192,7 @@ export function SolarDial() {
           </dl>
           <div className="mt-auto border-t border-slate-100 pt-4">
             <div className="text-[11px] text-slate-400">{t('or monthly over 7 years')}</div>
-            <div dir="ltr" className="text-3xl font-black leading-none tracking-tight text-brand-600 sm:text-4xl">
+            <div dir="ltr" style={{ textAlign: lang === 'ar' ? 'right' : 'left' }} className="text-3xl font-black leading-none tracking-tight text-brand-600 sm:text-4xl">
               {money(planMonthly(sys.cash, 7))}
               <span className="ms-1.5 text-sm font-semibold text-slate-400">{t('IQD')}</span>
             </div>
