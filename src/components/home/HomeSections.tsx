@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../../lib/i18n';
 import { openChat } from '../../lib/chatPanel';
@@ -29,6 +29,7 @@ const AR: Record<string, string> = {
   'Battery': 'البطارية',
   'Backup': 'التغذية',
   'hours': 'ساعة',
+  'h': 'س',
   'Cash': 'نقداً',
   'or monthly over 7 years': 'أو شهرياً على 7 سنوات',
   'IQD': 'دينار',
@@ -59,8 +60,13 @@ function useT() {
 
 const money = (n: number) => n.toLocaleString('en-US');
 
-/** Pick the amps; the panels, battery, hours and both prices follow. */
-export function SolarSizer() {
+/**
+ * The solar dial: a vertical slider, lit in blue from the bottom up to
+ * the chosen system, with the amps down one side and the backup hours
+ * down the other. The readout beside it is the same live installment
+ * table the prices page uses.
+ */
+export function SolarDial() {
   const t = useT();
   const [rows, setRows] = useState<InstallmentRow[]>(SEED_INSTALLMENT_ROWS);
   useEffect(() => subscribeInstallmentRows((list) => list.length && setRows(list)), []);
@@ -72,84 +78,137 @@ export function SolarSizer() {
     [rows],
   );
   const [pick, setPick] = useState(1);
-  const sys = sized[Math.min(pick, Math.max(0, sized.length - 1))];
+  const trackRef = useRef<HTMLDivElement>(null);
+  const n = sized.length;
+  const idx = Math.min(pick, Math.max(0, n - 1));
+  const sys = sized[idx];
   if (!sys) return null;
 
+  // Where along the track (0 = bottom, 1 = top) each system sits.
+  const at = (i: number) => (n > 1 ? i / (n - 1) : 0);
+  const fromPointer = (clientY: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const frac = 1 - Math.min(1, Math.max(0, (clientY - r.top) / r.height));
+    setPick(Math.round(frac * (n - 1)));
+  };
+
   return (
-    <section className="container-page pt-14">
-      <div className="grid gap-8 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600">{t('Solar energy')}</p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{t('Size your solar system')}</h2>
-          <p className="mt-3 text-slate-600">{t('Slide to the amps your house runs on. The price is the real one.')}</p>
-          <div className="mt-8">
-            <div dir="ltr" className="flex items-end justify-between">
-              {sized.map((r, i) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setPick(i)}
-                  className="flex flex-col items-center gap-2 text-xs font-bold transition"
-                  style={{ color: i === pick ? '#d97706' : '#94a3b8' }}
-                >
-                  <span className="h-3 w-0.5 rounded-full bg-current" />
-                  {r.sizeAmp}
-                </button>
-              ))}
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6">
+      <div className="grid grid-cols-[auto_1fr] gap-6 sm:gap-8">
+        {/* the dial */}
+        <div dir="ltr" className="flex select-none items-stretch gap-3 pt-6">
+          <div className="relative w-8 text-end text-[13px] font-bold text-slate-400">
+            <div className="absolute inset-x-0 -top-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {t('Amp')}
+            </div>
+            {sized.map((r, i) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setPick(i)}
+                className="absolute inset-x-0 -translate-y-1/2 text-end transition"
+                style={{ top: `${(1 - at(i)) * 100}%`, color: i === idx ? '#1d4ed8' : undefined }}
+              >
+                {r.sizeAmp}
+              </button>
+            ))}
+          </div>
+          <div
+            ref={trackRef}
+            role="presentation"
+            onPointerDown={(e) => {
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              fromPointer(e.clientY);
+            }}
+            onPointerMove={(e) => {
+              if (e.buttons) fromPointer(e.clientY);
+            }}
+            className="relative h-64 w-4 cursor-pointer touch-none rounded-full bg-slate-900 sm:h-72"
+          >
+            {/* lit from the bottom up to the thumb */}
+            <div
+              className="absolute inset-x-0 bottom-0 rounded-full transition-[height] duration-300 ease-out"
+              style={{
+                height: `${at(idx) * 100}%`,
+                background: 'linear-gradient(180deg, #60a5fa 0%, #2563eb 55%, #93c5fd 100%)',
+                boxShadow: '0 0 22px 4px rgba(59,130,246,.55)',
+              }}
+            />
+            {sized.map((r, i) => (
+              <span
+                key={r.id}
+                className="absolute left-1/2 h-0.5 w-1.5 -translate-x-1/2 rounded-full bg-white/40"
+                style={{ top: `${(1 - at(i)) * 100}%` }}
+              />
+            ))}
+            {/* the thumb */}
+            <div
+              className="pointer-events-none absolute left-1/2 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-brand-600 shadow-lg shadow-slate-900/25 ring-1 ring-slate-200 transition-[top] duration-300 ease-out"
+              style={{ top: `${(1 - at(idx)) * 100}%` }}
+            >
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 10.5l4 4 8-9" />
+              </svg>
             </div>
             <input
-              dir="ltr"
               type="range"
               min={0}
-              max={Math.max(0, sized.length - 1)}
+              max={Math.max(0, n - 1)}
               step={1}
-              value={Math.min(pick, sized.length - 1)}
+              value={idx}
               onChange={(e) => setPick(Number(e.target.value))}
-              className="mt-2 w-full accent-amber-500"
               aria-label={t('Amp')}
+              className="sr-only"
             />
+          </div>
+          <div className="relative w-10 text-[12px] font-semibold text-slate-400">
+            <div className="absolute inset-x-0 -top-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {t('Backup')}
+            </div>
+            {sized.map((r, i) => (
+              <span
+                key={r.id}
+                className="absolute inset-x-0 -translate-y-1/2"
+                style={{ top: `${(1 - at(i)) * 100}%`, color: i === idx ? '#0f172a' : undefined }}
+              >
+                {r.backupHours} {t('h')}
+              </span>
+            ))}
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-amber-900/5 sm:p-8">
-          <div className="flex items-baseline gap-2">
-            <span dir="ltr" className="text-6xl font-black tracking-tight text-slate-900 sm:text-7xl">
+        {/* the readout */}
+        <div className="flex min-w-0 flex-col">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">{t('Size your solar system')}</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span dir="ltr" className="text-5xl font-black leading-none tracking-tight text-slate-900 sm:text-6xl">
               {sys.sizeAmp}
             </span>
-            <span className="text-xl font-bold text-slate-500">{t('Amp')}</span>
+            <span className="text-lg font-bold text-slate-500">{t('Amp')}</span>
           </div>
-          <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-slate-100 pt-5 text-sm">
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             {[
               [t('Panels'), `${sys.panelsCount} × 650W`],
               [t('Battery'), `${sys.batteryKwh} KWh`],
               [t('Backup'), `${sys.backupHours} ${t('hours')}`],
+              [t('Cash'), `${money(sys.cash)} ${t('IQD')}`],
             ].map(([k, v]) => (
-              <div key={k}>
-                <dt className="text-slate-400">{k}</dt>
-                <dd dir="ltr" className="mt-1 text-lg font-extrabold text-slate-900">
+              <div key={k} className="min-w-0">
+                <dt className="text-[11px] text-slate-400">{k}</dt>
+                <dd dir="ltr" className="truncate text-base font-extrabold text-slate-900">
                   {v}
                 </dd>
               </div>
             ))}
           </dl>
-          <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-t border-slate-100 pt-5">
-            <div>
-              <div className="text-xs text-slate-400">{t('Cash')}</div>
-              <div dir="ltr" className="text-3xl font-black tracking-tight text-slate-900">
-                {money(sys.cash)} <span className="text-sm font-semibold text-slate-400">{t('IQD')}</span>
-              </div>
+          <div className="mt-auto border-t border-slate-100 pt-4">
+            <div className="text-[11px] text-slate-400">{t('or monthly over 7 years')}</div>
+            <div dir="ltr" className="text-3xl font-black leading-none tracking-tight text-brand-600 sm:text-4xl">
+              {money(planMonthly(sys.cash, 7))}
+              <span className="ms-1.5 text-sm font-semibold text-slate-400">{t('IQD')}</span>
             </div>
-            <div className="text-end">
-              <div className="text-xs text-slate-400">{t('or monthly over 7 years')}</div>
-              <div dir="ltr" className="text-3xl font-black tracking-tight text-amber-600">
-                {money(planMonthly(sys.cash, 7))}
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Link to="/solar-prices" className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-400">
-              {t('All systems and plans')}
-            </Link>
             <button
               type="button"
               onClick={() =>
@@ -157,14 +216,15 @@ export function SolarSizer() {
                   t('Hi! I am interested in the {amps} A installment system — could you give me the details?').replace('{amps}', sys.sizeAmp),
                 )
               }
-              className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-50"
+              className="mt-3 text-sm font-bold text-brand-700 hover:underline"
             >
-              {t('Ask about this one')}
+              {t('Ask about this one')} →
             </button>
           </div>
         </div>
       </div>
-    </section>
+      <p className="mt-4 text-center text-xs text-slate-400">{t('Slide to the amps your house runs on. The price is the real one.')}</p>
+    </div>
   );
 }
 

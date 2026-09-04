@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { categories } from '../data/categories';
-import { allBrands } from '../data/brands';
 import { useProducts } from '../lib/useProducts';
 import { useSettingsStatus } from '../lib/useSettings';
 import { hasSettingsCache } from '../lib/settingsStore';
@@ -10,8 +9,8 @@ import { useLang } from '../lib/i18n';
 import { openChat } from '../lib/chatPanel';
 import { pName } from '../lib/localizeProduct';
 import { formatPrice } from '../lib/format';
-import SolarSceneLite from '../components/SolarSceneLite';
-import { SolarSizer, CamerasPitch, TalkToUs } from '../components/home/HomeSections';
+import { SolarDial, CamerasPitch, TalkToUs } from '../components/home/HomeSections';
+import BrandCarousel from '../components/BrandCarousel';
 import type { CategorySlug, Product } from '../types/product';
 import type { PromoTile } from '../lib/settingsStore';
 import { useSeo, organizationJsonLd } from '../lib/seo';
@@ -131,11 +130,6 @@ export default function Home() {
   };
 
   const tiles = settingsReady ? (settings.promoTiles ?? []) : [];
-  // The list staff manage in Settings; until they add one, the built-in
-  // brands with whatever logos were uploaded against them.
-  const brandList = (settings.brands ?? []).length
-    ? settings.brands
-    : allBrands.map((b) => ({ name: b.name, image: settings.brandLogos?.[b.slug] ?? '' }));
 
   // Newest first. The shop hands products over in alphabetical order, which
   // is why "New arrivals" used to open with whatever began with a digit.
@@ -404,9 +398,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---------------- Size your solar system ---------------- */}
-      <SolarSizer />
-
       {/* ---------------- New arrivals ---------------- */}
       {productsLoading && (
         <section className="mt-14 border-y border-slate-200 bg-slate-50" aria-hidden>
@@ -441,66 +432,12 @@ export default function Home() {
       <CamerasPitch image={settings.aboutImages?.cameras || FALLBACK.cameras} />
 
       {/* ---------------- Brands ---------------- */}
-      <section className="container-page pt-14">
-        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">
-          {t('Partners')}
+      <section className="mt-14 border-y border-slate-200 bg-white py-10">
+        <div className="container-page pb-6">
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-600">{t('Partners')}</div>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{t('Brands we carry')}</h2>
         </div>
-        <h2 className="mb-5 text-3xl font-extrabold tracking-tight text-slate-900">
-          {t('Brands we carry')}
-        </h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          {brandList.map((b, i) => {
-            const logo = b.image;
-            return (
-              <div
-                key={`${b.name}-${i}`}
-                className="grid h-20 place-items-center rounded-xl border border-slate-200 bg-white px-3"
-              >
-                {logo ? (
-                  <img src={logo} alt={b.name} loading="lazy" className="max-h-12 w-auto object-contain" />
-                ) : (
-                  <span className="text-center text-sm font-bold text-slate-500">{b.name}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ---------------- Why us ---------------- */}
-      <section className="container-page py-14">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 border-t border-slate-200 pt-8 lg:grid-cols-4">
-          {[
-            {
-              icon: '🚚',
-              title: 'Fast delivery',
-              body: 'Same-day dispatch in Baghdad, and across Iraq within days.',
-            },
-            {
-              icon: '💵',
-              title: 'Cash on delivery',
-              body: 'Pay when the order reaches your door — nothing upfront.',
-            },
-            {
-              icon: '🔄',
-              title: 'Easy replacement',
-              body: 'Wrong item or changed your mind? Swap or return it.',
-            },
-            {
-              icon: '✅',
-              title: 'Genuine products',
-              body: 'Everything we sell comes from the authorised source.',
-            },
-          ].map((v) => (
-            <div key={v.title}>
-              <div className="mb-2 text-2xl" aria-hidden>
-                {v.icon}
-              </div>
-              <div className="mb-1.5 font-bold text-slate-900">{t(v.title)}</div>
-              <div className="text-sm leading-relaxed text-slate-500">{t(v.body)}</div>
-            </div>
-          ))}
-        </div>
+        <BrandCarousel />
       </section>
 
       {/* ---------------- Talk to a person ---------------- */}
@@ -786,7 +723,7 @@ function SolarQuote({ logo }: { logo?: string }) {
             the quote form used to live here, and asked more questions than
             a price list answers. */}
         <div className="flex flex-col gap-5">
-          <SolarSceneLite />
+          <SolarDial />
           <Link
             to="/solar-prices"
             className="block rounded-2xl bg-brand-600 py-4 text-center text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700"
