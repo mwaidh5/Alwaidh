@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
   where,
   deleteField,
 } from 'firebase/firestore';
@@ -67,6 +68,8 @@ export interface CrmContact {
   /** The ad link they arrived through — the campaign in alwaidh.com/lead/<x>. */
   source: string;
   status: CrmStatus;
+  /** Who is working this lead - a staff email, or '' for nobody yet. */
+  assignedTo: string;
   notes: CrmNote[];
   order: number; // position weight within its column (newest first)
   /** When to nudge the team to recontact them; null = no reminder. */
@@ -100,6 +103,7 @@ function normalize(data: Record<string, unknown>, id: string): CrmContact {
     interest: String(data.interest ?? ''),
     source: String(data.source ?? ''),
     status: (CRM_STATUSES.some((s) => s.key === data.status) ? data.status : 'new') as CrmStatus,
+    assignedTo: String(data.assignedTo ?? '').toLowerCase(),
     notes: Array.isArray(data.notes)
       ? (data.notes as Record<string, unknown>[]).map((n) => ({
           id: String(n.id ?? ''),
@@ -221,6 +225,46 @@ export async function addContactNote(id: string, text: string): Promise<void> {
     updatedAt: serverTimestamp(),
     updatedBy: currentEmail(),
   });
+}
+
+/** Hand a lead to a colleague ('' takes it back to nobody). */
+export async function assignContact(id: string, email: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('The CRM needs a database connection.');
+  await updateDoc(doc(database, COLLECTION, id), {
+    assignedTo: email.trim().toLowerCase(),
+    updatedAt: serverTimestamp(),
+    updatedBy: currentEmail(),
+  });
+}
+
+/** One change across many leads at once - a status, an assignee, or both. */
+export async function bulkUpdateContacts(
+  ids: string[],
+  patch: { status?: CrmStatus; assignedTo?: string },
+): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('The CRM needs a database connection.');
+  const fields: Record<string, unknown> = { updatedAt: serverTimestamp(), updatedBy: currentEmail() };
+  if (patch.status) fields.status = patch.status;
+  if (patch.assignedTo !== undefined) fields.assignedTo = patch.assignedTo.trim().toLowerCase();
+  // Firestore takes 500 writes a batch; the book is never that big, but
+  // slice anyway so a big clean-up cannot fail halfway.
+  for (let i = 0; i < ids.length; i += 400) {
+    const batch = writeBatch(database);
+    for (const id of ids.slice(i, i + 400)) batch.update(doc(database, COLLECTION, id), fields);
+    await batch.commit();
+  }
+}
+
+export async function bulkDeleteContacts(ids: string[]): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('The CRM needs a database connection.');
+  for (let i = 0; i < ids.length; i += 400) {
+    const batch = writeBatch(database);
+    for (const id of ids.slice(i, i + 400)) batch.delete(doc(database, COLLECTION, id));
+    await batch.commit();
+  }
 }
 
 export async function deleteContact(id: string): Promise<void> {
