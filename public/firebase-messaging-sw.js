@@ -20,9 +20,20 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// A ping that arrives long after it was sent - a laptop waking from
+// sleep, a browser reopened - is about something already dealt with on
+// another device. Ten minutes is the line.
+const STALE_MS = 10 * 60 * 1000;
+
 messaging.onBackgroundMessage((payload) => {
   const { title, body } = payload.notification || {};
   const link = (payload.data && payload.data.link) || '/admin';
+  const sentAt = Number(payload.data && payload.data.sentAt) || 0;
+  if (sentAt && Date.now() - sentAt > STALE_MS) {
+    // The SDK may already have shown its own copy under this tag; take it down.
+    self.registration.getNotifications({ tag: link }).then((list) => list.forEach((n) => n.close()));
+    return;
+  }
   self.registration.showNotification(title || 'Alwaidh', {
     body: body || '',
     icon: '/pwa-192.png',
