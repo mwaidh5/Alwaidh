@@ -11,6 +11,7 @@ import { openChat } from '../lib/chatPanel';
 import { pName } from '../lib/localizeProduct';
 import { formatPrice } from '../lib/format';
 import SolarSceneLite from '../components/SolarSceneLite';
+import { SolarSizer, CamerasPitch, TalkToUs } from '../components/home/HomeSections';
 import type { CategorySlug, Product } from '../types/product';
 import type { PromoTile } from '../lib/settingsStore';
 import { useSeo, organizationJsonLd } from '../lib/seo';
@@ -147,9 +148,6 @@ export default function Home() {
     [products],
   );
   const newest = inStock.slice(0, 4);
-  // A second strip further down, so the page shows more of the shop
-  // without repeating what's already above it.
-  const more = inStock.slice(4, 12);
 
   useSeo({
     title:
@@ -406,6 +404,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------------- Size your solar system ---------------- */}
+      <SolarSizer />
+
       {/* ---------------- New arrivals ---------------- */}
       {productsLoading && (
         <section className="mt-14 border-y border-slate-200 bg-slate-50" aria-hidden>
@@ -436,22 +437,8 @@ export default function Home() {
       {/* ---------------- Solar quote ---------------- */}
       <SolarQuote logo={settings.solarLogo} />
 
-      {/* ---------------- More products ---------------- */}
-      {more.length > 0 && (
-        <section className="container-page pt-14">
-          <SectionHead
-            eyebrow="From the shop"
-            title="More to explore"
-            linkTo="/shop"
-            linkLabel="Browse everything"
-          />
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {more.slice(0, 8).map((p) => (
-              <ArrivalCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ---------------- Cameras ---------------- */}
+      <CamerasPitch image={settings.aboutImages?.cameras || FALLBACK.cameras} />
 
       {/* ---------------- Brands ---------------- */}
       <section className="container-page pt-14">
@@ -515,6 +502,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ---------------- Talk to a person ---------------- */}
+      <TalkToUs />
     </div>
   );
 }
