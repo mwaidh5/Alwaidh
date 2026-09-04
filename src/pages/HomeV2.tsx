@@ -459,13 +459,9 @@ export default function HomeV2() {
               {brandList
                 .filter((b) => b.image)
                 .map((b) => (
-                  <img
-                    key={b.name}
-                    src={b.image}
-                    alt={b.name}
-                    loading="lazy"
-                    className="h-8 w-auto object-contain opacity-70 brightness-0 invert transition hover:opacity-100"
-                  />
+                  <span key={b.name} className="grid h-14 w-28 place-items-center rounded-2xl bg-white p-2">
+                    <img src={b.image} alt={b.name} loading="lazy" className="max-h-9 w-auto max-w-full object-contain" />
+                  </span>
                 ))}
             </div>
           </div>
