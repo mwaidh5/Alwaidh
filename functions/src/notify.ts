@@ -15,20 +15,36 @@ export function userTopic(email: string): string {
   return `user_${String(email).trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
 }
 
+/** How long an undelivered ping may wait for a device before it is
+ *  dropped. A laptop that was asleep should not wake to an hour of chat
+ *  pings its owner already handled on the phone. */
+const WEB_TTL_S = 5 * 60;
+const PHONE_TTL_S = 15 * 60;
+
 export async function push(topic: string, title: string, body: string, link: string): Promise<void> {
   try {
+    const now = Date.now();
     await getMessaging().send({
       topic,
       notification: { title, body },
-      // The app reads this to open the right screen when tapped.
-      data: { link },
+      // The app reads `link` to open the right screen when tapped, and
+      // `sentAt` to ignore a ping that reaches it long after the fact.
+      data: { link, sentAt: String(now) },
+      webpush: {
+        headers: { TTL: String(WEB_TTL_S) },
+        // The same tag the service worker uses, so the SDK's own copy of
+        // the alert and ours collapse into one.
+        notification: { tag: link, icon: '/pwa-192.png', badge: '/pwa-192.png' },
+        fcmOptions: { link: `https://alwaidh.com${link}` },
+      },
       apns: {
         // iOS: a sound also makes the phone buzz when it's on silent.
         payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
-        headers: { 'apns-priority': '10' },
+        headers: { 'apns-priority': '10', 'apns-expiration': String(Math.floor(now / 1000) + PHONE_TTL_S) },
       },
       android: {
         priority: 'high',
+        ttl: PHONE_TTL_S * 1000,
         notification: {
           channelId: 'alwaidh-staff',
           sound: 'default',
