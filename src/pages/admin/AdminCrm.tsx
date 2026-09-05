@@ -35,6 +35,7 @@ import { useLang } from '../../lib/i18n';
 import { useStaffName } from '../../lib/staffDirectory';
 import { useSettings } from '../../lib/useSettings';
 import { uploadImage } from '../../lib/imageUpload';
+import UploadThumb, { type UploadPhase } from '../../components/UploadThumb';
 import { auth } from '../../firebase';
 
 /** Open a photo full size - the system browser inside the app, a tab on the web. */
@@ -1210,7 +1211,12 @@ function ContactDetails({
   const [note, setNote] = useState('');
   const [posting, setPosting] = useState(false);
   // Photos waiting to go with the next note, previewed before they upload.
-  const [photos, setPhotos] = useState<{ file: File; url: string }[]>([]);
+  const [photos, setPhotos] = useState<{ file: File; url: string; phase: UploadPhase; percent: number }[]>([]);
+  const addPhotos = (files: File[]) =>
+    setPhotos((list) =>
+      [...list, ...files.map((file) => ({ file, url: URL.createObjectURL(file), phase: 'waiting' as UploadPhase, percent: 0 }))].slice(0, 6),
+    );
+  const uploadingIdx = photos.findIndex((p) => p.phase === 'preparing' || p.phase === 'uploading');
   const photoInput = useRef<HTMLInputElement>(null);
   const [remindDraft, setRemindDraft] = useState('');
   const notesEnd = useRef<HTMLDivElement>(null);
@@ -1227,9 +1233,17 @@ function ContactDetails({
       // Photos go to the uploader's own folder, which staff can read.
       const uid = auth?.currentUser?.uid ?? 'anon';
       const urls: string[] = [];
+      const mark = (ph: (typeof files)[number], phase: UploadPhase, percent: number) =>
+        setPhotos((list) => list.map((x) => (x.url === ph.url ? { ...x, phase, percent } : x)));
       for (const ph of files) {
-        const { url } = await uploadImage(ph.file, `uploads/${uid}/crm`);
-        urls.push(url);
+        try {
+          const { url } = await uploadImage(ph.file, `uploads/${uid}/crm`, (info) => mark(ph, info.phase, info.percent));
+          mark(ph, 'done', 100);
+          urls.push(url);
+        } catch (e) {
+          mark(ph, 'failed', 0);
+          throw e;
+        }
       }
       await addContactNote(contact.id, text, urls);
       setNote('');
@@ -1420,20 +1434,21 @@ function ContactDetails({
             {photos.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {photos.map((ph) => (
-                  <span key={ph.url} className="relative h-16 w-16 overflow-hidden rounded-lg ring-1 ring-slate-200">
-                    <img src={ph.url} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        URL.revokeObjectURL(ph.url);
-                        setPhotos((list) => list.filter((x) => x !== ph));
-                      }}
-                      className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-slate-900/70 text-[11px] text-white"
-                      aria-label="remove"
-                    >
-                      ✕
-                    </button>
-                  </span>
+                  <UploadThumb
+                    key={ph.url}
+                    src={ph.url}
+                    name={ph.file.name}
+                    phase={ph.phase}
+                    percent={ph.percent}
+                    onRemove={
+                      posting
+                        ? undefined
+                        : () => {
+                            URL.revokeObjectURL(ph.url);
+                            setPhotos((list) => list.filter((x) => x !== ph));
+                          }
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -1444,8 +1459,7 @@ function ContactDetails({
               multiple
               className="hidden"
               onChange={(e) => {
-                const list = Array.from(e.target.files ?? []).map((file) => ({ file, url: URL.createObjectURL(file) }));
-                if (list.length) setPhotos((p) => [...p, ...list].slice(0, 6));
+                addPhotos(Array.from(e.target.files ?? []));
                 e.target.value = '';
               }}
             />
@@ -1468,7 +1482,7 @@ function ContactDetails({
                   const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
                   if (!files.length) return;
                   e.preventDefault();
-                  setPhotos((list) => [...list, ...files.map((file) => ({ file, url: URL.createObjectURL(file) }))].slice(0, 6));
+                  addPhotos(files);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -1486,7 +1500,11 @@ function ContactDetails({
                 disabled={posting || (!note.trim() && !photos.length)}
                 className="btn-primary flex-none disabled:opacity-50"
               >
-                {posting ? '…' : t('Add')}
+                {posting
+                  ? uploadingIdx >= 0
+                    ? `${t('Uploading…')} ${uploadingIdx + 1}/${photos.length}`
+                    : '…'
+                  : t('Add')}
               </button>
             </div>
           </div>

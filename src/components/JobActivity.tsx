@@ -8,6 +8,7 @@ import {
   type JobEvent,
 } from '../lib/jobsStore';
 import { uploadJobCommentFile } from '../lib/imageUpload';
+import UploadThumb, { type UploadPhase } from './UploadThumb';
 import Reactions from './Reactions';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
@@ -153,6 +154,10 @@ export default function JobActivity({ job }: { job: Job }) {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [files, setFiles] = useState<JobAttachment[]>([]);
   const [uploading, setUploading] = useState(0);
+  // Files on their way up, each with its own ring.
+  const [pending, setPending] = useState<
+    { id: string; name: string; kind: 'image' | 'pdf'; preview: string; phase: UploadPhase; percent: number }[]
+  >([]);
   const [dragOver, setDragOver] = useState(false);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -194,13 +199,32 @@ export default function JobActivity({ job }: { job: Job }) {
     if (!chosen.length) return;
     setError('');
     setUploading((n) => n + chosen.length);
-    for (const file of chosen) {
+    const items = chosen.map((file) => ({
+      id: Math.random().toString(36).slice(2, 10),
+      name: file.name,
+      kind: (file.type === 'application/pdf' || /\.pdf$/i.test(file.name) ? 'pdf' : 'image') as 'image' | 'pdf',
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+      phase: 'waiting' as UploadPhase,
+      percent: 0,
+    }));
+    setPending((p) => [...p, ...items]);
+    const mark = (id: string, phase: UploadPhase, percent: number) =>
+      setPending((p) => p.map((x) => (x.id === id ? { ...x, phase, percent } : x)));
+    for (let i = 0; i < chosen.length; i++) {
+      const file = chosen[i];
+      const item = items[i];
       try {
-        const up = await uploadJobCommentFile(file, job.id);
+        const up = await uploadJobCommentFile(file, job.id, (info) => mark(item.id, info.phase, info.percent));
+        mark(item.id, 'done', 100);
         setFiles((f) => [...f, { url: up.url, name: file.name, kind: up.kind }]);
+        // The tick shows for a moment, then the file joins the attached list.
+        setTimeout(() => setPending((p) => p.filter((x) => x.id !== item.id)), 700);
       } catch (e) {
+        mark(item.id, 'failed', 0);
         setError(e instanceof Error ? e.message : `Could not upload ${file.name}.`);
+        setTimeout(() => setPending((p) => p.filter((x) => x.id !== item.id)), 2500);
       } finally {
+        if (item.preview) setTimeout(() => URL.revokeObjectURL(item.preview), 3000);
         setUploading((n) => n - 1);
       }
     }
@@ -356,8 +380,11 @@ export default function JobActivity({ job }: { job: Job }) {
             ))}
           </ul>
         )}
-        {(files.length > 0 || uploading > 0) && (
+        {(files.length > 0 || pending.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-2">
+            {pending.map((it) => (
+              <UploadThumb key={it.id} src={it.preview} name={it.name} kind={it.kind} phase={it.phase} percent={it.percent} />
+            ))}
             {files.map((f, i) => (
               <div
                 key={`${f.url}-${i}`}
@@ -380,7 +407,9 @@ export default function JobActivity({ job }: { job: Job }) {
               </div>
             ))}
             {uploading > 0 && (
-              <span className="self-center text-xs text-slate-500">{t('Uploading…')}</span>
+              <span className="self-center text-xs text-slate-500">
+                {t('Uploading…')} {pending.filter((x) => x.phase === 'done').length}/{pending.length}
+              </span>
             )}
           </div>
         )}
