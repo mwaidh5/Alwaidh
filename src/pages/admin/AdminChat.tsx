@@ -15,7 +15,12 @@ import {
 } from '../../lib/chatStore';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { loadAssistantConfig, saveAssistantEnabled, saveAssistantKnowledge } from '../../lib/assistantStore';
+import {
+  loadAssistantConfig,
+  saveAssistantEnabled,
+  saveAssistantKnowledge,
+  saveAssistantHandoff,
+} from '../../lib/assistantStore';
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useScrollLock } from '../../lib/useScrollLock';
@@ -466,6 +471,19 @@ export default function AdminChat() {
             setAttached(p);
             setPickerOpen(false);
           }}
+          onPickMany={async (list) => {
+            setPickerOpen(false);
+            if (!activeId) return;
+            // One card per message, in the order they were ticked.
+            for (const p of list) {
+              try {
+                await sendStaffReply(activeId, '', p);
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'Could not send a product card.');
+                break;
+              }
+            }
+          }}
         />
       )}
     </div>
@@ -476,14 +494,30 @@ export default function AdminChat() {
 function ProductPicker({
   onClose,
   onPick,
+  onPickMany,
 }: {
   onClose: () => void;
+  /** One product: attached to the composer, to go with a message. */
   onPick: (p: ProductCard) => void;
+  /** Several products: sent straight away, a card each. */
+  onPickMany: (list: ProductCard[]) => void;
 }) {
   const { t } = useLang();
   const { products, loading } = useProducts();
   useScrollLock();
   const [query, setQuery] = useState('');
+  // Ticked products, in the order they were ticked.
+  const [picked, setPicked] = useState<ProductCard[]>([]);
+  const card = (p: (typeof products)[number]): ProductCard => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    currency: p.currency,
+    image: p.image,
+  });
+  const isPicked = (id: string) => picked.some((x) => x.id === id);
+  const togglePick = (p: (typeof products)[number]) =>
+    setPicked((list) => (list.some((x) => x.id === p.id) ? list.filter((x) => x.id !== p.id) : [...list, card(p)]));
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -540,20 +574,25 @@ function ProductPicker({
           ) : (
             <ul className="divide-y divide-slate-100">
               {results.map((p) => (
-                <li key={p.id}>
+                <li key={p.id} className={isPicked(p.id) ? 'bg-brand-50' : ''}>
                   <button
                     type="button"
-                    onClick={() =>
-                      onPick({
-                        id: p.id,
-                        name: p.name,
-                        price: p.price,
-                        currency: p.currency,
-                        image: p.image,
-                      })
-                    }
+                    onClick={() => (picked.length ? togglePick(p) : onPick(card(p)))}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
                   >
+                    <span
+                      role="checkbox"
+                      aria-checked={isPicked(p.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePick(p);
+                      }}
+                      className={`grid h-6 w-6 flex-none place-items-center rounded-md border text-xs font-black ${
+                        isPicked(p.id) ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
                     <img
                       src={p.image}
                       alt=""
@@ -575,6 +614,21 @@ function ProductPicker({
             </ul>
           )}
         </div>
+        {picked.length > 0 && (
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3">
+            <span className="text-sm font-bold text-slate-700">
+              {picked.length} {t('selected')}
+            </span>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setPicked([])} className="btn-secondary">
+                {t('Clear')}
+              </button>
+              <button type="button" onClick={() => onPickMany(picked)} className="btn-primary">
+                {t('Send')} {picked.length} 📦
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
@@ -596,6 +650,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<'teach' | 'notes'>('teach');
   const [enabled, setEnabled] = useState(false);
   const [knowledge, setKnowledge] = useState('');
+  const [handoff, setHandoff] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -613,6 +668,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
       .then((cfg) => {
         setEnabled(cfg.enabled);
         setKnowledge(cfg.knowledge);
+        setHandoff(cfg.handoffLine);
         setLoaded(true);
       })
       .catch(() => setMsg('Could not load the settings.'));
@@ -628,6 +684,7 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
     try {
       if (!loaded) throw new Error('The notes have not loaded yet.');
       await saveAssistantKnowledge(knowledge);
+      await saveAssistantHandoff(handoff);
       setMsg('Saved. The assistant uses the new notes on its very next reply.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Save failed.');
@@ -872,6 +929,22 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
                 className="input min-h-[18rem] w-full font-normal"
                 disabled={!loaded}
               />
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold text-slate-700">
+                  What it says when it hands a customer to the team
+                </span>
+                <input
+                  value={handoff}
+                  onChange={(e) => setHandoff(e.target.value)}
+                  dir="auto"
+                  placeholder="خليني اتأكد وارجعلك هسه"
+                  className="input w-full font-normal"
+                  disabled={!loaded}
+                />
+                <span className="mt-1 block text-[11px] text-slate-400">
+                  Used word for word in Arabic chats whenever it cannot answer. Leave empty for the built-in sentence.
+                </span>
+              </label>
               {msg && (
                 <p className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700">
                   {msg}
