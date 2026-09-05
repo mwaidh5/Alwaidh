@@ -1,4 +1,32 @@
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
+import type { StorageReference, UploadMetadata } from 'firebase/storage';
+
+/** Told twice: once while the photo is being shrunk on the device
+ *  ('preparing'), then as the bytes go up (0-100). */
+export type UploadProgress = (info: { phase: 'preparing' | 'uploading'; percent: number }) => void;
+
+async function putWithProgress(
+  objectRef: StorageReference,
+  blob: Blob,
+  metadata: UploadMetadata,
+  onProgress?: UploadProgress,
+): Promise<void> {
+  if (!onProgress) {
+    await uploadBytes(objectRef, blob, metadata);
+    return;
+  }
+  onProgress({ phase: 'uploading', percent: 0 });
+  await new Promise<void>((resolve, reject) => {
+    const task = uploadBytesResumable(objectRef, blob, metadata);
+    task.on(
+      'state_changed',
+      (snap) => onProgress({ phase: 'uploading', percent: (snap.bytesTransferred / Math.max(1, snap.totalBytes)) * 100 }),
+      reject,
+      () => resolve(),
+    );
+  });
+  onProgress({ phase: 'uploading', percent: 100 });
+}
 
 import { storage } from '../firebase';
 import type { FirebaseStorage } from 'firebase/storage';
@@ -143,17 +171,15 @@ function friendlyUploadError(e: unknown): Error {
 }
 
 /** Upload an image into an arbitrary folder (e.g. "site", "projects"). */
-export async function uploadImage(file: File, folder = 'site'): Promise<UploadResult> {
+export async function uploadImage(file: File, folder = 'site', onProgress?: UploadProgress): Promise<UploadResult> {
+  onProgress?.({ phase: 'preparing', percent: 0 });
   const prepared = await normalizeImage(file);
   const store = validate(prepared);
   const safe = prepared.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 60);
   const path = `${folder.replace(/\/+$/, '')}/${Date.now()}-${safe}`;
   const objectRef = ref(store, path);
   try {
-    await uploadBytes(objectRef, prepared, {
-      contentType: prepared.type,
-      cacheControl: LONG_CACHE,
-    });
+    await putWithProgress(objectRef, prepared, { contentType: prepared.type, cacheControl: LONG_CACHE }, onProgress);
     const url = await getDownloadURL(objectRef);
     return { url, path, file: prepared };
   } catch (e) {
@@ -214,6 +240,7 @@ export async function uploadProductDoc(
 export async function uploadJobCommentFile(
   file: File,
   jobId: string,
+  onProgress?: UploadProgress,
 ): Promise<UploadResult & { kind: 'image' | 'pdf' }> {
   if (!storage) {
     throw new Error('Firebase Storage is not configured. Add VITE_FIREBASE_* values to your .env.');
@@ -228,16 +255,13 @@ export async function uploadJobCommentFile(
     const path = `${folder}/${Date.now()}-${safe}`;
     const objectRef = ref(storage, path);
     try {
-      await uploadBytes(objectRef, file, {
-      contentType: 'application/pdf',
-      cacheControl: LONG_CACHE,
-    });
+      await putWithProgress(objectRef, file, { contentType: 'application/pdf', cacheControl: LONG_CACHE }, onProgress);
       return { url: await getDownloadURL(objectRef), path, kind: 'pdf' };
     } catch (e) {
       throw friendlyUploadError(e);
     }
   }
-  return { ...(await uploadImage(file, folder)), kind: 'image' };
+  return { ...(await uploadImage(file, folder, onProgress)), kind: 'image' };
 }
 
 /** Upload a PDF invoice for a job. */
