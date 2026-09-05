@@ -320,7 +320,7 @@ export default function AdminCrm() {
         tag: editing.tag,
         interest: editing.interest.trim(),
         status: editing.status,
-        assignedTo: editing.assignedTo ?? '',
+        assignedTo: editing.assignedTo || (editing.id ? '' : me),
         order: editing.order || Date.now(),
       };
       if (!payload.name) throw new Error('The customer needs a name.');
@@ -421,7 +421,8 @@ export default function AdminCrm() {
             type="button"
             onClick={() => {
               setError('');
-              setEditing({ ...EMPTY, section, order: Date.now() });
+              // Whoever writes a lead in by hand is working it.
+              setEditing({ ...EMPTY, section, order: Date.now(), assignedTo: me });
             }}
             className="btn-primary"
           >
