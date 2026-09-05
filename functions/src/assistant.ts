@@ -129,6 +129,12 @@ async function humanActive(db: Firestore, chatId: string, sinceMs: number): Prom
   const chatDoc = await db.doc(`chats/${chatId}`).get();
   const typingAt = chatDoc.get('staffTypingAt');
   if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return true;
+  return humanReplied(db, chatId, sinceMs);
+}
+
+/** Has a person actually sent something since `sinceMs`? Typing alone
+ *  does not count - after the wait, only a reply does. */
+async function humanReplied(db: Firestore, chatId: string, sinceMs: number): Promise<boolean> {
   const recent = await db
     .collection(`chats/${chatId}/messages`)
     .orderBy('at', 'desc')
@@ -244,10 +250,12 @@ export const assistantReply = onDocumentCreated(
       .get();
     const history = msgsSnap.docs.map((d) => d.data()).reverse();
 
-    // Typing silences the assistant at once.
+    // A colleague typing does not end the run any more - it starts the
+    // clock. A half-written reply that never gets sent used to leave the
+    // customer with nothing at all.
     const chatDoc = await db.doc(`chats/${chatId}`).get();
     const typingAt = chatDoc.get('staffTypingAt');
-    if (typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000) return;
+    const typingNow = typingAt instanceof Timestamp && Date.now() - typingAt.toMillis() < 90_000;
 
     const askedAt = msg.at instanceof Timestamp ? msg.at.toMillis() : Date.now();
     const tenMinAgo = Date.now() - 10 * 60_000;
@@ -259,14 +267,16 @@ export const assistantReply = onDocumentCreated(
         m.at.toMillis() > tenMinAgo,
     );
 
-    if (colleagueHere) {
+    let waited = false;
+    if (colleagueHere || typingNow) {
       // A colleague is in this conversation, so the next answer is theirs
-      // — for three minutes. If nobody has typed or replied by then, the
-      // customer should not be left waiting: the assistant steps in. A
-      // customer who wrote again meanwhile is answered by that message's
-      // own run, not this one.
+      // - for three minutes. If no reply has landed by then, the customer
+      // should not be left waiting: the assistant steps in, even if the
+      // colleague is still typing. A customer who wrote again meanwhile
+      // is answered by that message's own run, not this one.
       await sleep(3 * 60_000);
-      if (await humanActive(db, chatId, askedAt)) return;
+      waited = true;
+      if (await humanReplied(db, chatId, askedAt)) return;
       if (!(await stillLatest(db, chatId, event.params.messageId, askedAt))) return;
     } else {
       // Nobody has joined yet, but a colleague has this chat open on a
@@ -367,7 +377,9 @@ export const assistantReply = onDocumentCreated(
 
     // One last look before speaking: a person may have taken over while
     // the answer was being written, or the customer may have moved on.
-    if (await humanActive(db, chatId, askedAt)) return;
+    // After the three-minute wait only a sent reply stands the assistant
+    // down; before it, typing is enough.
+    if (waited ? await humanReplied(db, chatId, askedAt) : await humanActive(db, chatId, askedAt)) return;
     if (!(await stillLatest(db, chatId, event.params.messageId, askedAt))) return;
 
     // Filed as staff so the widget styles it like a team reply; the staff
