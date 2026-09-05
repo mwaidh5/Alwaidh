@@ -56,12 +56,18 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
     .map((d) => {
       const r = d.data();
       const cash = Number(r.cash) > 0 ? Number(r.cash) : Math.round(Number(r.price7 ?? 0) / 1.225 / 1000) * 1000;
-      return `${r.sizeAmp}A: inverter ${r.inverterKw}kW, ${r.panelsCount} panels, battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, cash=${cash.toLocaleString('en-US')} IQD`;
+      const k = (n: number) => (Math.round(n / 1000) * 1000).toLocaleString('en-US');
+      const plan = (y: number) => {
+        const total = Math.round((cash * (1 + 0.03 * y + 0.015)) / 1000) * 1000;
+        return `${y}y total ${k(total)} (${k(total / (12 * y))}/month)`;
+      };
+      return `${r.sizeAmp}A: inverter ${r.inverterKw}kW, ${r.panelsCount} panels, battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, cash ${k(cash)} IQD; installments: ${[1, 2, 3, 4, 5, 6, 7].map(plan).join('; ')}`;
     })
     .join('\n');
 
   return [
-    '- Solar installments (Central Bank initiative, 1–7 year plans): the listed cash is the cash price. An N-year plan totals cash × (1 + 0.03 × N + 0.015) — so 3 years ×1.105, 5 years ×1.165, 7 years ×1.225; monthly = total ÷ (12 × N). Round every derived figure to the nearest thousand dinars.',
+    '- Solar installments (Central Bank initiative, 1–7 year plans): every system on the INSTALLMENT SHEET lists its cash price and, for each plan length, the total and the monthly payment already worked out. Quote those figures as written; never compute your own.',
+    '- A question about a system that is on either sheet — by amps, by KW, by plan length, or "details" of it — IS answered from the facts: give that row\'s figures (for installments: the monthly payment for the plan asked, and the size, panels, battery and backup). Do not hand such a question to the team.',
     '- Extra backup on any solar system: each additional 16 KWh battery costs 2,700,000 IQD and adds about (60 ÷ system amps) hours of backup — roughly 3 hours on a 20 A system, 1 hour on a 60 A system.',
     '',
     "OWNER'S NOTES (highest authority — follow these over anything else):",
@@ -170,7 +176,9 @@ async function stillLatest(db: Firestore, chatId: string, messageId: string, sin
 }
 
 /** The one sentence that hands a customer to the team, in their language. */
-function handoffLine(sample: string): string {
+function handoffLine(sample: string, custom = ''): string {
+  // The owner's own sentence, for Arabic conversations, when set.
+  if (custom.trim() && /[\u0600-\u06FF]/.test(sample)) return custom.trim();
   return /[\u0600-\u06FF]/.test(sample)
     ? 'هذا السؤال لازم زميلي بالفريق يجاوبك عليه، رح يرد عليك هنا بأقرب وقت.'
     : 'A colleague from the team will answer this one — they will reply here shortly.';
@@ -372,7 +380,7 @@ export const assistantReply = onDocumentCreated(
     let body = kept.join('\n').trim();
     if (needsStaff || !body) {
       needsStaff = true;
-      body = handoffLine(String(msg.text ?? ''));
+      body = handoffLine(String(msg.text ?? ''), String(cfg.handoffLine ?? ''));
     }
 
     // One last look before speaking: a person may have taken over while

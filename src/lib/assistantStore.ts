@@ -10,17 +10,20 @@ import { db } from '../firebase';
 export interface AssistantConfig {
   enabled: boolean;
   knowledge: string;
+  /** What it says when it hands a customer to the team (Arabic chats). */
+  handoffLine: string;
 }
 
 const REF = ['settings', 'assistant'] as const;
 
 export async function loadAssistantConfig(): Promise<AssistantConfig> {
-  if (!db) return { enabled: false, knowledge: '' };
+  if (!db) return { enabled: false, knowledge: '', handoffLine: '' };
   const snap = await getDoc(doc(db, ...REF));
   const data = snap.data() ?? {};
   return {
     enabled: Boolean(data.enabled ?? false),
     knowledge: String(data.knowledge ?? ''),
+    handoffLine: String(data.handoffLine ?? ''),
   };
 }
 
@@ -45,6 +48,12 @@ export async function saveAssistantKnowledge(knowledge: string, { allowEmpty = f
     throw new Error('The notes box is empty. Reload the page to see the saved notes; to erase them on purpose, delete them line by line.');
   }
   await setDoc(ref, { knowledge, knowledgeBackup: current }, { merge: true });
+}
+
+/** The hand-off sentence alone. Empty means the built-in one. */
+export async function saveAssistantHandoff(handoffLine: string): Promise<void> {
+  if (!db) throw new Error('Not connected.');
+  await setDoc(doc(db, ...REF), { handoffLine: handoffLine.trim() }, { merge: true });
 }
 
 /** @deprecated kept for older call sites; prefer the two above. */
