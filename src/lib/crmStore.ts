@@ -53,6 +53,8 @@ export const CRM_TAGS = [
 export interface CrmNote {
   id: string;
   text: string;
+  /** Photos attached to the note - site pictures, a bill, a screenshot. */
+  images: string[];
   by: string; // staff email
   atMs: number;
 }
@@ -108,6 +110,7 @@ function normalize(data: Record<string, unknown>, id: string): CrmContact {
       ? (data.notes as Record<string, unknown>[]).map((n) => ({
           id: String(n.id ?? ''),
           text: String(n.text ?? ''),
+          images: Array.isArray(n.images) ? (n.images as unknown[]).map(String).filter(Boolean) : [],
           by: String(n.by ?? ''),
           atMs: Number(n.atMs ?? 0),
         }))
@@ -210,15 +213,16 @@ export async function setContactReminder(id: string, remindAtMs: number | null):
   });
 }
 
-export async function addContactNote(id: string, text: string): Promise<void> {
+export async function addContactNote(id: string, text: string, images: string[] = []): Promise<void> {
   const database = db;
   if (!database) throw new Error('The CRM needs a database connection.');
   const body = text.trim();
-  if (!body) return;
+  if (!body && !images.length) return;
   await updateDoc(doc(database, COLLECTION, id), {
     notes: arrayUnion({
       id: Math.random().toString(36).slice(2, 10),
       text: body,
+      images,
       by: currentEmail(),
       atMs: Date.now(),
     }),
