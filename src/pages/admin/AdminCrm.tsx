@@ -56,6 +56,7 @@ function SelectBox({ id }: { id: string }) {
       checked={sel.has(id)}
       onChange={() => sel.toggle(id)}
       onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       aria-label="select"
       className="mt-0.5 h-4 w-4 flex-none accent-brand-600"
     />
@@ -778,7 +779,11 @@ function Column({
 }
 
 function DraggableCard({ contact, onView }: { contact: CrmContact; onView: (c: CrmContact) => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: contact.id });
+  const sel = useContext(Selection);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: contact.id, disabled: sel.on });
+  // While selecting, the card is a plain card: no drag sensor to swallow
+  // the tap, and the whole card is the target.
+  if (sel.on) return <CardBody contact={contact} onView={onView} />;
   return (
     <div
       ref={setNodeRef}
@@ -793,13 +798,20 @@ function DraggableCard({ contact, onView }: { contact: CrmContact; onView: (c: C
 
 function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmContact) => void }) {
   const lastNote = contact.notes[contact.notes.length - 1];
+  const sel = useContext(Selection);
+  const picked = sel.on && sel.has(contact.id);
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div
+      onClick={sel.on ? () => sel.toggle(contact.id) : undefined}
+      className={`rounded-xl border bg-white p-3 shadow-sm ${
+        picked ? 'border-brand-500 ring-2 ring-brand-500' : 'border-slate-200'
+      } ${sel.on ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <SelectBox id={contact.id} />
         <button
           type="button"
-          onClick={() => onView?.(contact)}
+          onClick={() => (sel.on ? sel.toggle(contact.id) : onView?.(contact))}
           className="min-w-0 flex-1 text-start"
         >
           <p className="truncate text-sm font-bold text-slate-900">{contact.name}</p>
@@ -868,6 +880,7 @@ function MobileCrm({
   onMove: (c: CrmContact, status: CrmStatus) => void;
 }) {
   const { t } = useLang();
+  const sel = useContext(Selection);
   const [only, setOnly] = useState<CrmStatus | 'all'>('all');
   const shown = CRM_STATUSES.filter((s) => only === 'all' || s.key === only);
   const allCount = CRM_STATUSES.reduce((n, s) => n + totals[s.key], 0);
@@ -906,10 +919,16 @@ function MobileCrm({
       <div className="space-y-3">
         {shown.map((s) =>
           byStatus[s.key].map((c) => (
-            <div key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
+            <div
+              key={c.id}
+              onClick={sel.on ? () => sel.toggle(c.id) : undefined}
+              className={`rounded-2xl border bg-white p-3.5 shadow-sm ${
+                sel.on && sel.has(c.id) ? 'border-brand-500 ring-2 ring-brand-500' : 'border-slate-200'
+              }`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <SelectBox id={c.id} />
-                <button type="button" onClick={() => onView(c)} className="min-w-0 flex-1 text-start">
+                <button type="button" onClick={() => (sel.on ? sel.toggle(c.id) : onView(c))} className="min-w-0 flex-1 text-start">
                   <p className="truncate text-base font-bold text-slate-900">{c.name}</p>
                   {c.interest && <p className="mt-0.5 truncate text-sm text-slate-600">{c.interest}</p>}
                   {c.source && (
