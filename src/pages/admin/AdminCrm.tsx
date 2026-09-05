@@ -1463,6 +1463,13 @@ function ContactDetails({
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                onPaste={(e) => {
+                  // A copied picture pasted into the box joins the note's photos.
+                  const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
+                  if (!files.length) return;
+                  e.preventDefault();
+                  setPhotos((list) => [...list, ...files.map((file) => ({ file, url: URL.createObjectURL(file) }))].slice(0, 6));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
