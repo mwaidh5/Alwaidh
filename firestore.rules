@@ -84,6 +84,14 @@ service cloud.firestore {
     // Product catalogue: public read. Admins and shop managers write anything;
     // computer staff may write computer/camera products; solar staff may write
     // solar products.
+    // The product diary: staff read it, staff append to it, and nobody
+    // edits or erases a line — a log you can rewrite is not a log.
+    match /productLogs/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff();
+      allow update, delete: if false;
+    }
+
     match /products/{id} {
       allow read: if true;
       allow create: if isAdmin() || isShopManager()
