@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -16,7 +16,7 @@ import { useSeo } from '../lib/seo';
  */
 export default function Lead() {
   const { campaign = 'facebook' } = useParams();
-  const { t, setLang } = useLang();
+  const { t } = useLang();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
@@ -25,17 +25,6 @@ export default function Lead() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
   useSeo({ title: 'الواعظ للقدرة — سجل اهتمامك', noindex: true });
-
-  // Ad visitors are Arabic-speaking; a first-timer starts in Arabic
-  // without being quizzed by the language pop-up.
-  useEffect(() => {
-    try {
-      if (localStorage.getItem('alwaidh.lang.v1') === null) setLang('ar');
-    } catch {
-      /* private mode */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

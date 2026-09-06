@@ -1196,17 +1196,18 @@ interface LanguageValue {
 }
 
 const LanguageContext = createContext<LanguageValue>({
-  lang: 'en',
-  dir: 'ltr',
+  lang: 'ar',
+  dir: 'rtl',
   setLang: () => {},
   t: (s) => s,
 });
 
+/** Arabic unless this visitor has chosen English before. */
 function readInitial(): Lang {
   try {
-    return localStorage.getItem(LS_KEY) === 'ar' ? 'ar' : 'en';
+    return localStorage.getItem(LS_KEY) === 'en' ? 'en' : 'ar';
   } catch {
-    return 'en';
+    return 'ar';
   }
 }
 

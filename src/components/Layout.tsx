@@ -6,7 +6,6 @@ import ChatWidget from './ChatWidget';
 import BottomNav from './BottomNav';
 import PullToRefresh from './PullToRefresh';
 import MobileDrawer from './MobileDrawer';
-import LanguageGate from './LanguageGate';
 import { trackPageView } from '../lib/ga';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 import { enablePush, handlePushTaps, isNativeApp, pushState, syncSubscriptions } from '../lib/push';
@@ -223,7 +222,6 @@ export default function Layout() {
   const slide = dir === 'rtl' ? '-56%' : '56%';
   return (
     <>
-      <LanguageGate />
       <MobileDrawer />
       {/* overflow-x: clip (not hidden — hidden would make this a scroll
           container and kill the sticky header) keeps the slid-out card
