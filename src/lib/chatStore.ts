@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   increment,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -255,11 +256,14 @@ export function subscribeChatMessages(
     return () => {};
   }
   return onSnapshot(
-    query(messagesRef(database, chatId), orderBy('at', 'asc')),
+    // The newest 300 messages, then put back in reading order. A long
+    // conversation used to pull every message it ever had on each open,
+    // which is what made a slow connection look broken.
+    query(messagesRef(database, chatId), orderBy('at', 'desc'), limit(300)),
     (snap) =>
       cb(
         sendingLast(
-        snap.docs.map((d) => {
+        snap.docs.slice().reverse().map((d) => {
           const data = d.data() as Record<string, unknown>;
           const p = data.product as Record<string, unknown> | undefined;
           return {
