@@ -24,7 +24,19 @@ import { sendAccountEmail } from '../../lib/accountEmail';
 // staff, 'jobs' = solar staff plus installers (who see only their own jobs),
 // 'staff' = every staff role except installers, 'team' = anyone who works
 // here, installers included.
-type Access = 'admin' | 'products' | 'solar' | 'jobs' | 'staff' | 'team' | 'crm';
+type Access =
+  | 'admin'
+  | 'products'
+  | 'solar'
+  | 'jobs'
+  | 'staff'
+  | 'team'
+  | 'crm'
+  | 'orders'
+  | 'media'
+  | 'blog'
+  | 'submissions'
+  | 'analytics';
 /** Routes that carry a "what's new" badge. */
 const ALERT_FOR: Record<string, AlertKey> = {
   '/admin/jobs': 'jobs',
@@ -40,17 +52,17 @@ const navItems: (NavItem & { access: Access })[] = [
   { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin', group: 'Work' },
   { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
   { to: '/admin/crm', label: 'CRM', icon: '📇', access: 'crm', group: 'Work' },
-  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'admin', group: 'Work' },
+  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'orders', group: 'Work' },
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
   { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar', group: 'Shop' },
-  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'admin', group: 'Shop' },
-  { to: '/admin/blog', label: 'Blog', icon: '📝', access: 'products', group: 'Shop' },
+  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'media', group: 'Shop' },
+  { to: '/admin/blog', label: 'Blog', icon: '📝', access: 'blog', group: 'Shop' },
   { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff', group: 'Team' },
   { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team', group: 'Team' },
   { to: '/admin/files', label: 'Files', icon: '📁', access: 'team', group: 'Team' },
-  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'admin', group: 'Team' },
+  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'submissions', group: 'Team' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin', group: 'Manage' },
-  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'admin', group: 'Manage' },
+  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'analytics', group: 'Manage' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️', access: 'admin', group: 'Manage' },
 ];
 
@@ -63,8 +75,7 @@ export default function AdminLayout() {
     isSolarStaff,
     isShopManager,
     isInstaller,
-    isCrmSolar,
-    isCrmComputers,
+    can,
     hasAdminAccess,
     viewAs,
     realIsAdmin,
@@ -201,12 +212,19 @@ export default function AdminLayout() {
 
   const canSee = (access: Access) => {
     if (isAdmin) return true;
-    if (access === 'products') return isComputerStaff || isSolarStaff || isShopManager;
-    if (access === 'solar') return isSolarStaff;
-    if (access === 'jobs') return isSolarStaff || isInstaller;
-    if (access === 'staff') return isComputerStaff || isSolarStaff || isShopManager;
-    if (access === 'crm') return isCrmSolar || isCrmComputers;
-    if (access === 'team') return true; // any signed-in staff role
+    // Every section is a permission now: the role grants its usual bundle,
+    // and anything handed out by name on the Users page adds to it.
+    if (access === 'products') return can('products');
+    if (access === 'solar') return can('solar-prices');
+    if (access === 'jobs') return can('jobs');
+    if (access === 'staff') return can('messages');
+    if (access === 'crm') return can('crm-solar') || can('crm-computers');
+    if (access === 'team') return can('team');
+    if (access === 'orders') return can('orders');
+    if (access === 'media') return can('media');
+    if (access === 'blog') return can('blog');
+    if (access === 'submissions') return can('submissions');
+    if (access === 'analytics') return can('analytics');
     return false;
   };
   const visibleItems = navItems.filter((i) => canSee(i.access));

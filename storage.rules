@@ -35,9 +35,14 @@ service firebase.storage {
       return emailVerified()
         && request.auth.token.email in settingsData().get('installerEmails', []);
     }
+    // A permission handed to one person by name on the Users page.
+    function hasPerm(name) {
+      return emailVerified()
+        && name in settingsData().get('permissions', {}).get(request.auth.token.email, []);
+    }
     function isStaff() {
       return isAdmin() || isComputerStaff() || isSolarStaff()
-        || isShopManager() || isInstaller();
+        || isShopManager() || isInstaller() || hasPerm('team') || hasPerm('messages');
     }
 
     // Public read only where customers are meant to look: the catalogue,

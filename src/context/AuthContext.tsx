@@ -23,6 +23,7 @@ function isNativeApp(): boolean {
 import { recordUserLogin } from '../lib/userStore';
 import { sendAccountEmail } from '../lib/accountEmail';
 import { subscribeSettings, type SiteSettings } from '../lib/settingsStore';
+import { extrasFor, permissionsFor, type Permission } from '../lib/permissions';
 
 /** Where the "view as" preview is remembered — this tab only. */
 const VIEW_AS_KEY = 'alwaidh.viewAs.v1';
@@ -38,6 +39,9 @@ interface AuthContextValue {
   isCrmSolar: boolean; // admin OR given the CRM's solar book
   isCrmComputers: boolean; // admin OR given the CRM's computers book
   hasAdminAccess: boolean; // any role that can open the dashboard
+  /** May this person open that part of the dashboard? Role bundle plus
+   *  whatever was handed to them by name on the Users page. */
+  can: (permission: Permission) => boolean;
   /** Colleague whose view is being previewed, or null. */
   viewAs: string | null;
   /** True when this account is really an admin, preview or not. */
@@ -173,6 +177,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isAdmin, shownEmail, settings],
   );
 
+  // Role bundle + the extras this person was given by name.
+  const allowed = useMemo(
+    () =>
+      permissionsFor(
+        { isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, isCrmSolar, isCrmComputers },
+        extrasFor(settings?.permissions, shownEmail),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, isCrmSolar, isCrmComputers, shownEmail, settings],
+  );
+  const can = (permission: Permission) => allowed.has(permission);
+
   // The real admin never loses their way back out of a preview.
   const hasAdminAccess =
     realIsAdmin ||
@@ -195,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isCrmSolar,
       isCrmComputers,
       hasAdminAccess,
+      can,
       viewAs,
       realIsAdmin,
       setViewAsEmail,
