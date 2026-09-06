@@ -36,10 +36,21 @@ service cloud.firestore {
       return emailVerified()
         && request.auth.token.email in settingsData().get('installerEmails', []);
     }
+    // A permission handed to one person by name on the Users page, on top
+    // of whatever their role already opens.
+    function hasPerm(name) {
+      return emailVerified()
+        && name in settingsData().get('permissions', {}).get(request.auth.token.email, []);
+    }
+    // Whoever may work the customer chat: the shop-side roles, plus
+    // anyone given "messages" by name.
+    function canChat() {
+      return isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager() || hasPerm('messages');
+    }
     // Anyone who works here — used for the shared file library.
     function isStaff() {
       return isAdmin() || isComputerStaff() || isSolarStaff()
-        || isShopManager() || isInstaller();
+        || isShopManager() || isInstaller() || hasPerm('team');
     }
     // The CRM: who may open which contacts book, assigned per person
     // from the Users page. Admins hold both books.
@@ -47,8 +58,10 @@ service cloud.firestore {
       return isAdmin()
         || (section == 'solar' && emailVerified()
             && request.auth.token.email in settingsData().get('crmSolarEmails', []))
+        || (section == 'solar' && hasPerm('crm-solar'))
         || (section == 'computers' && emailVerified()
-            && request.auth.token.email in settingsData().get('crmComputerEmails', []));
+            && request.auth.token.email in settingsData().get('crmComputerEmails', []))
+        || (section == 'computers' && hasPerm('crm-computers'));
     }
 
     // CRM leads. Reads must be filtered by section, so the rule can prove
@@ -214,7 +227,7 @@ service cloud.firestore {
     // are open, but only staff can LIST the conversations.
     match /chats/{chatId} {
       allow get, create, update: if true;
-      allow list: if isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+      allow list: if canChat();
       allow delete: if isAdmin();
 
       match /messages/{msgId} {
@@ -222,17 +235,16 @@ service cloud.firestore {
         // Anyone may write into a conversation they know the id of, but
         // only real staff can sign a message as staff — a visitor cannot
         // forge a reply that looks like it came from the shop.
-        allow create: if request.resource.data.get('from', 'guest') != 'staff'
-          || isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager();
+        allow create: if request.resource.data.get('from', 'guest') != 'staff' || canChat();
         // A staff member may fix or withdraw their own reply for five
         // minutes; after that the record stands.
-        allow update: if (isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager())
+        allow update: if canChat()
           && resource.data.from == 'staff'
           && resource.data.by == request.auth.token.email
           && request.time < resource.data.at + duration.value(5, 'm')
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
         allow delete: if isAdmin()
-          || ((isComputerStaff() || isSolarStaff() || isShopManager())
+          || (canChat()
               && resource.data.from == 'staff'
               && resource.data.by == request.auth.token.email
               && request.time < resource.data.at + duration.value(5, 'm'));
@@ -286,7 +298,7 @@ service cloud.firestore {
 
     // Solar install/repair jobs: admins and solar staff only.
     match /jobs/{id} {
-      allow read, create, update: if isAdmin() || isSolarStaff();
+      allow read, create, update: if isAdmin() || isSolarStaff() || hasPerm('jobs');
       // Deleting for good is the admin's alone. Solar staff still move a
       // job to the Trash — that writes a deletedAt field, which is an
       // update — so nothing they do every day is affected, and a job can

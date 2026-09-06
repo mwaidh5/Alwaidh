@@ -12,6 +12,7 @@ import {
 } from '../../lib/userStore';
 import { ADMIN_EMAILS } from '../../firebase';
 import { loadSettings, saveSettings, updateSettingsField, type SiteSettings } from '../../lib/settingsStore';
+import { PERMISSIONS, extrasFor, permissionsFor } from '../../lib/permissions';
 
 const ROLES: AppUser['role'][] = [
   'admin',
@@ -545,6 +546,11 @@ export default function AdminUsers() {
                       settings={settings}
                       onSaved={(next) => setSettings(next)}
                     />
+                    <ExtraPermissions
+                      email={u.email.toLowerCase()}
+                      settings={settings}
+                      onSaved={(next) => setSettings(next)}
+                    />
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(u.lastSeenAt).toLocaleDateString('en-GB')}
@@ -717,6 +723,101 @@ function CrmAccess({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Permissions handed to one person by name, on top of whatever their
+ * role already opens. A role's own doors are shown ticked and locked —
+ * the way to close those is to change the role. Everything else is a
+ * switch: give an installer the customer messages, give a solar staffer
+ * the orders, and nothing more.
+ */
+function ExtraPermissions({
+  email,
+  settings,
+  onSaved,
+}: {
+  email: string;
+  settings: SiteSettings | null;
+  onSaved: (next: SiteSettings) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busyKey, setBusyKey] = useState('');
+  if (!settings) return null;
+  const isAdmin = ADMIN_EMAILS.includes(email) || settings.extraAdminEmails.includes(email);
+  if (isAdmin) return null;
+
+  const roles = {
+    isAdmin: false,
+    isComputerStaff: settings.computerStaffEmails.includes(email),
+    isSolarStaff: settings.solarStaffEmails.includes(email),
+    isShopManager: (settings.shopManagerEmails ?? []).includes(email),
+    isInstaller: (settings.installerEmails ?? []).includes(email),
+    isCrmSolar: (settings.crmSolarEmails ?? []).includes(email),
+    isCrmComputers: (settings.crmComputerEmails ?? []).includes(email),
+  };
+  const extras = extrasFor(settings.permissions, email);
+  const fromRole = permissionsFor(roles, []);
+  const granted = permissionsFor(roles, extras);
+
+  async function toggle(key: string) {
+    const next = { ...(settings!.permissions ?? {}) };
+    const list = extrasFor(next, email);
+    const updated = list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
+    if (updated.length) next[email] = updated;
+    else delete next[email];
+    setBusyKey(key);
+    try {
+      await updateSettingsField('permissions', next);
+      onSaved({ ...settings!, permissions: next });
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  const extraCount = extras.length;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"
+      >
+        🔑 Permissions{extraCount ? ` · +${extraCount}` : ''} {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div className="mt-2 grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:grid-cols-2">
+          {PERMISSIONS.map((p) => {
+            const byRole = fromRole.has(p.key);
+            const on = granted.has(p.key);
+            return (
+              <label
+                key={p.key}
+                title={byRole ? 'Comes with their role' : p.hint}
+                className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${
+                  byRole ? 'opacity-60' : 'cursor-pointer hover:bg-white'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={on}
+                  disabled={byRole || busyKey === p.key}
+                  onChange={() => toggle(p.key)}
+                  className="mt-0.5 h-4 w-4 flex-none accent-brand-600"
+                />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-slate-800">{p.label}</span>
+                  <span className="block text-[11px] text-slate-500">
+                    {byRole ? 'comes with their role' : p.hint}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

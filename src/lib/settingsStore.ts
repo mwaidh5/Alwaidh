@@ -172,6 +172,9 @@ export interface SiteSettings {
   crmSolarEmails: string[];
   /** Who may open the CRM's computers contacts book. Admins always can. */
   crmComputerEmails: string[];
+  /** Extra permissions handed to one person, on top of their role:
+   *  { "someone@example.com": ["messages", "jobs"] }. */
+  permissions: Record<string, string[]>;
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -214,6 +217,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   installerEmails: [],
   installerLeaders: {},
   crmSolarEmails: [],
+  permissions: {},
   crmComputerEmails: [],
   staffNames: {},
   heroImage: '',
@@ -343,6 +347,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.aboutImages && typeof data.aboutImages === 'object'
         ? (data.aboutImages as Record<string, string>)
         : DEFAULT_SETTINGS.aboutImages,
+    permissions:
+      data.permissions && typeof data.permissions === 'object'
+        ? (data.permissions as Record<string, string[]>)
+        : DEFAULT_SETTINGS.permissions,
     heroSlides: Array.isArray(data.heroSlides)
       ? (data.heroSlides as Record<string, unknown>[]).map((h) => ({
           image: String(h.image ?? ''),
