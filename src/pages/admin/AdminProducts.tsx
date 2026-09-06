@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import ProductLogPanel from '../../components/ProductLogPanel';
 import {
   createProduct,
   deleteProduct,
@@ -48,6 +49,7 @@ export default function AdminProducts() {
   const [trashed, setTrashed] = useState<Product[]>([]);
   const [showTrash, setShowTrash] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'draft'>('all');
+  const [logOpen, setLogOpen] = useState(false);
 
   useEffect(() => {
     return subscribeProducts((list) => setProducts(list));
@@ -239,6 +241,9 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setLogOpen(true)} className="btn-secondary">
+            📜 {t('Log')}
+          </button>
           <button
             type="button"
             onClick={() => setShowTrash((v) => !v)}
@@ -253,6 +258,8 @@ export default function AdminProducts() {
           )}
         </div>
       </header>
+
+      {logOpen && <ProductLogPanel onClose={() => setLogOpen(false)} />}
 
       {!showTrash && (
       <div className="card p-4">

@@ -14,6 +14,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import { auth, db, firebaseReady } from '../firebase';
+import { describeChanges, logProduct } from './productLog';
 import { products as seedProducts } from '../data/products';
 import type { Product } from '../types/product';
 
@@ -218,11 +219,21 @@ export async function upsertProduct(product: Product): Promise<void> {
     // writing them back would shadow the real timestamps. Merging keeps
     // createdAt intact; a plain write dropped it on every edit.
     const { createdAtMs, deletedAtMs, ...stored } = product;
+    // Read the version being replaced, so the diary can name what moved.
+    let before: Partial<Product> = {};
+    try {
+      const snap = await getDoc(doc(database, COLLECTION, product.id));
+      before = (snap.data() ?? {}) as Partial<Product>;
+    } catch {
+      /* the diff is a nicety; the save is not */
+    }
     await setDoc(
       doc(database, COLLECTION, product.id),
       { ...stored, updatedAt: serverTimestamp() },
       { merge: true },
     );
+    const changes = describeChanges(before, stored as Partial<Product>);
+    if (changes.length) void logProduct('edited', product.id, product.name, changes);
     return;
   }
   const list = readLocal();
@@ -244,7 +255,16 @@ export async function updateProductMedia(
 ): Promise<void> {
   const database = db;
   if (database) {
+    let before: Partial<Product> = {};
+    try {
+      const snap = await getDoc(doc(database, COLLECTION, id));
+      before = (snap.data() ?? {}) as Partial<Product>;
+    } catch {
+      /* as above */
+    }
     await setDoc(doc(database, COLLECTION, id), updates, { merge: true });
+    const changes = describeChanges(before, updates as Partial<Product>);
+    if (changes.length) void logProduct('photos', id, String(before.name ?? id), changes);
     return;
   }
   writeLocal(readLocal().map((p) => (p.id === id ? { ...p, ...updates } : p)));
@@ -259,6 +279,11 @@ export async function createProduct(input: Omit<Product, 'id'>): Promise<string>
       ...input,
       createdAt: serverTimestamp(),
     });
+    void logProduct('added', ref.id, input.name, [
+      `Price: ${Number(input.price ?? 0).toLocaleString('en-US')} ${input.currency ?? ''}`.trim(),
+      `Category: ${input.category}`,
+      input.draft ? 'Saved as a draft' : 'Published',
+    ]);
     return ref.id;
   }
   const product: Product = { id, ...input };
@@ -273,11 +298,13 @@ export async function createProduct(input: Omit<Product, 'id'>): Promise<string>
 export async function deleteProduct(id: string): Promise<void> {
   const database = db;
   if (database) {
+    const name = String((await getDoc(doc(database, COLLECTION, id))).data()?.name ?? id);
     await setDoc(
       doc(database, COLLECTION, id),
       { deletedAt: serverTimestamp(), deletedBy: auth?.currentUser?.email ?? '' },
       { merge: true },
     );
+    void logProduct('trashed', id, name);
     return;
   }
   writeLocal(
@@ -290,11 +317,13 @@ export async function deleteProduct(id: string): Promise<void> {
 export async function restoreProduct(id: string): Promise<void> {
   const database = db;
   if (database) {
+    const name = String((await getDoc(doc(database, COLLECTION, id))).data()?.name ?? id);
     await setDoc(
       doc(database, COLLECTION, id),
       { deletedAt: deleteField(), deletedBy: deleteField() },
       { merge: true },
     );
+    void logProduct('restored', id, name);
     return;
   }
   writeLocal(
@@ -309,8 +338,10 @@ export async function destroyProduct(id: string): Promise<void> {
   if (database) {
     // Ensure the seed marker exists first, so emptying the whole catalogue
     // can never trigger the demo products to come back.
+    const name = String((await getDoc(doc(database, COLLECTION, id))).data()?.name ?? id);
     await setDoc(doc(database, COLLECTION, SEED_MARKER), { seededAt: serverTimestamp() }, { merge: true });
     await deleteDoc(doc(database, COLLECTION, id));
+    void logProduct('deleted', id, name);
     return;
   }
   writeLocal(readLocal().filter((p) => p.id !== id));
