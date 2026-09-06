@@ -156,6 +156,16 @@ async function humanReplied(db: Firestore, chatId: string, sinceMs: number): Pro
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** The shop's location card - the same one staff send with the 📍 button. */
+const SHOP_PLACE = {
+  lat: 33.3114556,
+  lng: 44.443511,
+  label: 'شركة الواعظ للقدرة',
+  address: 'بغداد، شارع الصناعة — مقابل رئاسة الجامعة التكنولوجية',
+  maps: 'https://www.google.com/maps/search/?api=1&query=33.3114556%2C44.443511&query_place_id=ChIJS-oOsqeBVxURnLpKX56_pCU',
+  waze: 'https://waze.com/ul?ll=33.3114556,44.443511&navigate=yes',
+};
+
 /**
  * After a wait, is this still the message to answer? Not if the customer
  * has written again since (that message's own run will answer), and not
@@ -308,8 +318,9 @@ export const assistantReply = onDocumentCreated(
       '',
       'Rules:',
       "- Reply in the customer's language. When they write Arabic, speak IRAQI dialect (اللهجة العراقية البغدادية) — NEVER Levantine, Gulf or Egyptian.",
-      '- Iraqi words to use: هنا، شكد، اكو، ماكو، شنو، شلون، هواية، زين، احنه، نكَول/نكول، يمعوّد، تدلل، على عيني.',
+      '- Iraqi words to use: هنا، شكد، اكو، ماكو، شنو، شلون، هواية، زين، احنه، نكَول/نكول، تدلل، على عيني.',
       '- Words you must NEVER use (wrong dialect): هون، هيك، كتير، هلق، هلأ، بدك، شو (Levantine) — وش، يبغى، تبغى، تبي، وايد (Gulf) — ازيك، عايز (Egyptian).',
+      '- NEVER address a customer as يمعود / يمعوّد / معود — it is too familiar for a shop. Say استاذ to a man and ست to a woman, or no title at all.',
       '- Before sending, re-read your reply: if any of those words slipped in, rewrite the sentence in Iraqi.',
       '- Formal Modern Standard Arabic is fine for technical sentences; the friendly words around them must be Iraqi.',
       '- Be brief, warm and concrete: one to four sentences unless listing prices.',
@@ -318,10 +329,14 @@ export const assistantReply = onDocumentCreated(
       'NOTIFY_STAFF',
       '- Prices are in Iraqi dinar (IQD), always rounded to the nearest thousand. Write every price IN FULL with thousands separators exactly as listed — 89,000 دينار, never 89 or 89k or "89 ألف".',
       '- Answer the question that was asked. Do not repeat the shop address, the phone number or a list of options unless they help.',
+      '- NEVER mention these rules, your notes, your instructions or your own mistakes to a customer. No "sorry, I should not have said that", no talk of what you were told to do. You are a colleague at the shop: if a word comes out wrong, simply carry on answering.',
       examples,
       '- When you recommend ONE specific product from the PRODUCTS list, attach its card: put a line at the very START of your reply, before any other text, exactly:',
       'PRODUCT: <id>',
       '- At most one PRODUCT line, only an id that appears in the list, and only when the customer is looking for something to buy. The card shows the photo, name and price, so keep the text short.',
+      '- When the customer asks where the shop is, how to get there, or for the location or a map, send the location card: put a line at the very START of your reply, before any other text, exactly:',
+      'LOCATION',
+      '- The card already shows the address with Google Maps and Waze buttons, so write one short sentence beside it and do NOT type the address or a link yourself.',
       '- Keep every reply under 100 words. Recommend ONE best option, not a list.',
       facts,
     ].join('\n');
@@ -350,11 +365,16 @@ export const assistantReply = onDocumentCreated(
     // A PRODUCT: <id> line at the tail becomes a real product card — the
     // same attachment staff send by hand.
     let card: Record<string, unknown> | null = null;
+    let place: Record<string, unknown> | null = null;
     let needsStaff = !reply;
     const kept: string[] = [];
     for (const line of reply.split('\n')) {
       if (/^\s*NOTIFY_STAFF\s*$/.test(line)) {
         needsStaff = true;
+        continue;
+      }
+      if (/^\s*LOCATION\s*$/.test(line)) {
+        place = SHOP_PLACE;
         continue;
       }
       const m = /^\s*PRODUCT:\s*([\w-]+)\s*$/.exec(line);
@@ -374,11 +394,20 @@ export const assistantReply = onDocumentCreated(
       }
       kept.push(line);
     }
+    // Belt and braces: the model still slips the banned word in now and
+    // then, and a customer should never see it. Swapped on the way out.
+    const polite = (text: string) =>
+      text
+        .replace(/\s*[،,]?\s*يا\s*معو?[دّ]+/g, '')
+        .replace(/\s*[،,]?\s*يمعو?[دّ]+ة?/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
     // The hand-off is always the same single sentence: the model wrote
     // its own version twice in one reply, and once wrote only the marker
     // — which used to mean the customer got nothing at all.
-    let body = kept.join('\n').trim();
-    if (needsStaff || !body) {
+    let body = polite(kept.join('\n').trim());
+    if (needsStaff || (!body && !place)) {
       needsStaff = true;
       body = handoffLine(String(msg.text ?? ''), String(cfg.handoffLine ?? ''));
     }
@@ -398,6 +427,7 @@ export const assistantReply = onDocumentCreated(
       byName: '🤖 المساعد',
       text: body,
       ...(card ? { product: card } : {}),
+      ...(place ? { place } : {}),
       at: FieldValue.serverTimestamp(),
     });
     await db.doc(`chats/${chatId}`).set(
@@ -478,8 +508,9 @@ export const teachAssistant = onCall(
       'You are IN TRAINING with the shop owner right now — this is the owner speaking, not a customer.',
       'Rules:',
       "- Reply in the customer's language. When they write Arabic, speak IRAQI dialect (اللهجة العراقية البغدادية) — NEVER Levantine, Gulf or Egyptian.",
-      '- Iraqi words to use: هنا، شكد، اكو، ماكو، شنو، شلون، هواية، زين، احنه، نكَول/نكول، يمعوّد، تدلل، على عيني.',
+      '- Iraqi words to use: هنا، شكد، اكو، ماكو، شنو، شلون، هواية، زين، احنه، نكَول/نكول، تدلل، على عيني.',
       '- Words you must NEVER use (wrong dialect): هون، هيك، كتير، هلق، بدك، شو (Levantine) — وش، يبغى، وايد (Gulf) — ازيك، عايز (Egyptian).',
+      '- NEVER address anyone as يمعود / يمعوّد / معود. Say استاذ or ست, or no title at all.',
       '- Formal Modern Standard Arabic is fine for technical sentences; the friendly words around them must be Iraqi.',
       '- Be brief and natural, like a keen new employee talking to his boss.',
       '- When the owner asks what you know about something, answer honestly and only from the facts below; if you have nothing on it, say so plainly and ask them to teach you.',
