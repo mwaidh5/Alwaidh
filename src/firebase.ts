@@ -1,5 +1,11 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { getAnalytics, isSupported, logEvent, type Analytics } from 'firebase/analytics';
@@ -29,7 +35,27 @@ export const firebaseApp: FirebaseApp | null = hasFirebaseConfig
   ? initializeApp(firebaseConfig)
   : null;
 
-export const db: Firestore | null = firebaseApp ? getFirestore(firebaseApp) : null;
+/**
+ * Firestore with the answers kept on the device. Without it every visit
+ * started from nothing: on a slow line the dashboard sat empty while the
+ * whole conversation list came down the wire again. With it, the last
+ * known state paints immediately and the server's version replaces it as
+ * it arrives — and a dropped connection no longer means a blank screen.
+ *
+ * Falls back to the plain client where IndexedDB is unavailable (private
+ * windows, old browsers), which is exactly how it behaved before.
+ */
+function makeDb(app: FirebaseApp): Firestore {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db: Firestore | null = firebaseApp ? makeDb(firebaseApp) : null;
 export const auth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;
 export const storage: FirebaseStorage | null = firebaseApp ? getStorage(firebaseApp) : null;
 export const googleProvider = new GoogleAuthProvider();
