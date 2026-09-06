@@ -266,6 +266,13 @@ export default function AdminUsers() {
     }
   }
 
+  // One filtered list, shown as cards on a phone and as the table above it.
+  const shownUsers = (users ?? []).filter((u) => {
+    if (audience === 'all') return true;
+    const customer = effectiveRole(u.email, settings) === 'customer';
+    return audience === 'customers' ? customer : !customer;
+  });
+
   return (
     <div className="space-y-6">
       <header>
@@ -361,7 +368,7 @@ export default function AdminUsers() {
       </div>
 
       {users !== null && users.length > 0 && (
-        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-semibold self-start w-fit">
+        <div className="scrollbar-none -mx-1 flex gap-0.5 overflow-x-auto px-1 text-sm font-semibold sm:mx-0 sm:w-fit sm:self-start sm:rounded-lg sm:border sm:border-slate-200 sm:bg-white sm:p-0.5 sm:px-0.5">
           {(
             [
               { key: 'all', label: `All (${users.length})` },
@@ -379,8 +386,10 @@ export default function AdminUsers() {
               key={tab.key}
               type="button"
               onClick={() => setAudience(tab.key)}
-              className={`rounded-md px-3 py-1.5 transition ${
-                audience === tab.key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              className={`flex-none whitespace-nowrap rounded-lg border px-3 py-1.5 transition sm:rounded-md sm:border-0 ${
+                audience === tab.key
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
               }`}
             >
               {tab.label}
@@ -396,7 +405,151 @@ export default function AdminUsers() {
           No user records yet. Users will appear here after their first sign-in.
         </p>
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        {/* Phones: one card per person. The table below needs 640px, which
+            is wider than the screen — it used to be a sideways scroll. */}
+        <ul className="space-y-3 sm:hidden">
+          {shownUsers.map((u) => {
+            const role = effectiveRole(u.email, settings);
+            return (
+              <li key={u.uid} className="card p-4">
+                <div className="flex items-start gap-3">
+                  {u.photoURL ? (
+                    <img src={u.photoURL} alt="" className="h-10 w-10 flex-none rounded-full" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="grid h-10 w-10 flex-none place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">
+                      {(u.displayName || u.email).charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold text-slate-900">
+                      {u.displayName || u.email}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingUid(u.uid);
+                          setNameDraft(u.displayName ?? '');
+                        }}
+                        title="Rename"
+                        className="ms-1.5 text-slate-400"
+                      >
+                        ✏️
+                      </button>
+                    </p>
+                    <p dir="ltr" className="truncate text-xs text-slate-500">{u.email}</p>
+                  </div>
+                  <span
+                    className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                      u.disabled ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {u.disabled ? 'Disabled' : 'Active'}
+                  </span>
+                </div>
+
+                {editingUid === u.uid && (
+                  <form
+                    className="mt-2 flex items-center gap-1.5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSaveName(u);
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      placeholder={u.email}
+                      className="input flex-1 px-2 py-1 text-sm"
+                    />
+                    <button type="submit" disabled={savingName} className="btn-primary px-2.5 py-1 text-xs">
+                      {savingName ? '…' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUid(null)}
+                      className="text-xs font-semibold text-slate-500"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                )}
+
+                <label className="mt-3 block">
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500">Role</span>
+                  <select
+                    value={pendingRoles[u.uid] ?? role}
+                    onChange={(e) => stageRole(u, e.target.value as AppUser['role'])}
+                    className="input w-full"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {pendingRoles[u.uid] && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRole(u)}
+                      disabled={savingUid === u.uid}
+                      className="btn-primary flex-1 py-1.5 text-xs"
+                    >
+                      {savingUid === u.uid ? 'Saving…' : 'Save role'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancelRole(u.uid)}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {role === 'installer' && (
+                  <CrewEditor
+                    leader={u.email.toLowerCase()}
+                    settings={settings}
+                    nameOf={(e) => users?.find((x) => x.email.toLowerCase() === e)?.displayName || e}
+                    onSaved={(next) => setSettings(next)}
+                  />
+                )}
+                <CrmAccess email={u.email.toLowerCase()} settings={settings} onSaved={(next) => setSettings(next)} />
+                <ExtraPermissions email={u.email.toLowerCase()} settings={settings} onSaved={(next) => setSettings(next)} />
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs">
+                  <span className="text-slate-400">
+                    Last seen {new Date(u.lastSeenAt).toLocaleDateString('en-GB')}
+                  </span>
+                  {u.email.toLowerCase() !== me && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewAsEmail(u.email);
+                        navigate('/admin');
+                      }}
+                      className="ms-auto font-semibold text-slate-700"
+                    >
+                      👁 View as
+                    </button>
+                  )}
+                  <button type="button" onClick={() => handleToggleDisabled(u)} className="font-semibold text-slate-700">
+                    {u.disabled ? 'Enable' : 'Disable'}
+                  </button>
+                  <button type="button" onClick={() => handleDelete(u.uid)} className="font-semibold text-red-700">
+                    Remove
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="card hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -408,13 +561,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {users
-                .filter((u) => {
-                  if (audience === 'all') return true;
-                  const customer = effectiveRole(u.email, settings) === 'customer';
-                  return audience === 'customers' ? customer : !customer;
-                })
-                .map((u) => (
+              {shownUsers.map((u) => (
                 <tr key={u.uid}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -585,6 +732,7 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
