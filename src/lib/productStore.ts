@@ -212,6 +212,15 @@ export async function getProductById(id: string): Promise<Product | null> {
   return list.find((p) => p.id === id) ?? null;
 }
 
+/** Firestore refuses `undefined`. A product read back from a record that
+ *  never had a field (specsList, oldPrice) carries undefined, and a bulk
+ *  edit would then fail on the whole batch — so drop those keys. */
+function defined<T extends Record<string, unknown>>(obj: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) if (v !== undefined) out[k] = v;
+  return out as T;
+}
+
 export async function upsertProduct(product: Product): Promise<void> {
   const database = db;
   if (database) {
@@ -229,7 +238,7 @@ export async function upsertProduct(product: Product): Promise<void> {
     }
     await setDoc(
       doc(database, COLLECTION, product.id),
-      { ...stored, updatedAt: serverTimestamp() },
+      { ...defined(stored), updatedAt: serverTimestamp() },
       { merge: true },
     );
     const changes = describeChanges(before, stored as Partial<Product>);
@@ -262,7 +271,7 @@ export async function updateProductMedia(
     } catch {
       /* as above */
     }
-    await setDoc(doc(database, COLLECTION, id), updates, { merge: true });
+    await setDoc(doc(database, COLLECTION, id), defined(updates), { merge: true });
     const changes = describeChanges(before, updates as Partial<Product>);
     if (changes.length) void logProduct('photos', id, String(before.name ?? id), changes);
     return;
@@ -276,7 +285,7 @@ export async function createProduct(input: Omit<Product, 'id'>): Promise<string>
   const id = slugify(input.name) || crypto.randomUUID();
   if (database) {
     const ref = await addDoc(collection(database, COLLECTION), {
-      ...input,
+      ...defined(input),
       createdAt: serverTimestamp(),
     });
     void logProduct('added', ref.id, input.name, [
