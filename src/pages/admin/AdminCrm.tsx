@@ -794,19 +794,25 @@ function DraggableCard({ contact, onView }: { contact: CrmContact; onView: (c: C
   // While selecting, the card is a plain card: no drag sensor to swallow
   // the tap, and the whole card is the target.
   if (sel.on) return <CardBody contact={contact} onView={onView} />;
+  // The card itself no longer drags — only the grip does. A lead used to
+  // slide into another column on a stray swipe over the card.
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className={isDragging ? 'opacity-40' : ''}
-    >
-      <CardBody contact={contact} onView={onView} />
+    <div ref={setNodeRef} className={isDragging ? 'opacity-40' : ''}>
+      <CardBody contact={contact} onView={onView} handleProps={{ ...attributes, ...listeners }} />
     </div>
   );
 }
 
-function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmContact) => void }) {
+function CardBody({
+  contact,
+  onView,
+  handleProps,
+}: {
+  contact: CrmContact;
+  onView?: (c: CrmContact) => void;
+  /** Given only where the card can be dragged: goes on the grip alone. */
+  handleProps?: Record<string, unknown>;
+}) {
   const lastNote = contact.notes[contact.notes.length - 1];
   const sel = useContext(Selection);
   const picked = sel.on && sel.has(contact.id);
@@ -819,6 +825,23 @@ function CardBody({ contact, onView }: { contact: CrmContact; onView?: (c: CrmCo
     >
       <div className="flex items-start justify-between gap-2">
         <SelectBox id={contact.id} />
+        {handleProps && (
+          <span
+            {...handleProps}
+            title="Drag to move this lead"
+            aria-label="Drag to move"
+            className="-ms-1 -mt-0.5 grid h-7 w-5 flex-none cursor-grab touch-none place-items-center rounded text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing"
+          >
+            <svg viewBox="0 0 10 16" className="h-4 w-2.5" fill="currentColor" aria-hidden>
+              <circle cx="2.5" cy="3" r="1.4" />
+              <circle cx="7.5" cy="3" r="1.4" />
+              <circle cx="2.5" cy="8" r="1.4" />
+              <circle cx="7.5" cy="8" r="1.4" />
+              <circle cx="2.5" cy="13" r="1.4" />
+              <circle cx="7.5" cy="13" r="1.4" />
+            </svg>
+          </span>
+        )}
         <button
           type="button"
           onClick={() => {
