@@ -80,9 +80,9 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
     (await staffLists()).jobs,
     job.createdBy,
     'jobs',
-    `🛠️ ${kind}: ${customer}`,
-    [system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
-    '/admin/jobs',
+    `🛠️ Solar job · new ${kind.toLowerCase()}`,
+    [customer, system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
+    `/admin/jobs?j=${event.params.jobId}`,
     ['jobs'],
   );
 });
@@ -101,16 +101,18 @@ export const notifyJobActivity = onDocumentCreated(
     const snap = await getFirestore().doc(`jobs/${event.params.jobId}`).get();
     const customer = preview(snap.data()?.customer, 40) || 'a job';
     const who = preview(String(entry.by ?? '').split('@')[0], 24) || 'Someone';
+    // The title has to say where this came from: "💬 Ali" on a lock
+    // screen reads like a customer messaging you, not a job on the board.
+    const did =
+      entry.kind === 'comment' ? 'commented' : entry.kind === 'status' ? 'moved a job' : 'edited a job';
     const icon = entry.kind === 'comment' ? '💬' : entry.kind === 'status' ? '🔄' : '✏️';
     await pushUsers(
       (await staffLists()).jobs,
       entry.by,
       'jobActivity',
-      `${icon} ${customer}`,
-      entry.kind === 'comment'
-        ? `${who}: ${preview(entry.text)}`
-        : `${who} — ${preview(entry.text) || 'updated this job'}`,
-      '/admin/jobs',
+      `🛠️ Solar job · ${customer}`,
+      `${icon} ${who} ${did}${entry.text ? `: ${preview(entry.text)}` : ''}`,
+      `/admin/jobs?j=${event.params.jobId}`,
       // The board shows the card change live; the details show the entry.
       ['jobs', `job:${event.params.jobId}`],
     );
@@ -127,7 +129,7 @@ export const notifyOrderUpdate = onDocumentUpdated('orders/{orderId}', async (ev
     (await staffLists()).admins,
     '',
     'orders',
-    `🧾 Order ${preview(after.status, 20)}`,
+    `🧾 Order · ${preview(after.status, 20)}`,
     `${name}${after.customerPhone ? ` · ${preview(after.customerPhone, 20)}` : ''}`,
     '/admin/orders',
     ['orders'],
@@ -161,7 +163,7 @@ export const notifyNewChatMessage = onDocumentCreated(
       (await staffLists()).messages,
       '',
       'messages',
-      '💬 New chat message',
+      '💬 Website chat · a customer',
       preview(msg.text) || 'A visitor wrote in the website chat',
       `/admin/chat?c=${event.params.chatId}`,
       ['messages', `chat:${event.params.chatId}`],
@@ -203,7 +205,9 @@ export const notifyTeamMessage = onDocumentCreated(
         .map((m) =>
           push(
             userTopic(m),
-            mentions.includes(m) ? `📣 ${from} tagged you${where}` : `🗨️ ${from}${where}`,
+            mentions.includes(m)
+              ? `📣 Team chat · ${from} tagged you${where}`
+              : `🗨️ Team chat · ${from}${where}`,
             body,
             '/admin/team',
           ),
@@ -220,7 +224,7 @@ export const notifyNewMessage = onDocumentCreated('contactSubmissions/{id}', asy
     (await staffLists()).messages,
     '',
     'messages',
-    `✉️ Message from ${name}`,
+    `✉️ Contact form · ${name}`,
     preview(msg.subject) || preview(msg.message) || 'New enquiry',
     '/admin/submissions',
     ['submissions'],

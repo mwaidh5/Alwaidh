@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   closestCorners,
   DndContext,
@@ -145,8 +146,24 @@ export default function AdminJobs() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [viewing, setViewing] = useState<Job | null>(null);
+  // A notification about one job opens that job: /admin/jobs?j=<id>.
+  const [params, setParams] = useSearchParams();
+  const wantedJob = params.get('j');
   // The board, or one job's details. Other devices stay quiet about it.
   usePresence(viewing ? `job:${viewing.id}` : 'jobs');
+  useEffect(() => {
+    if (!wantedJob || !jobs) return;
+    const found = jobs.find((j) => j.id === wantedJob);
+    if (found) setViewing(found);
+    // Clear the marker so closing the panel does not reopen it.
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('j');
+      return next;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedJob, jobs]);
+
   const boardRef = useRef<HTMLDivElement>(null);
 
   // The mouse wheel pans the board sideways. A native listener, because
