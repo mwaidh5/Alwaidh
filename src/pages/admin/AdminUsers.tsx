@@ -518,7 +518,6 @@ export default function AdminUsers() {
                     onSaved={(next) => setSettings(next)}
                   />
                 )}
-                <CrmAccess email={u.email.toLowerCase()} settings={settings} onSaved={(next) => setSettings(next)} />
                 <ExtraPermissions email={u.email.toLowerCase()} settings={settings} onSaved={(next) => setSettings(next)} />
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs">
@@ -688,11 +687,6 @@ export default function AdminUsers() {
                         onSaved={(next) => setSettings(next)}
                       />
                     )}
-                    <CrmAccess
-                      email={u.email.toLowerCase()}
-                      settings={settings}
-                      onSaved={(next) => setSettings(next)}
-                    />
                     <ExtraPermissions
                       email={u.email.toLowerCase()}
                       settings={settings}
@@ -815,72 +809,10 @@ function CrewEditor({
 }
 
 /**
- * Which CRM books this person may open. Admins are not shown the chips:
- * they hold both books by right, and a chip that cannot be turned off
- * only invites confusion.
- */
-function CrmAccess({
-  email,
-  settings,
-  onSaved,
-}: {
-  email: string;
-  settings: SiteSettings | null;
-  onSaved: (next: SiteSettings) => void;
-}) {
-  const [busyKey, setBusyKey] = useState('');
-  if (!settings) return null;
-  if (ADMIN_EMAILS.includes(email) || settings.extraAdminEmails.includes(email)) return null;
-
-  const books: { key: 'crmSolarEmails' | 'crmComputerEmails'; label: string }[] = [
-    { key: 'crmSolarEmails', label: '☀️ Solar CRM' },
-    { key: 'crmComputerEmails', label: '💻 Computers CRM' },
-  ];
-
-  async function toggle(key: 'crmSolarEmails' | 'crmComputerEmails') {
-    const list = settings![key] ?? [];
-    const next = list.includes(email) ? list.filter((e) => e !== email) : [...list, email];
-    setBusyKey(key);
-    try {
-      await updateSettingsField(key, next);
-      onSaved({ ...settings!, [key]: next });
-    } finally {
-      setBusyKey('');
-    }
-  }
-
-  return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {books.map((b) => {
-        const on = (settings[b.key] ?? []).includes(email);
-        return (
-          <button
-            key={b.key}
-            type="button"
-            disabled={busyKey === b.key}
-            onClick={() => toggle(b.key)}
-            title={on ? 'Click to take this book away' : 'Click to give this book'}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition ${
-              on
-                ? 'bg-cyan-50 text-cyan-800 ring-cyan-200'
-                : 'bg-slate-50 text-slate-400 ring-slate-200'
-            }`}
-          >
-            {b.label}
-            {on ? ' ✓' : ''}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * Permissions handed to one person by name, on top of whatever their
- * role already opens. A role's own doors are shown ticked and locked —
- * the way to close those is to change the role. Everything else is a
- * switch: give an installer the customer messages, give a solar staffer
- * the orders, and nothing more.
+ * Every door this person may open, as one list of switches: the ones
+ * their role carries are already ticked, and any of them can be given or
+ * taken away by name — the customer messages handed to an installer, or
+ * closed for a staffer whose role would otherwise include them.
  */
 function ExtraPermissions({
   email,
@@ -907,25 +839,43 @@ function ExtraPermissions({
     isCrmComputers: (settings.crmComputerEmails ?? []).includes(email),
   };
   const extras = extrasFor(settings.permissions, email);
+  const denied = extrasFor(settings.permissionsOff, email);
   const fromRole = permissionsFor(roles, []);
-  const granted = permissionsFor(roles, extras);
+  const granted = permissionsFor(roles, extras, denied);
 
+  /**
+   * One switch per door. Turning something on that the role does not
+   * carry adds it; turning something off that the role does carry writes
+   * it to the taken-away list, so a role can be trimmed without being
+   * changed.
+   */
   async function toggle(key: string) {
-    const next = { ...(settings!.permissions ?? {}) };
-    const list = extrasFor(next, email);
-    const updated = list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
-    if (updated.length) next[email] = updated;
-    else delete next[email];
+    const on = granted.has(key as typeof key & never) || granted.has(key as never);
+    const perms = { ...(settings!.permissions ?? {}) };
+    const off = { ...(settings!.permissionsOff ?? {}) };
+    const setList = (map: Record<string, string[]>, list: string[]) => {
+      if (list.length) map[email] = list;
+      else delete map[email];
+    };
+    if (on) {
+      // Take it away: drop any extra grant, and record the denial when
+      // the role would otherwise hand it back.
+      setList(perms, extrasFor(perms, email).filter((k) => k !== key));
+      if (fromRole.has(key as never)) setList(off, [...new Set([...extrasFor(off, email), key])]);
+    } else {
+      setList(off, extrasFor(off, email).filter((k) => k !== key));
+      if (!fromRole.has(key as never)) setList(perms, [...new Set([...extrasFor(perms, email), key])]);
+    }
     setBusyKey(key);
     try {
-      await updateSettingsField('permissions', next);
-      onSaved({ ...settings!, permissions: next });
+      await updateSettingsField('permissions', perms);
+      await updateSettingsField('permissionsOff', off);
+      onSaved({ ...settings!, permissions: perms, permissionsOff: off });
     } finally {
       setBusyKey('');
     }
   }
 
-  const extraCount = extras.length;
   return (
     <div className="mt-2">
       <button
@@ -933,32 +883,31 @@ function ExtraPermissions({
         onClick={() => setOpen((v) => !v)}
         className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"
       >
-        🔑 Permissions{extraCount ? ` · +${extraCount}` : ''} {open ? '▲' : '▼'}
+        🔑 Permissions · {granted.size}/{PERMISSIONS.length} {open ? '▲' : '▼'}
       </button>
       {open && (
         <div className="mt-2 grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:grid-cols-2">
           {PERMISSIONS.map((p) => {
             const byRole = fromRole.has(p.key);
             const on = granted.has(p.key);
+            const where = !on && byRole ? 'taken away' : on && byRole ? 'from their role' : on ? 'given to them' : p.hint;
             return (
               <label
                 key={p.key}
-                title={byRole ? 'Comes with their role' : p.hint}
-                className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs ${
-                  byRole ? 'opacity-60' : 'cursor-pointer hover:bg-white'
-                }`}
+                title={p.hint}
+                className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white"
               >
                 <input
                   type="checkbox"
                   checked={on}
-                  disabled={byRole || busyKey === p.key}
+                  disabled={busyKey === p.key}
                   onChange={() => toggle(p.key)}
                   className="mt-0.5 h-4 w-4 flex-none accent-brand-600"
                 />
                 <span className="min-w-0">
                   <span className="block font-semibold text-slate-800">{p.label}</span>
-                  <span className="block text-[11px] text-slate-500">
-                    {byRole ? 'comes with their role' : p.hint}
+                  <span className={`block text-[11px] ${!on && byRole ? 'text-red-600' : 'text-slate-500'}`}>
+                    {where}
                   </span>
                 </span>
               </label>
