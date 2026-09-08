@@ -70,6 +70,23 @@ export const subscribeWebPush = onCall({ region: NEAR }, async (request) => {
   return { ok: true };
 });
 
+/** Somebody signed in for the first time and a record was written. */
+export const notifyNewUser = onDocumentCreated('users/{uid}', async (event) => {
+  const u = event.data?.data();
+  if (!u) return;
+  const email = preview(String(u.email ?? ''), 60);
+  const name = preview(String(u.displayName ?? ''), 40);
+  await pushUsers(
+    (await staffLists()).admins,
+    String(u.email ?? ''),
+    'users',
+    '🙋 New user · signed up',
+    [name, email].filter(Boolean).join(' · ') || 'A new account was created',
+    '/admin/users',
+    ['users'],
+  );
+});
+
 export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
   const job = event.data?.data();
   if (!job) return;

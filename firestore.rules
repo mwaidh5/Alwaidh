@@ -38,14 +38,23 @@ service cloud.firestore {
     }
     // A permission handed to one person by name on the Users page, on top
     // of whatever their role already opens.
+    // A permission taken away by name, even where the role grants it.
+    // Admins are never denied — the way to remove an admin is the role.
+    function denied(name) {
+      return !isAdmin() && emailVerified()
+        && name in settingsData().get('permissionsOff', {}).get(request.auth.token.email, []);
+    }
     function hasPerm(name) {
       return emailVerified()
-        && name in settingsData().get('permissions', {}).get(request.auth.token.email, []);
+        && name in settingsData().get('permissions', {}).get(request.auth.token.email, [])
+        && !denied(name);
     }
     // Whoever may work the customer chat: the shop-side roles, plus
     // anyone given "messages" by name.
     function canChat() {
-      return isAdmin() || isComputerStaff() || isSolarStaff() || isShopManager() || hasPerm('messages');
+      return isAdmin()
+        || ((isComputerStaff() || isSolarStaff() || isShopManager() || hasPerm('messages'))
+            && !denied('messages'));
     }
     // Anyone who works here — used for the shared file library.
     function isStaff() {
@@ -56,12 +65,12 @@ service cloud.firestore {
     // from the Users page. Admins hold both books.
     function canCrm(section) {
       return isAdmin()
-        || (section == 'solar' && emailVerified()
-            && request.auth.token.email in settingsData().get('crmSolarEmails', []))
-        || (section == 'solar' && hasPerm('crm-solar'))
-        || (section == 'computers' && emailVerified()
-            && request.auth.token.email in settingsData().get('crmComputerEmails', []))
-        || (section == 'computers' && hasPerm('crm-computers'));
+        || (section == 'solar' && !denied('crm-solar') && emailVerified()
+            && (request.auth.token.email in settingsData().get('crmSolarEmails', [])
+                || hasPerm('crm-solar')))
+        || (section == 'computers' && !denied('crm-computers') && emailVerified()
+            && (request.auth.token.email in settingsData().get('crmComputerEmails', [])
+                || hasPerm('crm-computers')));
     }
 
     // CRM leads. Reads must be filtered by section, so the rule can prove

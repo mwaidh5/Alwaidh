@@ -36,9 +36,16 @@ service firebase.storage {
         && request.auth.token.email in settingsData().get('installerEmails', []);
     }
     // A permission handed to one person by name on the Users page.
+    // A permission taken away by name, even where the role grants it.
+    // Admins are never denied — the way to remove an admin is the role.
+    function denied(name) {
+      return !isAdmin() && emailVerified()
+        && name in settingsData().get('permissionsOff', {}).get(request.auth.token.email, []);
+    }
     function hasPerm(name) {
       return emailVerified()
-        && name in settingsData().get('permissions', {}).get(request.auth.token.email, []);
+        && name in settingsData().get('permissions', {}).get(request.auth.token.email, [])
+        && !denied(name);
     }
     function isStaff() {
       return isAdmin() || isComputerStaff() || isSolarStaff()

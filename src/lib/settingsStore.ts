@@ -175,6 +175,9 @@ export interface SiteSettings {
   /** Extra permissions handed to one person, on top of their role:
    *  { "someone@example.com": ["messages", "jobs"] }. */
   permissions: Record<string, string[]>;
+  /** Permissions taken away from one person, even where their role would
+   *  normally grant it: { "someone@example.com": ["messages"] }. */
+  permissionsOff: Record<string, string[]>;
   heroImage: string;
   solarBannerImage: string;
   logoImage: string;
@@ -218,6 +221,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   installerLeaders: {},
   crmSolarEmails: [],
   permissions: {},
+  permissionsOff: {},
   crmComputerEmails: [],
   staffNames: {},
   heroImage: '',
@@ -351,6 +355,10 @@ function normalize(data: Record<string, unknown>): SiteSettings {
       data.permissions && typeof data.permissions === 'object'
         ? (data.permissions as Record<string, string[]>)
         : DEFAULT_SETTINGS.permissions,
+    permissionsOff:
+      data.permissionsOff && typeof data.permissionsOff === 'object'
+        ? (data.permissionsOff as Record<string, string[]>)
+        : DEFAULT_SETTINGS.permissionsOff,
     heroSlides: Array.isArray(data.heroSlides)
       ? (data.heroSlides as Record<string, unknown>[]).map((h) => ({
           image: String(h.image ?? ''),

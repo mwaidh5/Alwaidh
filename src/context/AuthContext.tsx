@@ -183,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissionsFor(
         { isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, isCrmSolar, isCrmComputers },
         extrasFor(settings?.permissions, shownEmail),
+        extrasFor(settings?.permissionsOff, shownEmail),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, isCrmSolar, isCrmComputers, shownEmail, settings],

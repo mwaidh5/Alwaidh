@@ -65,12 +65,22 @@ function fromRoles(r: RoleFlags): Set<Permission> {
   return out;
 }
 
-/** Everything this person may open: their role's bundle plus their extras. */
-export function permissionsFor(roles: RoleFlags, extra: string[] = []): Set<Permission> {
+/**
+ * Everything this person may open: their role's bundle, plus anything
+ * handed to them by name, minus anything taken away by name. An admin
+ * keeps everything — the way to remove an admin is to change their role,
+ * not to strip them one door at a time.
+ */
+export function permissionsFor(
+  roles: RoleFlags,
+  extra: string[] = [],
+  denied: string[] = [],
+): Set<Permission> {
   const out = fromRoles(roles);
   for (const key of extra) {
     if (PERMISSIONS.some((p) => p.key === key)) out.add(key as Permission);
   }
+  if (!roles.isAdmin) for (const key of denied) out.delete(key as Permission);
   return out;
 }
 

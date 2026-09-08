@@ -10,7 +10,7 @@
  * open (see AdminLayout).
  */
 
-export type NotificationKey = 'jobs' | 'jobActivity' | 'orders' | 'messages' | 'team';
+export type NotificationKey = 'jobs' | 'jobActivity' | 'orders' | 'messages' | 'team' | 'users';
 
 export interface NotificationChannel {
   key: NotificationKey;
@@ -33,6 +33,7 @@ export const NOTIFICATION_CHANNELS: NotificationChannel[] = [
     description: 'Website chat and contact-form enquiries.',
   },
   { key: 'team', label: 'Team chat', description: 'Messages from colleagues, and @ tags.' },
+  { key: 'users', label: 'New users', description: 'When somebody signs up for an account.' },
 ];
 
 /**
@@ -71,7 +72,7 @@ export function channelsFor(roles: Roles): NotificationChannel[] {
   return NOTIFICATION_CHANNELS.filter(({ key }) => {
     if (key === 'team') return true; // everyone has colleagues
     if (key === 'jobs' || key === 'jobActivity') return roles.isAdmin || roles.isSolarStaff;
-    if (key === 'orders') return roles.isAdmin;
+    if (key === 'orders' || key === 'users') return roles.isAdmin;
     // messages
     return roles.isAdmin || roles.isComputerStaff || roles.isSolarStaff || !!roles.isShopManager;
   });
