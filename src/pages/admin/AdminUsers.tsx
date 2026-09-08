@@ -94,6 +94,7 @@ export default function AdminUsers() {
 
   // Split the long list into the people who work here and everyone else.
   const [audience, setAudience] = useState<'all' | 'team' | 'customers'>('all');
+  const [query, setQuery] = useState('');
 
   // Renaming: one row at a time holds an open name box.
   const [editingUid, setEditingUid] = useState<string | null>(null);
@@ -268,9 +269,15 @@ export default function AdminUsers() {
 
   // One filtered list, shown as cards on a phone and as the table above it.
   const shownUsers = (users ?? []).filter((u) => {
-    if (audience === 'all') return true;
-    const customer = effectiveRole(u.email, settings) === 'customer';
-    return audience === 'customers' ? customer : !customer;
+    if (audience !== 'all') {
+      const customer = effectiveRole(u.email, settings) === 'customer';
+      if (audience === 'customers' ? !customer : customer) return false;
+    }
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    // Name, email and the role's own words — "installer" finds the crew.
+    return [u.displayName ?? '', u.email, effectiveRole(u.email, settings), ROLE_LABELS[effectiveRole(u.email, settings)]]
+      .some((v) => String(v).toLowerCase().includes(q));
   });
 
   return (
@@ -368,6 +375,19 @@ export default function AdminUsers() {
       </div>
 
       {users !== null && users.length > 0 && (
+        <div className="relative">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, email or role"
+            className="input w-full ps-8 sm:max-w-sm"
+          />
+          <span className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+        </div>
+      )}
+
+      {users !== null && users.length > 0 && (
         <div className="scrollbar-none -mx-1 flex gap-0.5 overflow-x-auto px-1 text-sm font-semibold sm:mx-0 sm:w-fit sm:self-start sm:rounded-lg sm:border sm:border-slate-200 sm:bg-white sm:p-0.5 sm:px-0.5">
           {(
             [
@@ -396,6 +416,17 @@ export default function AdminUsers() {
             </button>
           ))}
         </div>
+      )}
+
+      {query.trim() && (
+        <p className="-mt-3 text-xs text-slate-500">
+          {shownUsers.length} of {users?.length ?? 0} people match “{query.trim()}”
+          {shownUsers.length === 0 && (
+            <button type="button" onClick={() => setQuery('')} className="ms-2 font-semibold text-brand-700 hover:underline">
+              Clear
+            </button>
+          )}
+        </p>
       )}
 
       {users === null ? (
