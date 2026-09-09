@@ -52,6 +52,10 @@ const EN_PHRASES: Array<[RegExp, string]> = [
   [/ساعة/g, 'hours'],
 ];
 const PHONE = '0774 420 5582';
+
+/** The installments sheet's nine columns: the specs stay narrow so the
+ *  cash price and the three plans have room to be read. */
+const INST_COLUMNS = '0.8fr 0.9fr 0.6fr 1fr 0.8fr 1.05fr 1.1fr 1.1fr 1.1fr';
 const WEBSITE = 'alwaidh.com';
 const ADDRESS = 'بغداد, شارع الصناعة — مقابل رئاسة الجامعة التكنلوجية';
 const ADDRESS_EN = 'Baghdad, Sinaa Street — opposite the University of Technology';
@@ -675,40 +679,40 @@ export default function SolarPrices() {
                 Arabic face, and the logos — all on the same baseline. */}
             <div className="grid items-center gap-6" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
               <div className="flex items-center">
-                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-5 py-2 text-base font-bold text-brand-700">
+                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-6 py-2.5 text-xl font-bold text-brand-700">
                   ⚡ {t('Installments')}
                 </span>
               </div>
               <p
                 dir="rtl"
-                className="text-center text-4xl font-black leading-tight text-slate-900"
+                className="-mt-2 text-center text-5xl font-black leading-tight text-slate-900"
                 style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
               >
                 شركة تقنية الواعظ
               </p>
               <div className="flex items-center justify-end gap-6">
                 {settings.solarLogo ? (
-                  <img src={settings.solarLogo} alt="SolarMax" className="h-16 w-auto" />
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
                 ) : (
                   <div dir="ltr" className="text-start leading-tight">
                     <p className="text-2xl font-black text-slate-900">SolarMax®</p>
                     <p className="text-base font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-20 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-24 w-auto" />}
               </div>
             </div>
-            <h2 className="mb-1 mt-4 text-2xl font-black leading-snug text-slate-900">
+            <h2 className="mb-1 mt-1 text-3xl font-black leading-snug text-slate-900">
               {t('Installment systems — Central Bank initiative')}
             </h2>
-            <p className="text-sm leading-relaxed text-slate-500">
-              {t('The total and the monthly payment for each plan length — 3, 5 and 7 years.')}
+            <p className="text-[15px] leading-relaxed text-slate-500">
+              {t('The cash price, then the total and the monthly payment for each plan length — 3, 5 and 7 years.')}
             </p>
 
             <div className="mt-5 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
               <div
-                className="grid items-center gap-3 bg-brand-600 px-6 py-2.5"
-                style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
+                className="grid items-center gap-2 bg-brand-600 px-5 py-2.5"
+                style={{ gridTemplateColumns: INST_COLUMNS }}
               >
                 {[
                   t('System'),
@@ -716,11 +720,12 @@ export default function SolarPrices() {
                   t('Panels'),
                   t('Batteries'),
                   t('Backup hours'),
+                  t('Cash price'),
                   `3 ${t('years')}`,
                   `5 ${t('years')}`,
                   `7 ${t('years')}`,
                 ].map((h) => (
-                  <div key={h} className="text-center text-sm font-extrabold text-white">
+                  <div key={h} className="text-center text-[15px] font-extrabold text-white">
                     {h}
                   </div>
                 ))}
@@ -728,26 +733,32 @@ export default function SolarPrices() {
               {instRows.map((row) => (
                 <div
                   key={row.id}
-                  className="grid flex-1 items-center gap-3 border-b border-slate-200 bg-white px-6 py-1.5 last:border-b-0"
-                  style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}
+                  className="grid flex-1 items-center gap-2 border-b border-slate-200 bg-white px-5 py-1.5 last:border-b-0"
+                  style={{ gridTemplateColumns: INST_COLUMNS }}
                 >
-                  <div dir="ltr" className="text-center text-xl font-black text-slate-900">
+                  <div dir="ltr" className="text-center text-2xl font-black text-slate-900">
                     {row.sizeAmp} A
                   </div>
                   {/* Shown as typed: a bare number gets its unit, anything
                       else (an IP rating, two inverters) is the staff's own words. */}
-                  <div dir="ltr" className="text-center text-[15px] text-slate-600">
+                  <div dir="ltr" className="text-center text-[16px] font-semibold text-slate-700">
                     {/^\d+(\.\d+)?$/.test(row.inverterKw.trim()) ? `${row.inverterKw} KW` : row.inverterKw}
                   </div>
-                  <div dir="ltr" className="text-center text-[15px] text-slate-600">
+                  <div dir="ltr" className="text-center text-[16px] font-semibold text-slate-700">
                     {row.panelsCount}
                   </div>
-                  <div className="text-center text-[15px] leading-tight text-slate-600">
-                    <span dir="ltr" className="block">{row.batteryKwh} KWh</span>
-                    <span className="block text-[12px] text-slate-400">{localize(row.batteryLabel)}</span>
+                  <div className="text-center leading-tight">
+                    <span dir="ltr" className="block text-[16px] font-extrabold text-slate-900">
+                      {row.batteryKwh} KWh
+                    </span>
+                    <span className="block text-[12px] text-slate-500">{localize(row.batteryLabel)}</span>
                   </div>
-                  <div dir="ltr" className="text-center text-[15px] text-slate-600">
+                  <div dir="ltr" className="text-center text-[16px] font-extrabold text-slate-900">
                     {row.backupHours} {t('hours')}
+                  </div>
+                  {/* Cash, beside the plans: the question every customer asks. */}
+                  <div dir="ltr" className="text-center text-[17px] font-extrabold tracking-tight text-slate-900">
+                    {money(row.cash)}
                   </div>
                   {[3, 5, 7].map((y) => (
                     <div key={y} dir="ltr" className="text-center leading-tight">
@@ -773,11 +784,14 @@ export default function SolarPrices() {
                   wrong side in RTL. */}
               <div className="space-y-0 text-[11px] leading-snug text-slate-600">
                 {[
-                  t('These prices include installation and commissioning; installation costs can vary by 10% depending on the site.'),
+                  t('These prices include installation and commissioning; installation costs can vary by 5% depending on the site.'),
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
                   t('The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.'),
                   t('The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.'),
-                  t('The price includes the AC cable between the inverter and the national board up to 15 metres; any extra length is charged.'),
+                  t('The price includes the AC cable between the inverter and the national board up to 10 metres; any extra length is charged.'),
+                  t('More backup hours are possible by adding batteries.'),
+                  t('Every panel needs about 4 square metres of roof space.'),
+                  t('The plan length is yours to choose — anything from one year to seven.'),
                 ].map((note) => (
                   <div key={note} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-600" />
@@ -789,7 +803,7 @@ export default function SolarPrices() {
 
             <div className="mt-3 flex items-center justify-center gap-14 border-t border-slate-200 pt-3">
               {(settings.brands ?? [])
-                .filter((b) => /jinko|saj|hailei/i.test(b.name) && b.image)
+                .filter((b) => /jinko|saj|hailei|sinexcel/i.test(b.name) && b.image)
                 .map((b) => (
                   <img key={b.name} src={b.image} alt={b.name} className="h-12 w-auto object-contain" />
                 ))}

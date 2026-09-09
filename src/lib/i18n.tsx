@@ -1007,7 +1007,7 @@ const AR: Record<string, string> = {
   'and every plan derive from the published 7-year total.': 'وكل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
   'System': 'المنظومة',
   'Monthly payment': 'القسط الشهري',
-  'These prices include installation and commissioning; installation costs can vary by 10% depending on the site.':
+  'These prices include installation and commissioning; installation costs can vary by 5% depending on the site.':
     'هذه الأسعار تتضمن تكاليف التنصيب والتشغيل للمنظومة، ويمكن لتكاليف النصب أن تتغير بنسبة 10% حسب مكان التنصيب.',
   'The inverter is IP65-rated with internet monitoring and a 5-year warranty.':
     'الانفيرتر المستخدم من فئة IP65 ويحتوي على خاصية المراقبة عن طريق الإنترنت وبضمان 5 سنوات.',
@@ -1186,7 +1186,11 @@ const AR: Record<string, string> = {
   'Open the map': 'افتح الخريطة',
   'month': 'شهر',
   'The total and the monthly payment for each plan length — 3, 5 and 7 years.': 'السعر الكلي والقسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
-  'The price includes the AC cable between the inverter and the national board up to 15 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
+  'The price includes the AC cable between the inverter and the national board up to 10 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 10 متر، وأي زيادة تكون مقابل ثمن.',
+  'More backup hours are possible by adding batteries.': 'يمكن زيادة ساعات التغذية من خلال زيادة عدد البطاريات.',
+  'Every panel needs about 4 square metres of roof space.': 'كل لوح يحتاج مساحة تقارب 4 متر مربع.',
+  'The plan length is yours to choose — anything from one year to seven.': 'يمكن اختيار مدة التقسيط من سنة واحدة إلى سبع سنوات.',
+  'The cash price, then the total and the monthly payment for each plan length — 3, 5 and 7 years.': 'السعر نقداً، ثم السعر الكلي والقسط الشهري لكل مدة — ٣ و ٥ و ٧ سنوات.',
   'Learn from past chats': 'تعلّم من المحادثات السابقة',
   'Reads what your team already answered': 'يقرأ إجابات فريقك السابقة',
   'Send a solar system': 'أرسل منظومة شمسية',
