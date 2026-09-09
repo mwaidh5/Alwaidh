@@ -52,6 +52,7 @@ const EN_PHRASES: Array<[RegExp, string]> = [
   [/ساعة/g, 'hours'],
 ];
 const PHONE = '0774 420 5582';
+const PHONE_2 = '0781 015 0876';
 
 /** The installments sheet's nine columns: the specs stay narrow so the
  *  cash price and the three plans have room to be read. */
@@ -533,7 +534,7 @@ export default function SolarPrices() {
           <span>
             {ADDRESS} ·{' '}
             <span dir="ltr" className="font-bold text-slate-700">
-              {PHONE}
+              {PHONE} · {PHONE_2}
             </span>
           </span>
           <span className="font-bold text-brand-700">{WEBSITE}</span>
@@ -652,7 +653,7 @@ export default function SolarPrices() {
                 <p className="text-sm text-slate-500">
                   {t('For enquiries and installation:')}{' '}
                   <span dir="ltr" className="font-bold text-slate-700">
-                    {PHONE}
+                    {PHONE} · {PHONE_2}
                   </span>{' '}
                   · <span className="font-bold text-brand-700">{WEBSITE}</span>
                 </p>
@@ -753,7 +754,7 @@ export default function SolarPrices() {
                     </span>
                     <span className="block text-[12px] text-slate-500">{localize(row.batteryLabel)}</span>
                   </div>
-                  <div dir="ltr" className="text-center text-[16px] font-extrabold text-slate-900">
+                  <div dir="ltr" className="text-center text-[19px] font-black text-slate-900">
                     {row.backupHours} {t('hours')}
                   </div>
                   {/* Cash, beside the plans: the question every customer asks. */}
@@ -815,7 +816,7 @@ export default function SolarPrices() {
                 <p className="text-sm text-slate-500">
                   {t('For enquiries and installation:')}{' '}
                   <span dir="ltr" className="font-bold text-slate-700">
-                    {PHONE}
+                    {PHONE} · {PHONE_2}
                   </span>{' '}
                   · <span className="font-bold text-brand-700">{WEBSITE}</span>
                 </p>
