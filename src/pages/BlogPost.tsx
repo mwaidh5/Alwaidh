@@ -6,7 +6,9 @@ import { useSeo, organizationJsonLd } from '../lib/seo';
 import { openChat } from '../lib/chatPanel';
 
 /** The body's little grammar: blank lines split paragraphs, "## " starts
-    a heading, consecutive "- " lines make a list. */
+    a heading, consecutive "- " lines make a list, and a line that is
+    nothing but a picture's address becomes that picture — with the line
+    under it, if there is one, as its caption. */
 function renderBody(body: string): ReactNode[] {
   const blocks = body.split(/\n\s*\n/);
   return blocks.map((block, i) => {
@@ -17,6 +19,24 @@ function renderBody(body: string): ReactNode[] {
         <h2 key={i} className="mb-3 mt-8 text-xl font-extrabold tracking-tight text-slate-900">
           {lines[0].slice(3)}
         </h2>
+      );
+    }
+    if (/^https?:\/\/\S+$/.test(lines[0].trim()) && /firebasestorage|\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(lines[0])) {
+      const caption = lines[1]?.trim();
+      return (
+        <figure key={i} className="mb-6 mt-2">
+          <img
+            src={lines[0].trim()}
+            alt={caption ?? ''}
+            loading="lazy"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 object-cover"
+          />
+          {caption && (
+            <figcaption dir="auto" className="bidi mt-2 text-center text-[13px] text-slate-500">
+              {caption}
+            </figcaption>
+          )}
+        </figure>
       );
     }
     if (lines.every((l) => l.trim().startsWith('- '))) {
