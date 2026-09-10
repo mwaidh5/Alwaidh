@@ -816,7 +816,9 @@ export default function SolarPrices() {
                     </span>
                     <span className="block text-[12px] text-slate-500">{localize(row.batteryLabel)}</span>
                   </div>
-                  <div dir="ltr" className="text-center text-[19px] font-black text-slate-900">
+                  {/* dir="auto": in Arabic the number leads and ساعة follows
+                      it; forcing LTR here put the word first. */}
+                  <div dir="auto" className="text-center text-[19px] font-black text-slate-900">
                     {row.backupHours} {t('hours')}
                   </div>
                   {/* Cash, beside the plans: the question every customer asks. */}
@@ -850,7 +852,7 @@ export default function SolarPrices() {
                   t('These prices include installation and commissioning; installation costs can vary by 5% depending on the site.'),
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
                   t('The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.'),
-                  t('The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.'),
+                  t('The panels are Jinko — the world’s number one panel — with a 15-year warranty.'),
                   t('The price includes the AC cable between the inverter and the national board up to 10 metres; any extra length is charged.'),
                   t('More backup hours are possible by adding batteries.'),
                   t('Every panel needs about 4 square metres of roof space.'),
