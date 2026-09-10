@@ -24,6 +24,7 @@ const config: CapacitorConfig = {
       'alwaidh-baeb5.web.app',
       'alwaidh-baeb5.firebaseapp.com',
       'accounts.google.com',
+      'appleid.apple.com',
       '*.google.com',
       '*.googleapis.com',
       '*.gstatic.com',
@@ -32,7 +33,9 @@ const config: CapacitorConfig = {
   plugins: {
     FirebaseAuthentication: {
       skipNativeAuth: false,
-      providers: ['google.com'],
+      // Every provider the native sheet may be asked for. The plugin
+      // refuses one that isn't listed here, whatever Firebase says.
+      providers: ['google.com', 'apple.com'],
     },
     FirebaseMessaging: {
       // Without this, iOS silently swallows a notification that arrives
