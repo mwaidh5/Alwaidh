@@ -293,9 +293,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
           if (isNativeApp()) {
+            // The sheet proves who they are to the native SDK; the delete
+            // happens on the JavaScript side, so the credential has to be
+            // handed over here too — signing in natively alone leaves this
+            // session just as stale as it was.
             const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-            if (providers.includes('apple.com')) await FirebaseAuthentication.signInWithApple();
-            else await FirebaseAuthentication.signInWithGoogle();
+            if (providers.includes('apple.com')) {
+              const res = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+              const idToken = res.credential?.idToken;
+              if (!idToken) throw new Error('Apple sign-in did not return a credential.');
+              const cred = new OAuthProvider('apple.com').credential({
+                idToken,
+                rawNonce: res.credential?.nonce,
+              });
+              await reauthenticateWithCredential(current, cred);
+              return;
+            }
+            const res = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
+            const idToken = res.credential?.idToken;
+            if (!idToken) throw new Error('Google sign-in did not return a credential.');
+            const cred = GoogleAuthProvider.credential(idToken, res.credential?.nonce);
+            await reauthenticateWithCredential(current, cred);
             return;
           }
           const provider = providers.includes('apple.com')
