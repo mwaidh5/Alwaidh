@@ -184,6 +184,23 @@ export default function SolarPrices() {
     if (!m) return { n: v ?? '—', unit: '' };
     return { n: m[1], unit: (v ?? '').replace(m[1], '').trim() };
   }
+  /**
+   * A battery cell is one line of free text — "بطاريتين ليثيوم 16 كيلو واط".
+   * The size is what a customer scans for, so it leads, and how many
+   * batteries make it up sits under it in smaller type, the way the
+   * installments sheet reads.
+   */
+  function splitBattery(v: string): { size: string; rest: string } {
+    const text = (v ?? '').replace(/\s+/g, ' ').trim();
+    const m = /([0-9]+(?:[.,][0-9]+)?)\s*(كيلو\s*واط|كيلوواط|كيلو|امبير|أمبير|Amps?|KWh|kWh|kW|kw)\b/i.exec(text);
+    if (!m) return { size: text, rest: '' };
+    const rest = text
+      .replace(m[0], ' ')
+      .replace(/[()（）]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return { size: `${m[1]} ${m[2]}`.trim(), rest };
+  }
   const isPrice = (key: string) => key === 'price' || key === 'priceWithInverter';
   /** A price cell with its column label, or null when the row has none. */
   function pickPrice(row: PriceRow, key: string): { value: string; label: string } | null {
@@ -646,14 +663,47 @@ export default function SolarPrices() {
                               : 'text-[15px] leading-relaxed text-slate-600'
                         }
                       >
-                        {isPrice(c.key)
-                          ? row.values[c.key] || '—'
-                          : sheetCell(localize(row.values[c.key] ?? '') || '—')}
+                        {isPrice(c.key) ? (
+                          row.values[c.key] || '—'
+                        ) : c.key === 'batteries' ? (
+                          (() => {
+                            const bat = splitBattery(localize(row.values[c.key] ?? ''));
+                            return (
+                              <span className="block leading-tight">
+                                <span className="block text-[16px] font-extrabold text-slate-900">
+                                  {sheetCell(bat.size || '—')}
+                                </span>
+                                {bat.rest && (
+                                  <span className="block text-[12px] font-semibold text-brand-400">
+                                    {sheetCell(bat.rest)}
+                                  </span>
+                                )}
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          sheetCell(localize(row.values[c.key] ?? '') || '—')
+                        )}
                       </div>
                     ),
                   )}
                 </div>
               ))}
+            </div>
+
+            <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+              <p className="mb-1 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
+              <div className="space-y-0 text-[12px] leading-snug text-slate-600">
+                {[
+                  t('The price does not include the AC cable.'),
+                  t('The price may be adjusted after the site survey.'),
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-600" />
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Footer: where we are — the door stays on the website */}
@@ -753,7 +803,9 @@ export default function SolarPrices() {
                   {/* Shown as typed: a bare number gets its unit, anything
                       else (an IP rating, two inverters) is the staff's own words. */}
                   <div dir="ltr" className="text-center text-[16px] font-semibold text-slate-700">
-                    {/^\d+(\.\d+)?$/.test(row.inverterKw.trim()) ? `${row.inverterKw} KW` : row.inverterKw}
+                    {/^[\d.]+\s*[*x×]\s*[\d.]+$|^\d+(\.\d+)?$/.test(row.inverterKw.trim())
+                      ? `${row.inverterKw} KW`
+                      : row.inverterKw}
                   </div>
                   <div dir="ltr" className="text-center text-[16px] font-semibold text-slate-700">
                     {row.panelsCount}
@@ -793,7 +845,7 @@ export default function SolarPrices() {
               <p className="mb-1 text-sm font-extrabold text-slate-900">{t('Notes')}</p>
               {/* Hand-drawn bullets: html2canvas puts list markers on the
                   wrong side in RTL. */}
-              <div className="space-y-0 text-[11px] leading-snug text-slate-600">
+              <div className="space-y-0 text-[12.5px] leading-snug text-slate-600">
                 {[
                   t('These prices include installation and commissioning; installation costs can vary by 5% depending on the site.'),
                   t('The inverter is IP65-rated with internet monitoring and a 5-year warranty.'),
@@ -816,7 +868,7 @@ export default function SolarPrices() {
               {(settings.brands ?? [])
                 .filter((b) => /jinko|saj|hailei|sinexcel/i.test(b.name) && b.image)
                 .map((b) => (
-                  <img key={b.name} src={b.image} alt={b.name} className="h-12 w-auto object-contain" />
+                  <img key={b.name} src={b.image} alt={b.name} className="h-16 w-auto object-contain" />
                 ))}
             </div>
 
@@ -831,7 +883,7 @@ export default function SolarPrices() {
                   · <span className="font-bold text-brand-700">{WEBSITE}</span>
                 </p>
               </div>
-              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-14 w-auto opacity-90" />}
+              {settings.solarLogo && <img src={settings.solarLogo} alt="" className="h-16 w-auto opacity-90" />}
             </div>
           </div>
         </div>
