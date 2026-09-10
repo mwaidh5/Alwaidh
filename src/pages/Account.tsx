@@ -46,6 +46,7 @@ export default function Account() {
           <div className="space-y-6">
             <ProfileCard />
             <SecurityCard onSendReset={sendPasswordReset} />
+            <DeleteAccountCard />
           </div>
           <OrdersCard uid={user.uid} />
         </div>
@@ -483,6 +484,126 @@ function OrdersCard({ uid }: { uid: string }) {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Leaving for good.
+ *
+ * Apple require an account made in the app to be deletable in the app,
+ * and it is the right thing anyway. Two deliberate steps — typing DELETE,
+ * then confirming — because there is no undo. Firebase asks for a fresh
+ * proof of identity on an old session; for a password account that is the
+ * password, for Google or Apple it is their own sheet, which the auth
+ * context handles.
+ */
+function DeleteAccountCard() {
+  const { deleteAccount, user } = useAuth();
+  const { t } = useLang();
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [password, setPassword] = useState('');
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const hasPassword = (user?.providerData ?? []).some((p) => p.providerId === 'password');
+  const ready = confirm.trim().toUpperCase() === 'DELETE' && (!needsPassword || password.length > 0);
+
+  async function handleDelete() {
+    setError('');
+    setBusy(true);
+    try {
+      await deleteAccount(password || undefined);
+      // The account is gone; onAuthStateChanged takes it from here and
+      // the router sends them back to the front of the site.
+      window.location.assign('/');
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : '';
+      if (e instanceof Error && e.name === 'PasswordNeeded') {
+        setNeedsPassword(true);
+        setError(t('Enter your password to confirm'));
+      } else if (raw.includes('auth/wrong-password') || raw.includes('auth/invalid-credential')) {
+        setError('That password is not right.');
+      } else {
+        setError(raw.replace('Firebase: ', '') || t('Could not delete the account.'));
+      }
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card p-5">
+      <h2 className="text-base font-bold text-slate-900">{t('Deleting your account')}</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        {t(
+          'This erases your account and your profile for good. Orders already placed stay with the shop as business records.',
+        )}
+      </p>
+
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-4 w-full rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-50"
+        >
+          {t('Delete my account')}
+        </button>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <label className="block text-sm">
+            <span className="font-medium text-slate-700">{t('Type DELETE to confirm')}</span>
+            <input
+              autoFocus
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              dir="ltr"
+              placeholder="DELETE"
+              className="input mt-1"
+            />
+          </label>
+          {(needsPassword || hasPassword) && (
+            <label className="block text-sm">
+              <span className="font-medium text-slate-700">{t('Enter your password to confirm')}</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                dir="ltr"
+                className="input mt-1"
+              />
+            </label>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={!ready || busy}
+              className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? '…' : t('Delete account for good')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setConfirm('');
+                setPassword('');
+                setError('');
+              }}
+              disabled={busy}
+              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700"
+            >
+              {t('Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800">{error}</p>
       )}
     </div>
   );

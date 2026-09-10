@@ -6,5 +6,12 @@
 	     App Store; Xcode maps it to the sandbox automatically for debug builds. -->
 	<key>aps-environment</key>
 	<string>production</string>
+	<!-- Sign in with Apple. App Review require it beside Google (4.8), and
+	     the capability must also be switched on for the App ID in the
+	     Apple Developer portal. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>
