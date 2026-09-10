@@ -429,7 +429,11 @@ export default function Home() {
       <SolarQuote logo={settings.solarLogo} />
 
       {/* ---------------- Cameras ---------------- */}
-      <CamerasPitch image={settings.aboutImages?.cameras || FALLBACK.cameras} />
+      {/* The homepage tells the story from the customer's side, so it has
+          its own photo; the About card keeps the product line-up. */}
+      <CamerasPitch
+        image={settings.aboutImages?.homeCameras || settings.aboutImages?.cameras || FALLBACK.cameras}
+      />
 
       {/* ---------------- Brands ---------------- */}
       <section className="mt-14 border-y border-slate-200 bg-white py-10">
