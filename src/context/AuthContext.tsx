@@ -102,6 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setUser(u);
       setLoading(false);
+      if (!u) {
+        // Signed out — including a sign-out from before this tidy-up
+        // existed, which left the topics behind.
+        import('../lib/push')
+          .then(({ unsubscribeAll, lastSubscriber }) => unsubscribeAll(lastSubscriber()))
+          .catch(() => undefined);
+      }
       if (u && u.email) {
         recordUserLogin({
           uid: u.uid,
@@ -412,6 +419,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         if (!auth) return;
+        // Leave every topic first: after fbSignOut there is no email to
+        // unsubscribe with, and the device would go on buzzing for work
+        // that is no longer theirs.
+        try {
+          const { unsubscribeAll } = await import('../lib/push');
+          await unsubscribeAll(auth.currentUser?.email ?? null);
+        } catch {
+          /* the sign-out matters more than the tidy-up */
+        }
         if (isNativeApp()) {
           // Also clear the OS-level Google session so the account picker
           // shows again on the next sign-in.

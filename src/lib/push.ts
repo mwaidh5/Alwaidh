@@ -326,6 +326,7 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
  * its token is refreshed, and re-subscribing costs nothing.
  */
 export async function syncSubscriptions(roles: Roles, email: string | null): Promise<void> {
+  if (email) rememberSubscriber(email);
   if (!isNativeApp()) {
     // Browser and home-screen app: the server does the subscribing, since
     // the web SDK can't join a topic by itself.
@@ -394,6 +395,79 @@ export async function setNotificationChannel(
     else await FirebaseMessaging.unsubscribeFromTopic({ topic });
   } catch {
     /* stays saved; the next sync will apply it */
+  }
+}
+
+/**
+ * Who this device last subscribed as. A sign-out that happened before
+ * this tidy-up existed left the topics behind, and after signing out
+ * there is no email left to name them with — so it is remembered.
+ */
+const SUBSCRIBED_AS = 'alwaidh.push.subscribedAs.v1';
+
+export function rememberSubscriber(email: string | null): void {
+  try {
+    if (email) localStorage.setItem(SUBSCRIBED_AS, email.toLowerCase());
+    else localStorage.removeItem(SUBSCRIBED_AS);
+  } catch {
+    /* private mode */
+  }
+}
+
+export function lastSubscriber(): string | null {
+  try {
+    return localStorage.getItem(SUBSCRIBED_AS);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every topic this address could possibly be subscribed to — all the
+ * channels, not merely the ones their current roles show, plus the plain
+ * personal topic and the old broadcast ones. Signing out has to undo
+ * subscriptions made when the person held other roles, or the device
+ * keeps buzzing for work that is no longer theirs.
+ */
+function allTopicsFor(email: string): string[] {
+  const own = userTopic(email);
+  return [
+    ...new Set([
+      own,
+      ...NOTIFICATION_CHANNELS.map(({ key }) => topicFor(key, email)),
+      ...LEGACY_TOPICS,
+    ]),
+  ];
+}
+
+/**
+ * Take this device off every one of that person's topics — called when
+ * they sign out. Works on the phone and in the browser: the browser's
+ * subscriptions live on the server against its token, so the server is
+ * told as well.
+ */
+export async function unsubscribeAll(email: string | null): Promise<void> {
+  if (!email) return;
+  const topics = allTopicsFor(email);
+  rememberSubscriber(null);
+  if (isNativeApp()) {
+    try {
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      for (const topic of topics) {
+        await FirebaseMessaging.unsubscribeFromTopic({ topic }).catch(() => undefined);
+      }
+    } catch {
+      /* plugin missing — nothing subscribed either */
+    }
+    return;
+  }
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    const token = await webPushToken();
+    if (!token) return;
+    await setWebTopics(token, [], topics);
+  } catch {
+    /* the browser or the server refused; the sign-out itself still stands */
   }
 }
 
