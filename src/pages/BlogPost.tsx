@@ -78,6 +78,10 @@ export default function BlogPost() {
 
   const loaded = post !== null && post !== 'missing' ? post : null;
 
+  // "الواعظ للقدرة" is the solar side of the house; a camera or a
+  // computer article is signed by the company itself.
+  const byline = loaded?.topic === 'solar' ? 'الواعظ للقدرة' : 'شركة الواعظ';
+
   // The invitation beneath the article matches what it was about.
   const cta =
     loaded?.topic === 'cameras'
@@ -164,7 +168,7 @@ export default function BlogPost() {
         </h1>
         <p className="mb-6 text-sm text-slate-400">
           {new Date(post.createdAtMs).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} ·
-          Alwaidh — الواعظ للقدرة
+          Alwaidh — {byline}
         </p>
         {post.cover && (
           <img src={post.cover} alt="" className="mb-8 w-full rounded-2xl object-cover" />

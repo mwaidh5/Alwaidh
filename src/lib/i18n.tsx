@@ -1015,8 +1015,8 @@ const AR: Record<string, string> = {
     'الانفيرتر المستخدم من فئة IP65 ويحتوي على خاصية المراقبة عن طريق الإنترنت وبضمان 5 سنوات.',
   'The batteries are IP20-rated, 16 KWh, 8000 charge cycles at 90% depth of discharge, with a 5-year warranty.':
     'البطاريات المستخدمة من فئة IP20 سعة 16 كيلو واط بعدد 8000 دورة شحن وتفريغ وبعمق تفريغ 90% وبضمان 5 سنوات.',
-  'The panels are Jinko — the world’s number one panel — rated 650W with a 15-year warranty.':
-    'الألواح المستخدمة من نوع Jinko (اللوح رقم واحد عالمياً) بقدرة 650 واط وبضمان 15 سنة.',
+  'The panels are Jinko — the world’s number one panel — with a 15-year warranty.':
+    'الألواح المستخدمة من نوع Jinko (اللوح رقم واحد عالمياً) وبضمان 15 سنة.',
   'AC cabling is included up to 20 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
   'Every plan is calculated from the published 7-year total.':
     'كل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
