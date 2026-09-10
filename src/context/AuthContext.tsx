@@ -1,9 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   createUserWithEmailAndPassword,
+  deleteUser as fbDeleteUser,
+  EmailAuthProvider,
   getRedirectResult,
   GoogleAuthProvider,
+  OAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -48,6 +53,15 @@ interface AuthContextValue {
   realIsAdmin: boolean;
   setViewAsEmail: (email: string | null) => void;
   signInWithGoogle: () => Promise<void>;
+  /** Apple's own sign-in — required by App Review beside Google, and the
+   *  one that lets a person hide their real address. */
+  signInWithApple: () => Promise<void>;
+  /**
+   * Erase this account for good: the person's record, then the sign-in
+   * itself. `password` is only needed when Firebase asks for a fresh
+   * proof of identity and the account signs in with one.
+   */
+  deleteAccount: (password?: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -217,6 +231,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       realIsAdmin,
       setViewAsEmail,
       configured: firebaseReady && auth !== null,
+      async signInWithApple() {
+        if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
+        if (isNativeApp()) {
+          // On the phone this is the system sheet, so Face ID and "Hide My
+          // Email" work the way people expect.
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+          const result = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+          const idToken = result.credential?.idToken;
+          if (!idToken) throw new Error('Apple sign-in did not return a credential. Please try again.');
+          const provider = new OAuthProvider('apple.com');
+          const credential = provider.credential({
+            idToken,
+            rawNonce: result.credential?.nonce,
+          });
+          const signedIn = await signInWithCredential(auth, credential);
+          // Apple hands over the name once, on the very first sign-in.
+          // Apple's plugin carries the name on the credential; the web
+          // SDK's type doesn't know about it, so read it loosely.
+          const named = result.credential as { givenName?: string; familyName?: string } | undefined;
+          const given = [named?.givenName, named?.familyName].filter(Boolean).join(' ').trim();
+          if (given && !signedIn.user.displayName) {
+            await updateProfile(signedIn.user, { displayName: given });
+          }
+          return;
+        }
+        const provider = new OAuthProvider('apple.com');
+        provider.addScope('email');
+        provider.addScope('name');
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (e) {
+          const code = (e as { code?: string })?.code ?? '';
+          if (
+            code === 'auth/popup-blocked' ||
+            code === 'auth/cancelled-popup-request' ||
+            code === 'auth/popup-closed-by-user' ||
+            code === 'auth/operation-not-supported-in-this-environment'
+          ) {
+            await signInWithRedirect(auth, provider);
+            return;
+          }
+          throw e;
+        }
+      },
+      async deleteAccount(password?: string) {
+        if (!auth?.currentUser) throw new Error('You are not signed in.');
+        const current = auth.currentUser;
+
+        /** Firebase refuses to erase an account signed in a while ago. */
+        const proveItIsYou = async () => {
+          const providers = current.providerData.map((p) => p.providerId);
+          if (providers.includes('password')) {
+            if (!password) {
+              const err = new Error('password-needed');
+              err.name = 'PasswordNeeded';
+              throw err;
+            }
+            const cred = EmailAuthProvider.credential(current.email ?? '', password);
+            await reauthenticateWithCredential(current, cred);
+            return;
+          }
+          if (isNativeApp()) {
+            const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+            if (providers.includes('apple.com')) await FirebaseAuthentication.signInWithApple();
+            else await FirebaseAuthentication.signInWithGoogle();
+            return;
+          }
+          const provider = providers.includes('apple.com')
+            ? new OAuthProvider('apple.com')
+            : googleProvider;
+          await reauthenticateWithPopup(current, provider);
+        };
+
+        const erase = async () => {
+          // The person's own record goes first: once the sign-in is gone
+          // the rules would refuse the write.
+          try {
+            const { deleteUser: deleteUserRecord } = await import('../lib/userStore');
+            await deleteUserRecord(current.uid);
+          } catch {
+            /* no record to remove, or the rules said no — the account still goes */
+          }
+          await fbDeleteUser(current);
+        };
+
+        try {
+          await erase();
+        } catch (e) {
+          const code = (e as { code?: string })?.code ?? '';
+          if (code !== 'auth/requires-recent-login') throw e;
+          await proveItIsYou();
+          await erase();
+        }
+      },
       async signInWithGoogle() {
         if (!auth) throw new Error('Firebase is not configured. Add VITE_FIREBASE_* values to your .env.');
         // Native app: Google blocks OAuth inside embedded webviews, so use the

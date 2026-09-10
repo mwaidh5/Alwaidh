@@ -47,8 +47,16 @@ function clearTries(): void {
 }
 
 export default function Login() {
-  const { user, loading, configured, signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset } =
-    useAuth();
+  const {
+    user,
+    loading,
+    configured,
+    signInWithGoogle,
+    signInWithApple,
+    signInWithEmail,
+    signUpWithEmail,
+    sendPasswordReset,
+  } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,6 +87,20 @@ export default function Login() {
 
   if (!loading && user) {
     return <Navigate to={redirectTo} replace />;
+  }
+
+  async function handleApple() {
+    setError('');
+    setInfo('');
+    setSubmitting(true);
+    try {
+      await signInWithApple();
+      navigate(redirectTo, { replace: true });
+    } catch (e) {
+      setError(toMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleGoogle() {
@@ -265,6 +287,18 @@ export default function Login() {
           {t('Continue with Google')}
         </button>
 
+        {/* Apple's own sign-in, in Apple's own black. Anyone using it can
+            keep their real address to themselves. */}
+        <button
+          type="button"
+          onClick={handleApple}
+          disabled={!configured || submitting || loading}
+          className="mt-2.5 inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <AppleIcon />
+          {t('Continue with Apple')}
+        </button>
+
         {error && (
           <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
             {t(error)}
@@ -295,6 +329,14 @@ function toMessage(e: unknown): string {
   if (raw.includes('auth/too-many-requests'))
     return 'Too many attempts — wait a few minutes, then try again.';
   return raw.replace('Firebase: ', '');
+}
+
+function AppleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className="h-[18px] w-[18px]" fill="currentColor">
+      <path d="M16.365 1.43c0 1.14-.42 2.2-1.25 3.04-.99 1-2.13 1.58-3.37 1.48-.03-1.11.44-2.23 1.24-3.05.83-.86 2.16-1.5 3.38-1.47zM20.5 17.02c-.6 1.38-.88 2-1.65 3.22-1.08 1.7-2.6 3.82-4.48 3.83-1.67.02-2.1-1.09-4.37-1.08-2.27.01-2.74 1.1-4.41 1.08-1.88-.01-3.32-1.92-4.4-3.62C-1.06 16.9-1.3 11.2 1.2 8.24c.85-1.03 2.12-1.7 3.5-1.72 1.61-.03 2.63 1.08 3.96 1.08 1.29 0 2.07-1.08 3.94-1.08 1.22 0 2.51.57 3.43 1.55-3.02 1.65-2.53 5.96.47 7.19z" />
+    </svg>
+  );
 }
 
 function GoogleIcon() {
