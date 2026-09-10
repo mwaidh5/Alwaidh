@@ -570,39 +570,47 @@ export default function SolarPrices() {
             }}
             className="mx-auto flex min-h-[778px] w-[1100px] max-w-none flex-col bg-white p-8 text-slate-900"
           >
-            {/* Header: chip + title on one side, the logos on the other */}
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-bold text-brand-700">
+{/* One header line, the same as the installments sheet: the chip, the
+                company name in the site's own Arabic face, and the logos. */}
+            <div className="grid items-center gap-6" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+              <div className="flex items-center">
+                <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-6 py-2.5 text-xl font-bold text-brand-700">
                   ⚡ {t('System prices')}
                 </span>
-                <h2 className="mb-1 mt-2.5 text-3xl font-black text-slate-900">
-                  {t('Solar power systems')}
-                </h2>
-                <p className="text-sm leading-relaxed text-slate-500">
-                  {t(
-                    'Complete prices including panels, inverter, batteries and installation. Prices are in Iraqi dinar and can change with stock.',
-                  )}
-                </p>
               </div>
-              <div className="flex flex-none items-center gap-4 pt-1">
+              <p
+                dir="rtl"
+                className="-mt-2 text-center text-5xl font-black leading-tight text-slate-900"
+                style={{ fontFamily: "'Janna LT', 'Tajawal', sans-serif" }}
+              >
+                شركة تقنية الواعظ
+              </p>
+              <div className="flex items-center justify-end gap-6">
                 {settings.solarLogo ? (
-                  <img src={settings.solarLogo} alt="SolarMax" className="h-10 w-auto" />
+                  <img src={settings.solarLogo} alt="SolarMax" className="h-20 w-auto" />
                 ) : (
                   <div dir="ltr" className="text-start leading-tight">
-                    <p className="text-xl font-black text-slate-900">SolarMax®</p>
-                    <p className="text-sm font-bold text-slate-500">الواعظ للقدرة</p>
+                    <p className="text-2xl font-black text-slate-900">SolarMax®</p>
+                    <p className="text-base font-bold text-slate-500">الواعظ للقدرة</p>
                   </div>
                 )}
-                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-10 w-auto" />}
+                {settings.logoImage && <img src={settings.logoImage} alt="" className="h-24 w-auto" />}
               </div>
             </div>
+            <h2 className="mb-1 mt-1 text-3xl font-black leading-snug text-slate-900">
+              {t('Solar power systems')}
+            </h2>
+            <p className="text-[15px] leading-relaxed text-slate-500">
+              {t(
+                'Complete prices including panels, inverter, batteries and installation. Prices are in Iraqi dinar and can change with stock.',
+              )}
+            </p>
 
             {/* The table */}
             <div className="mt-5 flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200">
               <div className="grid items-center gap-3 bg-brand-600 px-6 py-2.5" style={gridStyle}>
                 {columns.map((c) => (
-                  <div key={c.key} className="text-sm font-extrabold text-white">
+                  <div key={c.key} className="text-[15px] font-extrabold text-white">
                     {columnLabel(c)}
                     {!en && c.sub && !columnLabel(c).includes(c.sub) && (
                       <span className="block text-[10px] font-bold text-brand-100">{c.sub}</span>
@@ -633,7 +641,9 @@ export default function SolarPrices() {
                             ? `text-start text-lg font-extrabold ${
                                 c.key === 'priceWithInverter' ? 'text-brand-600' : 'text-slate-900'
                               }`
-                            : 'text-[15px] leading-relaxed text-slate-600'
+                            : c.key === 'panels'
+                              ? 'text-[17px] font-extrabold leading-relaxed text-slate-900'
+                              : 'text-[15px] leading-relaxed text-slate-600'
                         }
                       >
                         {isPrice(c.key)
