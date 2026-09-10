@@ -967,6 +967,8 @@ const AR: Record<string, string> = {
   'Panels': 'الألواح',
   'Batteries': 'البطاريات',
   'Backup hours': 'ساعات التغذية',
+  'The price does not include the AC cable.': 'السعر لا يشمل كيبل التيار المتناوب.',
+  'The price may be adjusted after the site survey.': 'السعر قابل للتعديل بعد الكشف.',
   'Log': 'السجل',
   'Product log': 'سجل المنتجات',
   'This product’s history': 'سجل هذا المنتج',
