@@ -21,6 +21,11 @@ import {
   saveAssistantKnowledge,
   saveAssistantHandoff,
 } from '../../lib/assistantStore';
+import {
+  markGapTaught,
+  subscribeAssistantGaps,
+  type AssistantGap,
+} from '../../lib/assistantGaps';
 import { useLang } from '../../lib/i18n';
 import { useSettings } from '../../lib/useSettings';
 import { useScrollLock } from '../../lib/useScrollLock';
@@ -209,7 +214,15 @@ export default function AdminChat() {
         )}
       </header>
 
-      {assistantOpen && <AssistantModal onClose={() => setAssistantOpen(false)} />}
+      {assistantOpen && (
+        <AssistantModal
+          onClose={() => setAssistantOpen(false)}
+          onOpenChat={(id) => {
+            setActiveId(id);
+            setAssistantOpen(false);
+          }}
+        />
+      )}
 
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
@@ -642,12 +655,21 @@ function ProductPicker({
  * owner states are saved into the same notes the customer-facing bot
  * answers from, so a correction here teaches the real thing.
  */
-function AssistantModal({ onClose }: { onClose: () => void }) {
+function AssistantModal({
+  onClose,
+  onOpenChat,
+}: {
+  onClose: () => void;
+  onOpenChat: (chatId: string) => void;
+}) {
   // Registers as a modal (hides the floating tab bar, freezes the page)
   // — without it the bar sat on top of the composer.
   useScrollLock();
   const { t } = useLang();
-  const [tab, setTab] = useState<'teach' | 'notes'>('teach');
+  const [tab, setTab] = useState<'teach' | 'gaps' | 'notes'>('teach');
+  // The questions it could not answer - counted on the tab so the owner
+  // sees at a glance that something is waiting.
+  const [gaps, setGaps] = useState<AssistantGap[] | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [knowledge, setKnowledge] = useState('');
   const [handoff, setHandoff] = useState('');
@@ -673,6 +695,9 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
       })
       .catch(() => setMsg('Could not load the settings.'));
   }, []);
+
+  useEffect(() => subscribeAssistantGaps(setGaps, () => setGaps([])), []);
+  const waiting = (gaps ?? []).filter((g) => !g.taught).length;
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
@@ -811,20 +836,26 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
           {(
             [
               { key: 'teach', label: '🎓 Teach it' },
+              { key: 'gaps', label: '🙋 Where it stopped', badge: waiting },
               { key: 'notes', label: '📒 Its notes' },
-            ] as { key: typeof tab; label: string }[]
+            ] as { key: typeof tab; label: string; badge?: number }[]
           ).map((x) => (
             <button
               key={x.key}
               type="button"
               onClick={() => setTab(x.key)}
-              className={`px-4 py-2.5 transition ${
+              className={`flex items-center gap-1.5 px-3 py-2.5 transition ${
                 tab === x.key
                   ? 'border-b-2 border-brand-600 text-brand-700'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {x.label}
+              {!!x.badge && (
+                <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white">
+                  {x.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -914,6 +945,8 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
             </div>
             {msg && <p className="border-t border-slate-100 px-4 py-2 text-xs text-red-700">{msg}</p>}
           </>
+        ) : tab === 'gaps' ? (
+          <GapsTab gaps={gaps} onOpenChat={onOpenChat} onTaught={setKnowledge} />
         ) : (
           <>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
@@ -964,5 +997,156 @@ function AssistantModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Where it stopped.
+ *
+ * Every time the assistant hands a customer to the team, the question is
+ * written down - and whatever a colleague answered afterwards is filed
+ * beside it. The owner reads both and teaches the answer in one tap: the
+ * line goes straight into the notes the bot answers from.
+ */
+function GapsTab({
+  gaps,
+  onOpenChat,
+  onTaught,
+}: {
+  gaps: AssistantGap[] | null;
+  onOpenChat: (chatId: string) => void;
+  onTaught: (knowledge: string) => void;
+}) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+  const [showDone, setShowDone] = useState(false);
+
+  const open = (gaps ?? []).filter((g) => !g.taught);
+  const done = (gaps ?? []).filter((g) => g.taught);
+  const shown = showDone ? done : open;
+
+  async function teach(g: AssistantGap) {
+    const answer = (drafts[g.id] ?? g.staffAnswer).trim();
+    if (!answer) return;
+    setBusy(g.id);
+    setErr('');
+    try {
+      // Read the notes fresh: another device may have added a line while
+      // this panel sat open.
+      const cfg = await loadAssistantConfig();
+      const line = `س: ${g.question.replace(/\s+/g, ' ').slice(0, 200)} — ج: ${answer.replace(/\s+/g, ' ')}`;
+      const next = (cfg.knowledge.trimEnd() ? cfg.knowledge.trimEnd() + '\n' : '') + line;
+      await saveAssistantKnowledge(next);
+      onTaught(next);
+      await markGapTaught(g.id, answer);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not save that.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function skip(g: AssistantGap) {
+    setBusy(g.id);
+    try {
+      await markGapTaught(g.id, '');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not save that.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  return (
+    <>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <p dir="auto" className="bidi text-xs leading-relaxed text-slate-500">
+            كل سؤال وقف عنده المساعد وحوّل الزبون للفريق. اكتب الجواب الصحيح واضغط «علّمه» —
+            يروح مباشرة لدفتره ويجاوب بيه من أول مرة جاية.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowDone((v) => !v)}
+            className="flex-none rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+          >
+            {showDone ? `🙋 Waiting (${open.length})` : `✓ Done (${done.length})`}
+          </button>
+        </div>
+
+        {gaps === null && <p className="py-6 text-center text-sm text-slate-400">...</p>}
+        {gaps !== null && shown.length === 0 && (
+          <p className="py-10 text-center text-sm text-slate-500">
+            {showDone ? 'Nothing taught yet.' : 'Nothing waiting - it answered everything. 🎉'}
+          </p>
+        )}
+
+        {shown.map((g) => (
+          <div key={g.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+              <span>{whenText(g.askedAtMs || null)}</span>
+              <button
+                type="button"
+                onClick={() => onOpenChat(g.chatId)}
+                className="font-bold text-brand-700 hover:underline"
+              >
+                Open the chat
+              </button>
+            </div>
+            <p dir="auto" className="bidi text-sm font-semibold text-slate-900">
+              {g.question}
+            </p>
+
+            {g.staffAnswer && (
+              <div className="mt-2 rounded-lg border border-green-200 bg-green-50 p-2">
+                <p dir="auto" className="bidi text-[11px] font-bold text-green-800">
+                  الفريق رد بعدها{g.staffAnswerBy ? ` - ${g.staffAnswerBy.split('@')[0]}` : ''}:
+                </p>
+                <p dir="auto" className="bidi mt-0.5 text-sm text-green-900">
+                  {g.staffAnswer}
+                </p>
+              </div>
+            )}
+
+            {!g.taught ? (
+              <>
+                <textarea
+                  value={drafts[g.id] ?? g.staffAnswer}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [g.id]: e.target.value }))}
+                  dir="auto"
+                  rows={2}
+                  placeholder="الجواب الصحيح، بجملة وحدة..."
+                  className="input mt-2 w-full resize-none py-2 text-sm font-normal"
+                />
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => teach(g)}
+                    disabled={busy === g.id || !(drafts[g.id] ?? g.staffAnswer).trim()}
+                    className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50"
+                  >
+                    {busy === g.id ? 'Saving...' : '📝 Teach it this'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skip(g)}
+                    disabled={busy === g.id}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Nothing to learn
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-[11px] font-bold text-slate-400">
+                ✓ Done{g.taughtBy ? ` - ${g.taughtBy.split('@')[0]}` : ''}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      {err && <p className="border-t border-slate-100 px-4 py-2 text-xs text-red-700">{err}</p>}
+    </>
   );
 }

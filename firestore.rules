@@ -260,6 +260,14 @@ service cloud.firestore {
       }
     }
 
+    // Every question that stopped the assistant, written down by the
+    // Cloud Function so the owner can teach it the answer. Anyone who
+    // works the chat may read them; only admins tick one off.
+    match /assistantGaps/{id} {
+      allow read: if canChat();
+      allow write: if isAdmin();
+    }
+
     // Internal staff messaging: one-to-one chats and groups. Membership is
     // the access model — you only ever see a conversation your email is a
     // member of, so the app's query filters on it.
