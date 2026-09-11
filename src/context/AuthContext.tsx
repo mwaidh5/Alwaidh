@@ -104,10 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       if (!u) {
         // Signed out — including a sign-out from before this tidy-up
-        // existed, which left the topics behind.
-        import('../lib/push')
-          .then(({ unsubscribeAll, lastSubscriber }) => unsubscribeAll(lastSubscriber()))
-          .catch(() => undefined);
+        // existed, which left the topics behind. Wait first: a sign-in
+        // resolves through this same listener, and unsubscribing on the
+        // way past would strip the subscriptions it is about to make.
+        window.setTimeout(() => {
+          if (auth?.currentUser) return;
+          import('../lib/push')
+            .then(({ unsubscribeAll, lastSubscriber }) => unsubscribeAll(lastSubscriber()))
+            .catch(() => undefined);
+        }, 4000);
       }
       if (u && u.email) {
         recordUserLogin({
