@@ -156,6 +156,76 @@ async function humanReplied(db: Firestore, chatId: string, sinceMs: number): Pro
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * The questions that stopped it.
+ *
+ * Every time the assistant says "a colleague will answer this", the
+ * question goes in this book — with whatever the colleague then wrote,
+ * so the owner can see both and teach the answer in one tap. Nothing is
+ * learned automatically: a person decides what becomes a note.
+ */
+async function recordGap(
+  db: Firestore,
+  chatId: string,
+  messageId: string,
+  question: string,
+  askedAt: number,
+): Promise<void> {
+  const text = question.replace(/\s+/g, ' ').trim();
+  if (!text) return;
+  try {
+    await db.doc(`assistantGaps/${chatId}__${messageId}`).set(
+      {
+        chatId,
+        messageId,
+        question: text.slice(0, 600),
+        askedAt: Timestamp.fromMillis(askedAt),
+        // Filled in below the moment a colleague answers in that chat.
+        staffAnswer: '',
+        taught: false,
+        at: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (e) {
+    console.warn('assistant gap:', e instanceof Error ? e.message : e);
+  }
+}
+
+/**
+ * A colleague has just written in a chat. If the assistant gave up in
+ * that same conversation in the last three days, their words are the
+ * answer it was missing — filed beside the question.
+ */
+async function noteStaffAnswer(db: Firestore, chatId: string, text: string, by: string): Promise<void> {
+  const body = text.replace(/\s+/g, ' ').trim();
+  if (!body) return;
+  try {
+    const open = await db
+      .collection('assistantGaps')
+      .where('chatId', '==', chatId)
+      .where('staffAnswer', '==', '')
+      .limit(3)
+      .get();
+    const cutoff = Date.now() - 3 * 24 * 60 * 60_000;
+    await Promise.all(
+      open.docs
+        .filter((d) => {
+          const t = d.get('askedAt');
+          return t instanceof Timestamp ? t.toMillis() > cutoff : true;
+        })
+        .map((d) =>
+          d.ref.set(
+            { staffAnswer: body.slice(0, 600), staffAnswerBy: by, staffAnswerAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          ),
+        ),
+    );
+  } catch (e) {
+    console.warn('assistant gap answer:', e instanceof Error ? e.message : e);
+  }
+}
+
 /** The shop's location card - the same one staff send with the 📍 button. */
 const SHOP_PLACE = {
   lat: 33.3114556,
@@ -247,7 +317,15 @@ export const assistantReply = onDocumentCreated(
   },
   async (event) => {
     const msg = event.data?.data();
-    if (!msg || msg.from !== 'guest') return;
+    if (!msg) return;
+    // A colleague answering: not the assistant's turn, but their words
+    // may be the answer to a question it could not handle. Written down
+    // before we step aside.
+    if (msg.from === 'staff' && msg.by !== ASSISTANT_BY) {
+      await noteStaffAnswer(getFirestore(), event.params.chatId, String(msg.text ?? ''), String(msg.by ?? ''));
+      return;
+    }
+    if (msg.from !== 'guest') return;
     if (!String(msg.text ?? '').trim()) return;
 
     const key = (ANTHROPIC_API_KEY.value() || '').trim();
@@ -444,6 +522,7 @@ export const assistantReply = onDocumentCreated(
     // top of the ordinary new-message ping they already got.
     if (needsStaff) {
       const question = String(msg.text ?? '').replace(/\s+/g, ' ').slice(0, 90);
+      await recordGap(db, chatId, event.params.messageId, String(msg.text ?? ''), askedAt);
       await pushUsers(
         (await staffLists()).messages,
         '',
