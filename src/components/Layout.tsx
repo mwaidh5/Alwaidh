@@ -186,21 +186,27 @@ export default function Layout() {
   useEffect(() => {
     if (!user?.email) return;
     let cancelled = false;
+    let timer = 0;
     (async () => {
       if ((await pushState()) !== 'granted' || cancelled) return;
-      syncSubscriptions(
-        {
-          isAdmin: realIsAdmin,
-          isComputerStaff,
-          isSolarStaff,
-          isShopManager,
-          isInstaller,
-        },
-        user.email ?? null,
-      );
+      const roles = {
+        isAdmin: realIsAdmin,
+        isComputerStaff,
+        isSolarStaff,
+        isShopManager,
+        isInstaller,
+      };
+      await syncSubscriptions(roles, user.email ?? null);
+      // Once more, a moment later. Subscribing and unsubscribing are both
+      // slow round trips, and a sign-out that was still finishing as this
+      // person signed back in would otherwise leave the device deaf.
+      timer = window.setTimeout(() => {
+        if (!cancelled) syncSubscriptions(roles, user.email ?? null);
+      }, 8000);
     })();
     return () => {
       cancelled = true;
+      if (timer) window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller]);

@@ -326,6 +326,8 @@ export async function enablePush(roles: Roles, email: string | null): Promise<En
  * its token is refreshed, and re-subscribing costs nothing.
  */
 export async function syncSubscriptions(roles: Roles, email: string | null): Promise<void> {
+  // Signing out clears this; setting it again on the way in is what tells
+  // a later sign-out which topics to leave.
   if (email) rememberSubscriber(email);
   if (!isNativeApp()) {
     // Browser and home-screen app: the server does the subscribing, since
