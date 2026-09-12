@@ -354,13 +354,24 @@ service cloud.firestore {
         allow read: if isAdmin() || isSolarStaff() || ownJob();
         allow create: if (isAdmin() || isSolarStaff() || ownJob())
                       && request.resource.data.by == request.auth.token.email;
-        // History is written once — only reactions may be added, and each
-        // person may touch only their own slot in the map.
+        // History is written once, with two exceptions: a reaction — each
+        // person may touch only their own slot in the map — and the author
+        // fixing the wording of their own comment, which leaves editedAt
+        // behind so the entry can say so. The automatic lines about status
+        // moves belong to the record and nobody may rewrite them.
         allow update: if (isAdmin() || isSolarStaff() || ownJob())
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
-          && request.resource.data.get('reactions', {})
-               .diff(resource.data.get('reactions', {}))
-               .affectedKeys().hasOnly([request.auth.token.email]);
+          && (
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+             && request.resource.data.get('reactions', {})
+                  .diff(resource.data.get('reactions', {}))
+                  .affectedKeys().hasOnly([request.auth.token.email]))
+            || (resource.data.by == request.auth.token.email
+                && resource.data.get('kind', 'comment') == 'comment'
+                && request.resource.data.diff(resource.data)
+                     .affectedKeys().hasOnly(['text', 'editedAt'])
+                && request.resource.data.text is string
+                && request.resource.data.text.size() > 0)
+          );
         allow delete: if isAdmin();
       }
     }

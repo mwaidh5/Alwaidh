@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   addJobComment,
+  editJobComment,
   setJobReaction,
   subscribeJobActivity,
   type Job,
@@ -13,6 +14,7 @@ import Reactions from './Reactions';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { useStaffName } from '../lib/staffDirectory';
+import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAILS } from '../firebase';
 
 /**
@@ -159,6 +161,12 @@ export default function JobActivity({ job }: { job: Job }) {
     { id: string; name: string; kind: 'image' | 'pdf'; preview: string; phase: UploadPhase; percent: number }[]
   >([]);
   const [dragOver, setDragOver] = useState(false);
+  // The comment being reworded, and the words in the box.
+  const [editing, setEditing] = useState('');
+  const [editDraft, setEditDraft] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const { user } = useAuth();
+  const me = user?.email?.toLowerCase() ?? '';
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -255,6 +263,22 @@ export default function JobActivity({ job }: { job: Job }) {
     }
   }
 
+  /** Save a reworded comment; the box stays open if it fails. */
+  async function saveEdit(entryId: string) {
+    const text = editDraft.trim();
+    if (!text || savingEdit) return;
+    setSavingEdit(true);
+    setError('');
+    try {
+      await editJobComment(job.id, entryId, text);
+      setEditing('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the change.');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   return (
     <section className="mt-2">
       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -314,6 +338,34 @@ export default function JobActivity({ job }: { job: Job }) {
                       <span className="text-slate-600">{t(e.text)}</span>
                     )}
                   </p>
+                  {editing === e.id && (
+                    <div className="mt-1.5">
+                      <textarea
+                        value={editDraft}
+                        onChange={(ev) => setEditDraft(ev.target.value)}
+                        dir="auto"
+                        rows={2}
+                        className="input bidi w-full resize-none py-1.5 text-sm font-normal"
+                      />
+                      <div className="mt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(e.id)}
+                          disabled={savingEdit || !editDraft.trim()}
+                          className="btn-primary px-3 py-1 text-xs disabled:opacity-50"
+                        >
+                          {t('Save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditing('')}
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                          {t('Cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {e.attachments.length > 0 && <AttachmentList items={e.attachments} />}
                   {e.kind === 'comment' && (
                     <Reactions
@@ -321,7 +373,25 @@ export default function JobActivity({ job }: { job: Job }) {
                       onToggle={(emoji) => setJobReaction(job.id, e.id, emoji)}
                     />
                   )}
-                  <p className="text-xs text-slate-400">{whenText(e.atMs)}</p>
+                  <p className="flex items-center gap-2 text-xs text-slate-400">
+                    <span>
+                      {whenText(e.atMs)}
+                      {e.editedAtMs ? ` · ${t('edited')}` : ''}
+                    </span>
+                    {/* Your own words, yours to fix. */}
+                    {e.kind === 'comment' && e.by.toLowerCase() === me && editing !== e.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditing(e.id);
+                          setEditDraft(e.text);
+                        }}
+                        className="font-bold text-slate-500 hover:text-brand-700"
+                      >
+                        {t('Edit')}
+                      </button>
+                    )}
+                  </p>
                 </div>
               </li>
             ))

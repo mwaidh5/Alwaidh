@@ -69,6 +69,8 @@ export interface JobEvent {
   mentions: string[];  // emails tagged in a comment
   attachments: JobAttachment[]; // photos and PDFs posted with the comment
   reactions: Record<string, string>; // email → emoji, one per person
+  /** When the author last fixed the wording; null if never touched. */
+  editedAtMs: number | null;
 }
 
 export const JOB_STATUSES: { key: JobStatus; label: string }[] = [
@@ -457,6 +459,24 @@ export async function addJobComment(
   });
 }
 
+/**
+ * Fix the wording of a comment you wrote.
+ *
+ * Only the author, and only a comment — the automatic lines about status
+ * moves are the record and stay as they are. The time of the edit is
+ * stored beside the text so the entry can say it was changed.
+ */
+export async function editJobComment(jobId: string, entryId: string, text: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Comments need a database connection.');
+  const body = text.trim();
+  if (!body) throw new Error('A comment cannot be left empty.');
+  await updateDoc(doc(database, COLLECTION, jobId, 'activity', entryId), {
+    text: body,
+    editedAt: serverTimestamp(),
+  });
+}
+
 /** Put, swap or take back this account's reaction on one history entry.
  *  The rules allow exactly this: only the caller's own slot in the
  *  reactions map may change, and nothing else on the entry. */
@@ -508,6 +528,7 @@ export function subscribeJobActivity(
             text: String(data.text ?? ''),
             mentions: Array.isArray(data.mentions) ? data.mentions.map(String) : [],
             reactions: readReactions(data.reactions),
+            editedAtMs: toMillis(data.editedAt),
             attachments: Array.isArray(data.attachments)
               ? (data.attachments as Record<string, unknown>[]).map((a) => ({
                   url: String(a.url ?? ''),
