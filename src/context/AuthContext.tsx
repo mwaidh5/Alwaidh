@@ -290,6 +290,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async deleteAccount(password?: string) {
         if (!auth?.currentUser) throw new Error('You are not signed in.');
         const current = auth.currentUser;
+        const signedInWith = current.providerData.map((p) => p.providerId);
+
+        /**
+         * Apple ask for the token back when the account goes — the
+         * authorisation code only comes out of a fresh sheet, so an Apple
+         * account is asked once here and erased straight after. A failure
+         * to revoke never stops the deletion: the account is theirs.
+         */
+        const partWithApple = async () => {
+          if (!signedInWith.includes('apple.com') || !isNativeApp()) return;
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+          const res = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+          const idToken = res.credential?.idToken;
+          if (idToken) {
+            const cred = new OAuthProvider('apple.com').credential({
+              idToken,
+              rawNonce: res.credential?.nonce,
+            });
+            // The same sheet proves who they are, so Firebase will not ask
+            // again a moment later.
+            await reauthenticateWithCredential(current, cred).catch(() => undefined);
+          }
+          const code = res.credential?.authorizationCode ?? res.credential?.accessToken ?? '';
+          if (!code) return;
+          await FirebaseAuthentication.revokeAccessToken({ token: code }).catch((e) =>
+            console.warn('Apple token revoke:', e instanceof Error ? e.message : e),
+          );
+        };
 
         /** Firebase refuses to erase an account signed in a while ago. */
         const proveItIsYou = async () => {
@@ -346,6 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fbDeleteUser(current);
         };
 
+        await partWithApple();
         try {
           await erase();
         } catch (e) {
