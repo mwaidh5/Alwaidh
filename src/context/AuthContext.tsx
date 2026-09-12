@@ -298,25 +298,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          * account is asked once here and erased straight after. A failure
          * to revoke never stops the deletion: the account is theirs.
          */
+        const appleOnThePhone = signedInWith.includes('apple.com') && isNativeApp();
         const partWithApple = async () => {
-          if (!signedInWith.includes('apple.com') || !isNativeApp()) return;
+          if (!appleOnThePhone) return;
           const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-          const res = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+          // Not skipNativeAuth this time: the iOS SDK's revokeToken only
+          // answers when the native layer holds a signed-in user. Without
+          // one it never calls back, and the delete spun for ever.
+          const res = await FirebaseAuthentication.signInWithApple();
           const idToken = res.credential?.idToken;
           if (idToken) {
             const cred = new OAuthProvider('apple.com').credential({
               idToken,
               rawNonce: res.credential?.nonce,
             });
-            // The same sheet proves who they are, so Firebase will not ask
-            // again a moment later.
+            // The same sheet proves who they are on this side too; if the
+            // token will not go round twice, proveItIsYou asks again.
             await reauthenticateWithCredential(current, cred).catch(() => undefined);
           }
           const code = res.credential?.authorizationCode ?? res.credential?.accessToken ?? '';
           if (!code) return;
-          await FirebaseAuthentication.revokeAccessToken({ token: code }).catch((e) =>
-            console.warn('Apple token revoke:', e instanceof Error ? e.message : e),
-          );
+          // Ten seconds and no more: the account goes either way.
+          await Promise.race([
+            FirebaseAuthentication.revokeAccessToken({ token: code }),
+            new Promise<never>((_, reject) =>
+              window.setTimeout(() => reject(new Error('Apple did not answer in time')), 10_000),
+            ),
+          ]).catch((e) => console.warn('Apple token revoke:', e instanceof Error ? e.message : e));
+        };
+        /** The native session that sheet opened is not wanted afterwards. */
+        const leaveThePhone = async () => {
+          if (!appleOnThePhone) return;
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+          await FirebaseAuthentication.signOut().catch(() => undefined);
         };
 
         /** Firebase refuses to erase an account signed in a while ago. */
@@ -382,6 +396,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (code !== 'auth/requires-recent-login') throw e;
           await proveItIsYou();
           await erase();
+        } finally {
+          await leaveThePhone();
         }
       },
       async signInWithGoogle() {
