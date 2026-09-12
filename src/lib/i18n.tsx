@@ -968,6 +968,7 @@ const AR: Record<string, string> = {
   'Batteries': 'البطاريات',
   'Backup hours': 'ساعات التغذية',
   'Continue with Apple': 'المتابعة عبر Apple',
+  'Delete account': 'حذف الحساب',
   'Delete my account': 'حذف حسابي',
   'Deleting your account': 'حذف الحساب',
   'This erases your account and your profile for good. Orders already placed stay with the shop as business records.':
