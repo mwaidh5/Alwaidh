@@ -6,6 +6,7 @@ import {
   doc,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -57,6 +58,8 @@ export interface CrmNote {
   images: string[];
   by: string; // staff email
   atMs: number;
+  /** When the writer last fixed it; 0 if never touched. */
+  editedAtMs: number;
 }
 
 export interface CrmContact {
@@ -113,6 +116,7 @@ function normalize(data: Record<string, unknown>, id: string): CrmContact {
           images: Array.isArray(n.images) ? (n.images as unknown[]).map(String).filter(Boolean) : [],
           by: String(n.by ?? ''),
           atMs: Number(n.atMs ?? 0),
+          editedAtMs: Number(n.editedAtMs ?? 0),
         }))
       : [],
     order: Number(data.order ?? 0),
@@ -228,6 +232,35 @@ export async function addContactNote(id: string, text: string, images: string[] 
     }),
     updatedAt: serverTimestamp(),
     updatedBy: currentEmail(),
+  });
+}
+
+/**
+ * Fix the wording of a note.
+ *
+ * The notes live in one array on the lead, so the whole list is written
+ * back — inside a transaction, or a colleague adding a note at the same
+ * moment would lose it. The photos on the note are left alone.
+ */
+export async function editContactNote(id: string, noteId: string, text: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('The CRM needs a database connection.');
+  const body = text.trim();
+  const ref = doc(database, COLLECTION, id);
+  await runTransaction(database, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('That lead is no longer there.');
+    const notes = [...((snap.data().notes ?? []) as Record<string, unknown>[])];
+    const i = notes.findIndex((n) => String(n.id ?? '') === noteId);
+    if (i < 0) throw new Error('That note is no longer there.');
+    const images = Array.isArray(notes[i].images) ? (notes[i].images as unknown[]) : [];
+    if (!body && !images.length) throw new Error('A note cannot be left empty.');
+    notes[i] = { ...notes[i], text: body, editedAtMs: Date.now() };
+    tx.update(ref, {
+      notes,
+      updatedAt: serverTimestamp(),
+      updatedBy: currentEmail(),
+    });
   });
 }
 

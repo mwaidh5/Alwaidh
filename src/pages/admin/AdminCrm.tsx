@@ -17,6 +17,7 @@ import {
   CRM_STATUSES,
   CRM_TAGS,
   addContactNote,
+  editContactNote,
   createContact,
   setContactReminder,
   deleteContact,
@@ -1242,10 +1243,29 @@ function ContactDetails({
   const uploadingIdx = photos.findIndex((p) => p.phase === 'preparing' || p.phase === 'uploading');
   const photoInput = useRef<HTMLInputElement>(null);
   const [remindDraft, setRemindDraft] = useState('');
+  // The note being reworded, and the words in the box.
+  const [editingNote, setEditingNote] = useState('');
+  const [editDraft, setEditDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const myEmail = auth?.currentUser?.email?.toLowerCase() ?? '';
   const notesEnd = useRef<HTMLDivElement>(null);
   useEffect(() => {
     notesEnd.current?.scrollIntoView({ block: 'nearest' });
   }, [contact.notes.length]);
+
+  /** Save a reworded note; the box stays open if it fails. */
+  async function saveNoteEdit(noteId: string) {
+    if (savingNote) return;
+    setSavingNote(true);
+    try {
+      await editContactNote(contact.id, noteId, editDraft);
+      setEditingNote('');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Could not save the change.');
+    } finally {
+      setSavingNote(false);
+    }
+  }
 
   async function postNote() {
     const text = note.trim();
@@ -1429,8 +1449,37 @@ function ContactDetails({
               <div className="space-y-2">
                 {contact.notes.map((n) => (
                   <div key={n.id || `${n.atMs}`} className="rounded-xl bg-slate-50 p-3">
-                    {n.text && (
-                      <p dir="auto" className="bidi whitespace-pre-wrap break-words text-sm text-slate-800">{n.text}</p>
+                    {editingNote && editingNote === n.id ? (
+                      <>
+                        <textarea
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          dir="auto"
+                          rows={3}
+                          className="input bidi w-full resize-none py-1.5 text-sm font-normal"
+                        />
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => saveNoteEdit(n.id)}
+                            disabled={savingNote}
+                            className="btn-primary px-3 py-1 text-xs disabled:opacity-50"
+                          >
+                            {t('Save')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingNote('')}
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                          >
+                            {t('Cancel')}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      n.text && (
+                        <p dir="auto" className="bidi whitespace-pre-wrap break-words text-sm text-slate-800">{n.text}</p>
+                      )
                     )}
                     {n.images?.length > 0 && (
                       <div className={`${n.text ? 'mt-2' : ''} flex flex-wrap gap-1.5`}>
@@ -1446,8 +1495,24 @@ function ContactDetails({
                         ))}
                       </div>
                     )}
-                    <p className="mt-1 text-[11px] text-slate-400">
-                      {staffName(n.by)} · {fmtWhen(n.atMs)}
+                    <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                      <span>
+                        {staffName(n.by)} · {fmtWhen(n.atMs)}
+                        {n.editedAtMs ? ` · ${t('edited')}` : ''}
+                      </span>
+                      {/* Your own words, yours to fix. */}
+                      {!!n.id && n.by.toLowerCase() === myEmail && editingNote !== n.id && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingNote(n.id);
+                            setEditDraft(n.text);
+                          }}
+                          className="font-bold text-slate-500 hover:text-brand-700"
+                        >
+                          {t('Edit')}
+                        </button>
+                      )}
                     </p>
                   </div>
                 ))}
