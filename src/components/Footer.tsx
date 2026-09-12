@@ -52,6 +52,7 @@ export default function Footer() {
             <li><Link className="hover:text-brand-700" to="/about">{t('About')}</Link></li>
             <li><Link className="hover:text-brand-700" to="/blog">{t('Articles')}</Link></li>
             <li><Link className="hover:text-brand-700" to="/privacy">{t('Privacy')}</Link></li>
+            <li><Link className="hover:text-brand-700" to="/delete-account">{t('Delete account')}</Link></li>
             <li>{t('Terms')}</li>
           </ul>
         </div>

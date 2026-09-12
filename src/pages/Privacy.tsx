@@ -13,7 +13,7 @@ export default function Privacy() {
 
   return (
     <div className="container-page py-12">
-      <div className="mx-auto max-w-3xl">
+      <div dir="ltr" className="mx-auto max-w-3xl text-left">
         <h1 className="text-3xl font-extrabold text-slate-900">Privacy Policy</h1>
         <p className="mt-2 text-sm text-slate-500">
           Applies to the {store} website and the “{store} Staff” mobile app.
@@ -37,7 +37,7 @@ export default function Privacy() {
             <ul className="mt-2 list-disc space-y-2 pl-5">
               <li>
                 <span className="font-semibold">Account details.</span> If you create an account or
-                sign in with Google, we receive your email address and display name so we can
+                sign in with Google or Apple, we receive your email address and display name so we can
                 identify you and protect your account.
               </li>
               <li>
@@ -101,8 +101,12 @@ export default function Privacy() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">Your choices</h2>
             <p className="mt-2">
-              You can ask us to show, correct, or delete the personal information we hold about you,
-              or to close your account, by emailing{' '}
+              You can delete your account yourself at any time from{' '}
+              <a href="/account" className="font-semibold text-brand-700 hover:underline">My account</a>
+              {' '}in the app or on the website — see{' '}
+              <a href="/delete-account" className="font-semibold text-brand-700 hover:underline">how to delete your account</a>
+              . You can also ask us to show, correct, or delete the personal information we hold
+              about you by emailing{' '}
               <a href={`mailto:${email}`} className="font-semibold text-brand-700 hover:underline">
                 {email}
               </a>

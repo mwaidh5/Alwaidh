@@ -13,6 +13,7 @@ import BlogPost from './pages/BlogPost';
 import SolarPrices from './pages/SolarPrices';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
+import DeleteAccount from './pages/DeleteAccount';
 import Login from './pages/Login';
 import AuthAction from './pages/AuthAction';
 import Account from './pages/Account';
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/solar-prices" element={<SolarPrices />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/login" element={<Login />} />
         {/* Where the links in account emails land — see pages/AuthAction. */}
         <Route path="/auth/action" element={<AuthAction />} />
