@@ -31,6 +31,7 @@ import {
   type JobType,
 } from '../../lib/jobsStore';
 import { uploadInvoice } from '../../lib/imageUpload';
+import PdfPreviewModal from '../../components/PdfPreviewModal';
 import { useLang } from '../../lib/i18n';
 import { usePresence } from '../../lib/presence';
 import { useStaffName } from '../../lib/staffDirectory';
@@ -178,13 +179,9 @@ export default function AdminJobs() {
   const [busy, setBusy] = useState(false);
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
 
-  // Phones render iframe PDFs zoomed to actual size, so open the native
-  // viewer there instead of the modal.
+  // Our own viewer everywhere: the Android webview cannot show a PDF,
+  // and a new window there went to a download nobody saw.
   function previewInvoice(url: string) {
-    if (window.matchMedia('(max-width: 640px)').matches) {
-      window.open(url, '_blank', 'noopener');
-      return;
-    }
     setInvoicePreview(url);
   }
   const [query, setQuery] = useState('');
@@ -1724,45 +1721,6 @@ function InvoiceField({
       {err && <p className="mt-1 text-xs text-red-700">{err}</p>}
     </div>
   );
-}
-
-function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
-  useScrollLock();
-  const { t } = useLang();
-  return createPortal(
-    <div className="modal-backdrop fixed inset-0 z-50 flex bg-slate-900/80 p-4" onClick={onClose}>
-      <div
-        className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-800">{t('Invoice preview')}</span>
-          <div className="flex gap-4 text-sm">
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-brand-700 hover:underline"
-            >
-              {t('Open in new tab')}
-            </a>
-            <button
-              type="button"
-              onClick={onClose}
-              className="font-semibold text-slate-600 hover:underline"
-            >
-              {t('Close')}
-            </button>
-          </div>
-        </div>
-        <iframe
-          src={url.includes('#') ? url : `${url}#view=FitH`}
-          title="Invoice preview"
-          className="h-full w-full flex-1"
-        />
-      </div>
-    </div>
-  , document.body);
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
