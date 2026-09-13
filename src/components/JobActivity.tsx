@@ -11,6 +11,7 @@ import {
 import { uploadJobCommentFile } from '../lib/imageUpload';
 import UploadThumb, { type UploadPhase } from './UploadThumb';
 import Reactions from './Reactions';
+import PdfPreviewModal from './PdfPreviewModal';
 import { useSettings } from '../lib/useSettings';
 import { useLang } from '../lib/i18n';
 import { useStaffName } from '../lib/staffDirectory';
@@ -26,6 +27,8 @@ function AttachmentList({ items }: { items: JobAttachment[] }) {
   const { t } = useLang();
   // Index of the photo open in the pop-up, or null.
   const [open, setOpen] = useState<number | null>(null);
+  // A PDF being read in the in-app viewer.
+  const [pdf, setPdf] = useState<JobAttachment | null>(null);
   const photos = items.filter((a) => a.kind === 'image');
 
   function step(dir: 1 | -1) {
@@ -53,18 +56,18 @@ function AttachmentList({ items }: { items: JobAttachment[] }) {
             />
           </button>
         ) : (
-          <a
+          <button
             key={`${a.url}-${i}`}
-            href={a.url}
-            target="_blank"
-            rel="noreferrer"
+            type="button"
+            onClick={() => setPdf(a)}
             className="inline-flex max-w-[12rem] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
           >
             📄 <span className="truncate">{a.name}</span>
-          </a>
+          </button>
         ),
       )}
 
+      {pdf && <PdfPreviewModal url={pdf.url} title={pdf.name} onClose={() => setPdf(null)} />}
       {open !== null && photos[open] && (
         <div
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4"
