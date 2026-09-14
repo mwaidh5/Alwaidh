@@ -137,7 +137,12 @@ service cloud.firestore {
     match /library/{id} {
       allow read: if isStaff();
       allow create: if isStaff() && request.resource.data.by == request.auth.token.email;
-      allow update: if false;
+      // A staff member may give a file a better name or note; the file
+      // itself, its link and who added it stay as they are.
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'note'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
       // Removing a file is the admin's call: everyone else works from what
       // is on the shelf, so nobody can take one away from under them.
       allow delete: if isAdmin();
