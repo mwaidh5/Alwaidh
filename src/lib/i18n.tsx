@@ -761,6 +761,7 @@ const AR: Record<string, string> = {
   'Copied ✓': 'تم النسخ ✓',
   'Remove this file for everyone?': 'إزالة هذا الملف للجميع؟',
   'Could not remove the file.': 'تعذّر حذف الملف.',
+  'or drop files here — up to 25 MB each': 'أو اسحب الملفات هنا — لغاية 25 ميغابايت للملف',
   'or drop a file here — PDF up to 25 MB':
     'أو أفلت ملفاً هنا — PDF لغاية 25 ميغابايت',
   'Note (optional)': 'ملاحظة (اختياري)',
