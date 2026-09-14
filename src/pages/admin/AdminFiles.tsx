@@ -6,6 +6,7 @@ import { useScrollLock } from '../../lib/useScrollLock';
 import {
   deleteLibraryFile,
   formatFileSize,
+  renameLibraryFile,
   isPdf,
   subscribeLibrary,
   uploadLibraryFile,
@@ -28,6 +29,30 @@ export default function AdminFiles() {
   const [search, setSearch] = useState('');
   const [preview, setPreview] = useState<LibraryFile | null>(null);
   const [copied, setCopied] = useState('');
+  // The file being renamed, and the words in its two boxes.
+  const [renaming, setRenaming] = useState('');
+  const [nameDraft, setNameDraft] = useState('');
+  const [noteDraft, setNoteDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  function startRename(item: LibraryFile) {
+    setRenaming(item.id);
+    setNameDraft(item.name);
+    setNoteDraft(item.note);
+  }
+
+  async function saveRename() {
+    if (!renaming || savingName) return;
+    setSavingName(true);
+    try {
+      await renameLibraryFile(renaming, nameDraft, noteDraft);
+      setRenaming('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('Could not rename the file.'));
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   useEffect(
     () =>
@@ -116,14 +141,58 @@ export default function AdminFiles() {
                     sharing a row with four buttons squeezed it to a
                     single character. */}
                 <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-0">
-                  <button
-                    type="button"
-                    onClick={() => setPreview(f)}
-                    className="block max-w-full truncate text-start font-semibold text-slate-900 hover:text-brand-700 hover:underline"
-                  >
-                    {f.name}
-                  </button>
-                  {f.note && <p className="truncate text-sm text-slate-600">{f.note}</p>}
+                  {renaming === f.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        saveRename();
+                      }}
+                      className="space-y-1.5"
+                    >
+                      <input
+                        autoFocus
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Escape' && setRenaming('')}
+                        placeholder={t('Name')}
+                        className="input w-full py-1.5 text-sm font-semibold"
+                      />
+                      <input
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Escape' && setRenaming('')}
+                        placeholder={t('Note (optional)')}
+                        className="input w-full py-1.5 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={savingName || !nameDraft.trim()}
+                          className="btn-primary px-3 py-1 text-xs disabled:opacity-50"
+                        >
+                          {t('Save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRenaming('')}
+                          className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          {t('Cancel')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPreview(f)}
+                        className="block max-w-full truncate text-start font-semibold text-slate-900 hover:text-brand-700 hover:underline"
+                      >
+                        {f.name}
+                      </button>
+                      {f.note && <p className="truncate text-sm text-slate-600">{f.note}</p>}
+                    </>
+                  )}
                   <p className="text-xs text-slate-500">
                     {[
                       formatFileSize(f.size),
@@ -154,6 +223,15 @@ export default function AdminFiles() {
                   >
                     {copied === f.id ? t('Copied ✓') : t('Copy link')}
                   </button>
+                  {renaming !== f.id && (
+                    <button
+                      type="button"
+                      onClick={() => startRename(f)}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      ✏️ {t('Rename')}
+                    </button>
+                  )}
                   {/* Only an admin takes a file off the shelf — everyone
                       else relies on it being there. */}
                   {isAdmin && (

@@ -262,6 +262,8 @@ const AR: Record<string, string> = {
   Loading: 'جاري التحميل',
   'Loading…': 'جاري التحميل…',
   Save: 'حفظ',
+  Rename: 'إعادة تسمية',
+  'Could not rename the file.': 'ما تغيّر اسم الملف.',
   'Saving…': 'جاري الحفظ…',
   Cancel: 'إلغاء',
   Delete: 'حذف',

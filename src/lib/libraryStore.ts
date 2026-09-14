@@ -7,6 +7,7 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
@@ -123,6 +124,16 @@ export async function uploadLibraryFile(input: {
     by: email,
     createdAt: serverTimestamp(),
   });
+}
+
+/** Give a file a better name, and a note if wanted. The stored file and
+ *  its link are untouched, so anything already copied keeps working. */
+export async function renameLibraryFile(id: string, name: string, note: string): Promise<void> {
+  const database = db;
+  if (!database) throw new Error('Firebase is not configured.');
+  const clean = name.trim();
+  if (!clean) throw new Error('A file needs a name.');
+  await updateDoc(doc(database, COLLECTION, id), { name: clean, note: note.trim() });
 }
 
 /**
