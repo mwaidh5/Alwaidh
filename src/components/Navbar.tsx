@@ -226,7 +226,7 @@ export default function Navbar() {
           </div>
 
           {user ? (
-            <div className="relative">
+            <div className="relative flex-none">
               <button
                 type="button"
                 onClick={() => {
@@ -237,18 +237,10 @@ export default function Navbar() {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt=""
-                    className="h-8 w-8 flex-none rounded-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-brand-600 text-xs font-bold text-white">
-                    {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <Avatar
+                  photo={user.photoURL}
+                  initial={(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                />
                 <span className="hidden sm:inline">
                   {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
                 </span>
@@ -379,6 +371,32 @@ function CartIcon({ className = '' }: { className?: string }) {
       <circle cx="18" cy="20" r="1.5" />
       <path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21.5 7H6" />
     </svg>
+  );
+}
+
+/**
+ * The circle on the account button, always 32px whatever the photo does.
+ *
+ * On some Android phones the Google photo never loads, and a broken
+ * image with an empty alt is drawn at no width at all — the button
+ * collapsed to its own padding, a ten-pixel sliver. The initial sits
+ * underneath and the photo is laid over it only once it has arrived.
+ */
+function Avatar({ photo, initial }: { photo: string | null; initial: string }) {
+  const [broken, setBroken] = useState(false);
+  return (
+    <span className="relative grid h-8 w-8 flex-none place-items-center overflow-hidden rounded-full bg-brand-600 text-xs font-bold text-white">
+      {initial}
+      {photo && !broken && (
+        <img
+          src={photo}
+          alt=""
+          onError={() => setBroken(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      )}
+    </span>
   );
 }
 
