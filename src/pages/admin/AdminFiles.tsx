@@ -186,11 +186,11 @@ export default function AdminFiles() {
                       <button
                         type="button"
                         onClick={() => setPreview(f)}
-                        className="block max-w-full truncate text-start font-semibold text-slate-900 hover:text-brand-700 hover:underline"
+                        className="block max-w-full break-words text-start font-semibold text-slate-900 hover:text-brand-700 hover:underline sm:truncate"
                       >
                         {f.name}
                       </button>
-                      {f.note && <p className="truncate text-sm text-slate-600">{f.note}</p>}
+                      {f.note && <p className="break-words text-sm text-slate-600 sm:truncate">{f.note}</p>}
                     </>
                   )}
                   <p className="text-xs text-slate-500">
@@ -424,7 +424,7 @@ function FilePreview({ item, onClose }: { item: LibraryFile; onClose: () => void
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
-          <h2 className="min-w-0 flex-1 truncate font-bold text-slate-900">{item.name}</h2>
+          <h2 className="min-w-0 flex-1 break-words font-bold text-slate-900 sm:truncate">{item.name}</h2>
           <a
             href={brandedFileUrl(item.url)}
             target="_blank"

@@ -261,6 +261,7 @@ const AR: Record<string, string> = {
   'Signed in as': 'مسجّل الدخول باسم',
   Loading: 'جاري التحميل',
   'Loading…': 'جاري التحميل…',
+  'Could not show this PDF here.': 'ما گدرنا نعرض الملف هنا.',
   Save: 'حفظ',
   Rename: 'إعادة تسمية',
   'Could not rename the file.': 'ما تغيّر اسم الملف.',
