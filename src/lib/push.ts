@@ -71,7 +71,9 @@ export interface Roles {
 export function channelsFor(roles: Roles): NotificationChannel[] {
   return NOTIFICATION_CHANNELS.filter(({ key }) => {
     if (key === 'team') return true; // everyone has colleagues
-    if (key === 'jobs' || key === 'jobActivity') return roles.isAdmin || roles.isSolarStaff;
+    // An installer hears about the jobs with their name on them and the
+    // comments under those; the server picks which ones.
+    if (key === 'jobs' || key === 'jobActivity') return roles.isAdmin || roles.isSolarStaff || !!roles.isInstaller;
     if (key === 'orders' || key === 'users') return roles.isAdmin;
     // messages
     return roles.isAdmin || roles.isComputerStaff || roles.isSolarStaff || !!roles.isShopManager;
