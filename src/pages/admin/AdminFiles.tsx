@@ -177,41 +177,61 @@ export default function AdminFiles() {
   );
 }
 
-/** Add a file: pick one (or drop it here), name it, and it's on the shelf. */
+/**
+ * Add files: drop a handful (or pick them), give any of them a better
+ * name, and one Upload puts them all on the shelf in turn. A note typed
+ * here goes on every file in the batch.
+ */
 function UploadBox({ onError }: { onError: (message: string) => void }) {
   const { t } = useLang();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [name, setName] = useState('');
+  // What is waiting to go up, each with the name it will carry.
+  const [pending, setPending] = useState<{ file: File; name: string }[]>([]);
   const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
+  // How many of the batch are already up, while it runs; -1 when idle.
+  const [progress, setProgress] = useState(-1);
   const [over, setOver] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(0);
 
-  function choose(next: File | null) {
-    setFile(next);
-    setDone(false);
-    // Offer the filename (without its extension) as a starting name.
-    if (next && !name.trim()) setName(next.name.replace(/\.[^.]+$/, ''));
+  function choose(list: FileList | File[] | null) {
+    const files = [...(list ?? [])];
+    if (!files.length) return;
+    setDone(0);
+    setPending((cur) => [
+      ...cur,
+      ...files
+        // The same file twice is one file.
+        .filter((f) => !cur.some((x) => x.file.name === f.name && x.file.size === f.size))
+        .map((file) => ({ file, name: file.name.replace(/\.[^.]+$/, '') })),
+    ]);
   }
 
   async function handleUpload() {
-    if (!file) return;
+    if (!pending.length) return;
     onError('');
-    setBusy(true);
+    const batch = pending;
+    let sent = 0;
     try {
-      await uploadLibraryFile({ file, name, note });
-      setFile(null);
-      setName('');
+      for (const item of batch) {
+        setProgress(sent);
+        await uploadLibraryFile({ file: item.file, name: item.name, note });
+        sent += 1;
+        // What is up is off the list, so a failure half-way leaves only
+        // the rest to retry.
+        setPending((cur) => cur.filter((x) => x !== item));
+      }
       setNote('');
-      setDone(true);
+      setDone(sent);
       if (inputRef.current) inputRef.current.value = '';
     } catch (e) {
       onError(e instanceof Error ? e.message : t('Upload failed.'));
     } finally {
-      setBusy(false);
+      setProgress(-1);
     }
   }
+
+  const busy = progress >= 0;
+  const total = pending.reduce((n, x) => n + x.file.size, 0);
 
   return (
     <div
@@ -223,8 +243,7 @@ function UploadBox({ onError }: { onError: (message: string) => void }) {
       onDrop={(e) => {
         e.preventDefault();
         setOver(false);
-        const dropped = e.dataTransfer.files?.[0];
-        if (dropped) choose(dropped);
+        choose(e.dataTransfer.files);
       }}
       className={`card border-2 border-dashed p-4 transition ${
         over ? 'border-brand-500 bg-brand-50' : 'border-slate-200'
@@ -234,50 +253,78 @@ function UploadBox({ onError }: { onError: (message: string) => void }) {
         <input
           ref={inputRef}
           type="file"
+          multiple
           accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-          onChange={(e) => choose(e.target.files?.[0] ?? null)}
+          onChange={(e) => choose(e.target.files)}
           className="text-sm"
         />
         <p className="text-sm text-slate-500">
-          {t('or drop a file here — PDF up to 25 MB')}
+          {t('or drop files here — up to 25 MB each')}
         </p>
       </div>
 
-      {file && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="font-semibold text-slate-700">{t('Name')}</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={file.name}
-              className="input mt-1 w-full"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="font-semibold text-slate-700">{t('Note (optional)')}</span>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('e.g. 2026 price list')}
-              className="input mt-1 w-full"
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={busy}
-              className="btn-primary disabled:opacity-60"
-            >
-              {busy ? t('Uploading…') : `${t('Upload')} — ${formatFileSize(file.size)}`}
-            </button>
+      {pending.length > 0 && (
+        <div className="mt-3 space-y-3">
+          <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+            {pending.map((item, i) => (
+              <li key={`${item.file.name}-${item.file.size}`} className="flex items-center gap-2 p-2">
+                <span className="text-lg" aria-hidden>
+                  {item.file.type === 'application/pdf' ? '📕' : item.file.type.startsWith('image/') ? '🖼️' : '📄'}
+                </span>
+                <input
+                  value={item.name}
+                  onChange={(e) =>
+                    setPending((cur) => cur.map((x, n) => (n === i ? { ...x, name: e.target.value } : x)))
+                  }
+                  placeholder={item.file.name}
+                  disabled={busy}
+                  className="input min-w-0 flex-1 py-1.5 text-sm"
+                />
+                <span className="flex-none text-xs text-slate-500">{formatFileSize(item.file.size)}</span>
+                {!busy && (
+                  <button
+                    type="button"
+                    onClick={() => setPending((cur) => cur.filter((_, n) => n !== i))}
+                    title={t('Remove')}
+                    className="flex-none px-1 text-slate-400 hover:text-red-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="font-semibold text-slate-700">{t('Note (optional)')}</span>
+              <input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('e.g. 2026 price list')}
+                disabled={busy}
+                className="input mt-1 w-full"
+              />
+            </label>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={busy}
+                className="btn-primary disabled:opacity-60"
+              >
+                {busy
+                  ? `${t('Uploading…')} ${progress + 1} / ${pending.length + progress}`
+                  : `${t('Upload')} ${pending.length > 1 ? pending.length : ''} — ${formatFileSize(total)}`}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {done && !file && (
-        <p className="mt-3 text-sm font-semibold text-green-700">{t('Uploaded ✓')}</p>
+      {done > 0 && pending.length === 0 && (
+        <p className="mt-3 text-sm font-semibold text-green-700">
+          {done > 1 ? `${t('Uploaded ✓')} (${done})` : t('Uploaded ✓')}
+        </p>
       )}
     </div>
   );

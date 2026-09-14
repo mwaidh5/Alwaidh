@@ -476,7 +476,25 @@ export default function AdminChat() {
         </div>
       </div>
 
-      {systemOpen && <SystemPicker onPick={sendSystem} onClose={() => setSystemOpen(false)} />}
+      {systemOpen && (
+        <SystemPicker
+          onPick={sendSystem}
+          onPickMany={async (cards) => {
+            setSystemOpen(false);
+            if (!activeId) return;
+            // One card per message, in the order they were ticked.
+            for (const card of cards) {
+              try {
+                await sendStaffReply(activeId, '', null, null, card);
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'Could not send a system card.');
+                break;
+              }
+            }
+          }}
+          onClose={() => setSystemOpen(false)}
+        />
+      )}
       {pickerOpen && (
         <ProductPicker
           onClose={() => setPickerOpen(false)}

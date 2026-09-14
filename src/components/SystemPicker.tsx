@@ -59,9 +59,13 @@ function planCard(row: InstallmentRow): ChatSystemCard {
  */
 export default function SystemPicker({
   onPick,
+  onPickMany,
   onClose,
 }: {
+  /** One system, tapped: sent on its own. */
   onPick: (card: ChatSystemCard) => void;
+  /** Several, ticked: a card each, in the order they were ticked. */
+  onPickMany: (cards: ChatSystemCard[]) => void;
   onClose: () => void;
 }) {
   useScrollLock();
@@ -70,6 +74,14 @@ export default function SystemPicker({
   const [tab, setTab] = useState<'cash' | 'plan'>('cash');
   const [cash, setCash] = useState<PriceRow[]>([]);
   const [plans, setPlans] = useState<InstallmentRow[]>([]);
+  // Ticked systems, in the order they were ticked. A cash row and its
+  // installment twin are two different cards, so the key says which.
+  const [picked, setPicked] = useState<{ key: string; card: ChatSystemCard }[]>([]);
+  const isPicked = (key: string) => picked.some((x) => x.key === key);
+  const toggle = (key: string, card: ChatSystemCard) =>
+    setPicked((list) => (list.some((x) => x.key === key) ? list.filter((x) => x.key !== key) : [...list, { key, card }]));
+  // With a selection going, a tap on the row joins it instead of sending.
+  const tap = (key: string, card: ChatSystemCard) => (picked.length ? toggle(key, card) : onPick(card));
   useEffect(() => subscribePriceRows(setCash), []);
   useEffect(() => subscribeInstallmentRows(setPlans), []);
   const labels = useMemo(
@@ -126,11 +138,26 @@ export default function SystemPicker({
                 <li key={row.id}>
                   <button
                     type="button"
-                    onClick={() => onPick(cashCard(row, labels))}
+                    onClick={() => tap(`cash:${row.id}`, cashCard(row, labels))}
                     dir="rtl"
-                    className="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-start hover:bg-slate-50"
+                    className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-start hover:bg-slate-50 ${
+                      isPicked(`cash:${row.id}`) ? 'bg-brand-50' : ''
+                    }`}
                   >
-                    <span>
+                    <span
+                      role="checkbox"
+                      aria-checked={isPicked(`cash:${row.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(`cash:${row.id}`, cashCard(row, labels));
+                      }}
+                      className={`grid h-6 w-6 flex-none place-items-center rounded-md border text-xs font-black ${
+                        isPicked(`cash:${row.id}`) ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-slate-900">{row.values.capacity}</span>
                       <span className="block text-xs text-slate-500">
                         {row.values.inverter} · {row.values.panels} لوح · {row.values.batteries}
@@ -144,11 +171,26 @@ export default function SystemPicker({
                 <li key={row.id}>
                   <button
                     type="button"
-                    onClick={() => onPick(planCard(row))}
+                    onClick={() => tap(`plan:${row.id}`, planCard(row))}
                     dir="rtl"
-                    className="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-start hover:bg-slate-50"
+                    className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-start hover:bg-slate-50 ${
+                      isPicked(`plan:${row.id}`) ? 'bg-brand-50' : ''
+                    }`}
                   >
-                    <span>
+                    <span
+                      role="checkbox"
+                      aria-checked={isPicked(`plan:${row.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(`plan:${row.id}`, planCard(row));
+                      }}
+                      className={`grid h-6 w-6 flex-none place-items-center rounded-md border text-xs font-black ${
+                        isPicked(`plan:${row.id}`) ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-slate-900">{row.sizeAmp} أمبير</span>
                       <span className="block text-xs text-slate-500">
                         {row.inverterKw} كيلو واط · {row.panelsCount} لوح · {row.batteryKwh} كيلو واط ساعة
@@ -164,6 +206,25 @@ export default function SystemPicker({
                 </li>
               ))}
         </ul>
+        {picked.length > 0 && (
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3">
+            <span className="text-sm font-bold text-slate-700">
+              {picked.length} {t('selected')}
+            </span>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setPicked([])} className="btn-secondary">
+                {t('Clear')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onPickMany(picked.map((x) => x.card))}
+                className="btn-primary"
+              >
+                {t('Send')} {picked.length} ☀️
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
