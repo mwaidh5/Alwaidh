@@ -17,14 +17,19 @@ export default function PdfView({ url, className }: { url: string; className?: s
   const { t } = useLang();
   const holder = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  // What went wrong, for the message — and for the owner's screenshot.
+  const [reason, setReason] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const pdfjs = await import('pdfjs-dist');
+        // The legacy build, not the modern one: an older Android WebView
+        // (a Huawei's, for one) lacks what the modern build assumes, and
+        // the import itself failed there — a blank box, no message.
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
+          'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
           import.meta.url,
         ).toString();
         // The character maps and the base-14 fonts come from our own
@@ -73,8 +78,12 @@ export default function PdfView({ url, className }: { url: string; className?: s
           await page.render({ canvas, canvasContext: ctx, viewport }).promise;
         }
         if (!cancelled) setStatus('ready');
-      } catch {
-        if (!cancelled) setStatus('error');
+      } catch (e) {
+        console.warn('PdfView:', e instanceof Error ? e.message : e);
+        if (!cancelled) {
+          setReason(e instanceof Error ? e.message : String(e));
+          setStatus('error');
+        }
       }
     })();
     return () => {
@@ -83,8 +92,23 @@ export default function PdfView({ url, className }: { url: string; className?: s
   }, [url]);
 
   if (status === 'error') {
-    // Rendering failed (e.g. corrupted file) — fall back to the browser frame.
-    return <iframe src={url} title="PDF" className="h-[75vh] w-full" />;
+    // No iframe here: the Android WebView draws one as a blank box, which
+    // is exactly what the owner was looking at. Say what happened and
+    // offer the file outside.
+    return (
+      <div className="p-8 text-center">
+        <p className="text-sm font-semibold text-slate-700">{t('Could not show this PDF here.')}</p>
+        {reason && <p className="mt-1 text-xs text-slate-400">{reason}</p>}
+        <a
+          href={brandedFileUrl(url)}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-primary mt-4 inline-block"
+        >
+          {t('Open the file')} ↗
+        </a>
+      </div>
+    );
   }
   return (
     <div className={className ?? 'max-h-[80vh] overflow-y-auto'}>
