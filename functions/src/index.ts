@@ -93,14 +93,51 @@ export const notifyNewJob = onDocumentCreated('jobs/{jobId}', async (event) => {
   const customer = preview(job.customer, 40) || 'New customer';
   const system = preview(job.system, 40);
   const kind = job.type === 'repair' ? 'Repair' : 'Install';
+  const detail = [customer, system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added';
+  const link = `/admin/jobs?j=${event.params.jobId}`;
+  const staff = (await staffLists()).jobs;
+  await pushUsers(staff, job.createdBy, 'jobs', `🛠️ Solar job · new ${kind.toLowerCase()}`, detail, link, ['jobs']);
+  // The installers named on it, if they are not staff already: a job
+  // with their name on it is theirs from the first minute.
+  const crew = installersOf(job).filter((e) => !staff.includes(e));
+  if (crew.length) {
+    await pushUsers(crew, job.createdBy, 'jobs', `🛠️ Solar job · assigned to you`, detail, link, ['jobs']);
+  }
+});
+
+/** The installer accounts on a job — the list, or the old single field. */
+function installersOf(job: Record<string, unknown>): string[] {
+  const list = Array.isArray(job.installerEmails)
+    ? job.installerEmails.map(String)
+    : job.installerEmail
+      ? [String(job.installerEmail)]
+      : [];
+  return [...new Set(list.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+}
+
+/**
+ * A job handed to somebody: whoever has just been added to its crew
+ * hears about it. Nothing else about the job is announced here — edits
+ * and moves already write an activity line, which notifyJobActivity
+ * turns into a ping.
+ */
+export const notifyJobAssigned = onDocumentUpdated('jobs/{jobId}', async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after) return;
+  const was = new Set(installersOf(before));
+  const added = installersOf(after).filter((e) => !was.has(e));
+  if (!added.length) return;
+  const customer = preview(after.customer, 40) || 'a job';
+  const system = preview(after.system, 40);
   await pushUsers(
-    (await staffLists()).jobs,
-    job.createdBy,
+    added,
+    after.updatedBy,
     'jobs',
-    `🛠️ Solar job · new ${kind.toLowerCase()}`,
-    [customer, system, preview(job.address, 40)].filter(Boolean).join(' · ') || 'New solar job added',
+    `🛠️ Solar job · assigned to you`,
+    [customer, system, preview(after.address, 40)].filter(Boolean).join(' · '),
     `/admin/jobs?j=${event.params.jobId}`,
-    ['jobs'],
+    ['jobs', `job:${event.params.jobId}`],
   );
 });
 
@@ -116,23 +153,31 @@ export const notifyJobActivity = onDocumentCreated(
     const entry = event.data?.data();
     if (!entry || entry.kind === 'created') return;
     const snap = await getFirestore().doc(`jobs/${event.params.jobId}`).get();
-    const customer = preview(snap.data()?.customer, 40) || 'a job';
+    const job = snap.data() ?? {};
+    const customer = preview(job.customer, 40) || 'a job';
     const who = preview(String(entry.by ?? '').split('@')[0], 24) || 'Someone';
+    const mentions = new Set(
+      (Array.isArray(entry.mentions) ? entry.mentions.map(String) : []).map((m) => m.toLowerCase()),
+    );
     // The title has to say where this came from: "💬 Ali" on a lock
     // screen reads like a customer messaging you, not a job on the board.
     const did =
       entry.kind === 'comment' ? 'commented' : entry.kind === 'status' ? 'moved a job' : 'edited a job';
     const icon = entry.kind === 'comment' ? '💬' : entry.kind === 'status' ? '🔄' : '✏️';
-    await pushUsers(
-      (await staffLists()).jobs,
-      entry.by,
-      'jobActivity',
-      `🛠️ Solar job · ${customer}`,
-      `${icon} ${who} ${did}${entry.text ? `: ${preview(entry.text)}` : ''}`,
-      `/admin/jobs?j=${event.params.jobId}`,
-      // The board shows the card change live; the details show the entry.
-      ['jobs', `job:${event.params.jobId}`],
-    );
+    const body = `${icon} ${who} ${did}${entry.text ? `: ${preview(entry.text)}` : ''}`;
+    const link = `/admin/jobs?j=${event.params.jobId}`;
+    // The board shows the card change live; the details show the entry.
+    const focus = ['jobs', `job:${event.params.jobId}`];
+    // Everyone who should hear: the job staff, the crew on this job, and
+    // anyone tagged. A tag gets its own title — "tagged you" on a lock
+    // screen is a different thing from "commented".
+    const everyone = [...new Set([...(await staffLists()).jobs, ...installersOf(job), ...mentions])];
+    const tagged = everyone.filter((e) => mentions.has(e));
+    const rest = everyone.filter((e) => !mentions.has(e));
+    await pushUsers(rest, entry.by, 'jobActivity', `🛠️ Solar job · ${customer}`, body, link, focus);
+    if (tagged.length) {
+      await pushUsers(tagged, entry.by, 'jobActivity', `📣 Solar job · ${who} tagged you`, body, link, focus);
+    }
   },
 );
 
