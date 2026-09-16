@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useLang } from '../../lib/i18n';
 import { useScrollLock } from '../../lib/useScrollLock';
 import type { AlertKey, StaffAlerts } from '../../lib/useStaffAlerts';
+import AdminTabBar from './AdminTabBar';
 
 export interface NavItem {
   to: string;
@@ -11,6 +12,8 @@ export interface NavItem {
   end?: boolean;
   /** Which heading it sits under in the phone menu. */
   group: string;
+  /** A one-word version for the bar, where the full label would wrap. */
+  short?: string;
 }
 
 /** The order sections appear in; anything else falls to the end. */
@@ -27,6 +30,7 @@ const GROUP_ORDER = ['Work', 'Shop', 'Solar', 'Team', 'Manage'];
  */
 export default function AdminMobileNav({
   items,
+  favorites,
   alerts,
   alertFor,
   storeName,
@@ -37,6 +41,8 @@ export default function AdminMobileNav({
   language,
 }: {
   items: NavItem[];
+  /** This person's tabs, most wanted first — see AdminTabBar. */
+  favorites: string[];
   alerts: StaffAlerts;
   alertFor: Record<string, AlertKey>;
   storeName: string;
@@ -46,42 +52,18 @@ export default function AdminMobileNav({
   onSignOut: () => void;
   language: string;
 }) {
-  const { t } = useLang();
   const [open, setOpen] = useState(false);
 
   const badge = (to: string) => {
     const key = alertFor[to];
     return key ? alerts[key] : 0;
   };
-  const waiting = items.reduce((n, i) => n + badge(i.to), 0);
 
+  // The bar at the bottom is the navigation now; the sheet is what its
+  // More tab opens — every page, grouped, plus the account actions.
   return (
     <div className="lg:hidden">
-      <div className="card flex items-center gap-2 p-2">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-1.5 text-start active:bg-slate-100"
-        >
-          <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">
-            {(storeName || 'A').charAt(0).toUpperCase()}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold" style={{ color: 'var(--hp-ink)' }}>
-              {storeName}
-            </span>
-            <span className="block truncate text-[11px] text-slate-500">{t('Dashboard')}</span>
-          </span>
-          <span className="flex-none text-slate-400" aria-hidden>
-            ⌄
-          </span>
-        </button>
-        {waiting > 0 && (
-          <span className="grid h-6 min-w-6 flex-none place-items-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
-            {waiting > 99 ? '99+' : waiting}
-          </span>
-        )}
-      </div>
+      <AdminTabBar items={items} favorites={favorites} badge={badge} onMore={() => setOpen(true)} />
 
       {open && (
         <Sheet

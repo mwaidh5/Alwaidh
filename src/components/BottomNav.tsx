@@ -35,6 +35,9 @@ export default function BottomNav() {
   // business floating over the menu: it slides down out of the way and
   // back up as the card returns — the same half-second, the same curve.
   const drawerOpen = useDrawerOpen();
+  // The dashboard has a bar of its own (AdminTabBar) with the pages that
+  // matter in there; Home / Shop / Solar under it helped nobody.
+  const onDashboard = hasAdminAccess && pathname.startsWith('/admin');
 
   // No Cart: it already sits in the header on every screen, with its count,
   // and five is where a bar of these stops being readable.
@@ -63,7 +66,7 @@ export default function BottomNav() {
   useEffect(() => setPressed(null), [pathname]);
   const active = pressed ?? routeIndex;
 
-  if (modalOpen) return null;
+  if (modalOpen || onDashboard) return null;
 
   const slot = 100 / items.length;
   // The pill travels in reading direction: to the right in English, to the

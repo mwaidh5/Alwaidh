@@ -50,15 +50,15 @@ const ALERT_FOR: Record<string, AlertKey> = {
 // together rather than one long list.
 const navItems: (NavItem & { access: Access })[] = [
   { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin', group: 'Work' },
-  { to: '/admin/jobs', label: 'Solar Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
+  { to: '/admin/jobs', label: 'Solar Jobs', short: 'Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
   { to: '/admin/crm', label: 'CRM', icon: '📇', access: 'crm', group: 'Work' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'orders', group: 'Work' },
   { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
-  { to: '/admin/prices', label: 'Solar Prices', icon: '💲', access: 'solar', group: 'Shop' },
+  { to: '/admin/prices', label: 'Solar Prices', short: 'Prices', icon: '💲', access: 'solar', group: 'Shop' },
   { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'media', group: 'Shop' },
   { to: '/admin/blog', label: 'Blog', icon: '📝', access: 'blog', group: 'Shop' },
   { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff', group: 'Team' },
-  { to: '/admin/team', label: 'Team chat', icon: '🗨️', access: 'team', group: 'Team' },
+  { to: '/admin/team', label: 'Team chat', short: 'Team', icon: '🗨️', access: 'team', group: 'Team' },
   { to: '/admin/files', label: 'Files', icon: '📁', access: 'team', group: 'Team' },
   { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'submissions', group: 'Team' },
   { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin', group: 'Manage' },
@@ -229,6 +229,19 @@ export default function AdminLayout() {
   };
   const visibleItems = navItems.filter((i) => canSee(i.access));
 
+  // The four tabs on the phone's bar, by who is looking: the pages that
+  // person opens all day, most wanted first. AdminTabBar takes the first
+  // four of these they are allowed to see.
+  const favorites = isAdmin
+    ? ['/admin', '/admin/jobs', '/admin/chat', '/admin/crm', '/admin/orders']
+    : isInstaller && !isSolarStaff
+      ? ['/admin/jobs', '/admin/team', '/admin/files', '/admin/chat']
+      : isSolarStaff
+        ? ['/admin/jobs', '/admin/chat', '/admin/crm', '/admin/prices', '/admin/team']
+        : isShopManager
+          ? ['/admin/orders', '/admin/chat', '/admin/products', '/admin/crm', '/admin/team']
+          : ['/admin/chat', '/admin/crm', '/admin/orders', '/admin/products', '/admin/team'];
+
   // Keep staff out of pages they can't see (also handles the /admin index).
   const path = location.pathname;
   const pathAllowed = visibleItems.some(
@@ -247,6 +260,7 @@ export default function AdminLayout() {
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <AdminMobileNav
               items={visibleItems}
+              favorites={favorites}
               alerts={alerts}
               alertFor={ALERT_FOR}
               storeName={settings?.storeName ?? 'Alwaidh'}

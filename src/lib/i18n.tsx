@@ -829,6 +829,9 @@ const AR: Record<string, string> = {
   // ---- Dashboard menu on a phone ----
   Work: 'العمل',
   Team: 'الفريق',
+  More: 'المزيد',
+  Jobs: 'الأعمال',
+  Prices: 'الأسعار',
   Manage: 'الإدارة',
   'The shop': 'المتجر',
   // ---- What changed since you last looked ----
