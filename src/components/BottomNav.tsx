@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { toggleChat, useChatUnread } from '../lib/chatPanel';
-import { useDrawerOpen } from '../lib/drawer';
+import { openDrawer, useDrawerOpen } from '../lib/drawer';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -35,8 +35,8 @@ export default function BottomNav() {
   // business floating over the menu: it slides down out of the way and
   // back up as the card returns — the same half-second, the same curve.
   const drawerOpen = useDrawerOpen();
-  // The dashboard has a bar of its own (AdminTabBar) with the pages that
-  // matter in there; Home / Shop / Solar under it helped nobody.
+  // Already in the dashboard, the Dashboard tab opens the drawer — the
+  // pages in there are a thumb's reach away without the bar changing.
   const onDashboard = hasAdminAccess && pathname.startsWith('/admin');
 
   // No Cart: it already sits in the header on every screen, with its count,
@@ -66,7 +66,7 @@ export default function BottomNav() {
   useEffect(() => setPressed(null), [pathname]);
   const active = pressed ?? routeIndex;
 
-  if (modalOpen || onDashboard) return null;
+  if (modalOpen) return null;
 
   const slot = 100 / items.length;
   // The pill travels in reading direction: to the right in English, to the
@@ -130,6 +130,10 @@ export default function BottomNav() {
               onClick={(e) => {
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                 e.preventDefault();
+                if (item.to === '/admin' && onDashboard) {
+                  openDrawer();
+                  return;
+                }
                 setPressed(i);
                 // The bar has already answered; the page may take its time.
                 startTransition(() => navigate(item.to));

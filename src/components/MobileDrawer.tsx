@@ -1,10 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import LangSwitch from './LangSwitch';
-import { closeDrawer, useDrawerOpen } from '../lib/drawer';
+import { askNotificationSettings, closeDrawer, useDrawerOpen } from '../lib/drawer';
+import { ADMIN_NAV, ALERT_FOR, canOpen, favoritePaths } from '../lib/adminNav';
+import { useStaffAlerts } from '../lib/useStaffAlerts';
+import { AdminIcon } from '../pages/admin/adminIcons';
 
 /**
  * The phone menu, drawer-style: the whole page slides aside and shrinks
@@ -17,10 +20,12 @@ import { closeDrawer, useDrawerOpen } from '../lib/drawer';
  */
 export default function MobileDrawer() {
   const open = useDrawerOpen();
-  const { user, hasAdminAccess, isAdmin, signOut } = useAuth();
+  const { user, hasAdminAccess, signOut } = useAuth();
   const { itemCount } = useCart();
   const { t, dir } = useLang();
   const location = useLocation();
+  // In the dashboard the shop's links fold away under "More".
+  const [shopOpen, setShopOpen] = useState(false);
 
   // Going anywhere closes it, whichever link did the navigating.
   useEffect(() => {
@@ -63,18 +68,28 @@ export default function MobileDrawer() {
     };
   }, [open]);
 
-  const items: { to: string; label: string; icon: JSX.Element; badge?: number }[] = [
+  const onDashboard = hasAdminAccess && location.pathname.startsWith('/admin');
+
+  const shopItems: DrawerItem[] = [
     { to: '/', label: 'Home', icon: <HomeIcon /> },
     { to: '/shop', label: 'Shop', icon: <ShopIcon /> },
     { to: '/solar-prices', label: 'Solar Prices', icon: <SunIcon /> },
     { to: '/blog', label: 'Articles', icon: <ArticleIcon /> },
     { to: '/cart', label: 'Cart', icon: <CartIcon />, badge: itemCount },
-    ...(hasAdminAccess
-      ? [{ to: '/admin', label: isAdmin ? 'Admin' : 'Dashboard', icon: <GridIcon /> }]
-      : []),
     { to: '/about', label: 'About', icon: <InfoIcon /> },
     { to: '/privacy', label: 'Privacy', icon: <ShieldIcon /> },
   ];
+
+  // Tapping the page you're already on: the route doesn't change, so the
+  // close-on-navigate effect never fires and the tap felt dead. Close by
+  // hand and go to the top — that IS "take me home" when home is where
+  // you are.
+  const tapCurrent = (to: string) => {
+    if (to === location.pathname) {
+      closeDrawer();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div
@@ -116,36 +131,37 @@ export default function MobileDrawer() {
         </div>
 
         <nav data-drawer-scroll className="mt-8 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
-          {items.map((item, i) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => {
-                // Tapping the page you're already on: the route doesn't
-                // change, so the close-on-navigate effect never fires and
-                // the tap felt dead. Close by hand and go to the top —
-                // that IS "take me home" when home is where you are.
-                if (item.to === location.pathname) {
-                  closeDrawer();
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              className={`drawer-item flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
-                open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
-              }`}
-              style={{ transitionDelay: open ? `${60 + i * 30}ms` : '0ms' }}
-            >
-              <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-white/10 text-white/90">
-                {item.icon}
-              </span>
-              <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
-              {!!item.badge && item.badge > 0 && (
-                <span className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-slate-900">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
+          {hasAdminAccess ? (
+            <>
+              {/* Staff: their dashboard first — the pages they open all
+                  day, then More for the rest — and the shop under its
+                  own caption below. In the dashboard the shop folds to
+                  its first row; on the shop it is all there. */}
+              <StaffSection open={open} dir={dir} onTap={tapCurrent} />
+              <p className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">
+                {t('The shop')}
+              </p>
+              {(onDashboard && !shopOpen ? shopItems.slice(0, 1) : shopItems).map((item, i) => (
+                <DrawerRow key={item.to} item={item} i={i} open={open} dir={dir} onTap={tapCurrent} />
+              ))}
+              {onDashboard && (
+                <button
+                  type="button"
+                  onClick={() => setShopOpen((v) => !v)}
+                  className="flex items-center gap-4 rounded-xl px-3 py-2 text-[13px] font-semibold text-white/60 active:bg-white/10"
+                >
+                  <span className="grid h-8 w-8 flex-none place-items-center text-white/60">
+                    <MoreIcon up={shopOpen} />
+                  </span>
+                  {t(shopOpen ? 'Show less' : 'More')}
+                </button>
               )}
-            </Link>
-          ))}
+            </>
+          ) : (
+            shopItems.map((item, i) => (
+              <DrawerRow key={item.to} item={item} i={i} open={open} dir={dir} onTap={tapCurrent} />
+            ))
+          )}
         </nav>
 
         <div
@@ -181,6 +197,136 @@ export default function MobileDrawer() {
         </div>
       </div>
     </div>
+  );
+}
+
+type DrawerItem = { to: string; label: string; icon: JSX.Element; badge?: number };
+
+/** One line of the menu, sliding in a beat after the one above it. */
+function DrawerRow({
+  item,
+  i,
+  open,
+  dir,
+  onTap,
+}: {
+  item: DrawerItem;
+  i: number;
+  open: boolean;
+  dir: string;
+  onTap: (to: string) => void;
+}) {
+  const { t } = useLang();
+  return (
+    <Link
+      to={item.to}
+      onClick={() => onTap(item.to)}
+      className={`drawer-item flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
+        open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
+      }`}
+      style={{ transitionDelay: open ? `${60 + i * 30}ms` : '0ms' }}
+    >
+      <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-white/10 text-white/90">
+        {item.icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
+      {!!item.badge && item.badge > 0 && (
+        <span className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-slate-900">
+          {item.badge > 9 ? '9+' : item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/**
+ * The dashboard, for the people who have one: the four pages they open
+ * all day, then More for the rest, then the notification switches. Its
+ * own component so the alert counts are only subscribed to by staff.
+ */
+function StaffSection({ open, dir, onTap }: { open: boolean; dir: string; onTap: (to: string) => void }) {
+  const { t } = useLang();
+  const { isAdmin, isSolarStaff, isShopManager, isInstaller, can } = useAuth();
+  const alerts = useStaffAlerts();
+  const [more, setMore] = useState(false);
+
+  const visible = ADMIN_NAV.filter((i) => canOpen(i.access, isAdmin, can));
+  const favorites = favoritePaths({ isAdmin, isSolarStaff, isShopManager, isInstaller })
+    .map((to) => visible.find((i) => i.to === to))
+    .filter((i): i is (typeof visible)[number] => Boolean(i))
+    .slice(0, 4);
+  const rest = visible.filter((i) => !favorites.includes(i));
+  const badge = (to: string) => {
+    const key = ALERT_FOR[to];
+    return key ? alerts[key] : 0;
+  };
+  const restWaiting = rest.reduce((n, i) => n + badge(i.to), 0);
+  const row = (i: (typeof visible)[number]): DrawerItem => ({
+    to: i.to,
+    label: i.label,
+    icon: <AdminIcon to={i.to} size={18} />,
+    badge: badge(i.to),
+  });
+
+  return (
+    <>
+      <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">
+        {t('Dashboard')}
+      </p>
+      {favorites.map((i, n) => (
+        <DrawerRow key={i.to} item={row(i)} i={n} open={open} dir={dir} onTap={onTap} />
+      ))}
+      {more && rest.map((i, n) => (
+        <DrawerRow key={i.to} item={row(i)} i={favorites.length + n} open={open} dir={dir} onTap={onTap} />
+      ))}
+      {rest.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setMore((v) => !v)}
+          className="flex items-center gap-4 rounded-xl px-3 py-2 text-[13px] font-semibold text-white/60 active:bg-white/10"
+        >
+          <span className="grid h-8 w-8 flex-none place-items-center text-white/60">
+            <MoreIcon up={more} />
+          </span>
+          <span className="min-w-0 flex-1 text-start">{t(more ? 'Show less' : 'More')}</span>
+          {!more && restWaiting > 0 && (
+            <span className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-slate-900">
+              {restWaiting > 9 ? '9+' : restWaiting}
+            </span>
+          )}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          closeDrawer();
+          askNotificationSettings();
+        }}
+        className="flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 active:bg-white/10"
+      >
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-white/10 text-white/90">
+          <BellIcon />
+        </span>
+        {t('Notifications')}
+      </button>
+    </>
+  );
+}
+
+function MoreIcon({ up }: { up: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: up ? 'rotate(180deg)' : undefined }}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
   );
 }
 
@@ -233,16 +379,6 @@ function CartIcon() {
       <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h6.7a2 2 0 0 0 2-1.5L20 7H6" />
       <circle cx="10" cy="20" r="1.3" />
       <circle cx="17" cy="20" r="1.3" />
-    </svg>
-  );
-}
-function GridIcon() {
-  return (
-    <svg {...stroke} aria-hidden="true">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
     </svg>
   );
 }

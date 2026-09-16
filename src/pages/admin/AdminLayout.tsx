@@ -16,8 +16,9 @@ import {
   type PushState,
 } from '../../lib/push';
 import NotificationSettings from '../../components/NotificationSettings';
-import AdminMobileNav, { type NavItem } from './AdminMobileNav';
 import { AdminIcon } from './adminIcons';
+import { ADMIN_NAV, ALERT_FOR, canOpen } from '../../lib/adminNav';
+import { useNotificationAsk } from '../../lib/drawer';
 import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -25,48 +26,6 @@ import { sendAccountEmail } from '../../lib/accountEmail';
 // staff, 'jobs' = solar staff plus installers (who see only their own jobs),
 // 'staff' = every staff role except installers, 'team' = anyone who works
 // here, installers included.
-type Access =
-  | 'admin'
-  | 'products'
-  | 'solar'
-  | 'jobs'
-  | 'staff'
-  | 'team'
-  | 'crm'
-  | 'orders'
-  | 'media'
-  | 'blog'
-  | 'submissions'
-  | 'analytics';
-/** Routes that carry a "what's new" badge. */
-const ALERT_FOR: Record<string, AlertKey> = {
-  '/admin/jobs': 'jobs',
-  '/admin/orders': 'orders',
-  '/admin/submissions': 'submissions',
-  '/admin/chat': 'chat',
-  '/admin/team': 'team',
-};
-
-// `group` is only used by the phone menu, which shows related pages
-// together rather than one long list.
-const navItems: (NavItem & { access: Access })[] = [
-  { to: '/admin', label: 'Overview', icon: '📊', end: true, access: 'admin', group: 'Work' },
-  { to: '/admin/jobs', label: 'Solar Jobs', short: 'Jobs', icon: '🛠️', access: 'jobs', group: 'Work' },
-  { to: '/admin/crm', label: 'CRM', icon: '📇', access: 'crm', group: 'Work' },
-  { to: '/admin/orders', label: 'Orders', icon: '🧾', access: 'orders', group: 'Work' },
-  { to: '/admin/products', label: 'Products', icon: '📦', access: 'products', group: 'Shop' },
-  { to: '/admin/prices', label: 'Solar Prices', short: 'Prices', icon: '💲', access: 'solar', group: 'Shop' },
-  { to: '/admin/media', label: 'Media', icon: '🖼️', access: 'media', group: 'Shop' },
-  { to: '/admin/blog', label: 'Blog', icon: '📝', access: 'blog', group: 'Shop' },
-  { to: '/admin/chat', label: 'Messages', icon: '💬', access: 'staff', group: 'Team' },
-  { to: '/admin/team', label: 'Team chat', short: 'Team', icon: '🗨️', access: 'team', group: 'Team' },
-  { to: '/admin/files', label: 'Files', icon: '📁', access: 'team', group: 'Team' },
-  { to: '/admin/submissions', label: 'Submissions', icon: '✉️', access: 'submissions', group: 'Team' },
-  { to: '/admin/users', label: 'Users', icon: '👥', access: 'admin', group: 'Manage' },
-  { to: '/admin/analytics', label: 'Analytics', icon: '📈', access: 'analytics', group: 'Manage' },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️', access: 'admin', group: 'Manage' },
-];
-
 export default function AdminLayout() {
   const {
     user,
@@ -167,6 +126,12 @@ export default function AdminLayout() {
 
   useEffect(() => subscribeSettings(setSettings), []);
 
+  // The drawer's "Notifications" row asks; this layout owns the dialog.
+  const notifAsk = useNotificationAsk();
+  useEffect(() => {
+    if (notifAsk > 0) setNotifOpen(true);
+  }, [notifAsk]);
+
   // Opening a section marks it read on this device — and being in the
   // dashboard at all empties the phone's notification tray: the person
   // is looking at the news, the reminders have done their job.
@@ -211,37 +176,7 @@ export default function AdminLayout() {
     return <NotAuthorized email={user.email} extraAdmins={extra} />;
   }
 
-  const canSee = (access: Access) => {
-    if (isAdmin) return true;
-    // Every section is a permission now: the role grants its usual bundle,
-    // and anything handed out by name on the Users page adds to it.
-    if (access === 'products') return can('products');
-    if (access === 'solar') return can('solar-prices');
-    if (access === 'jobs') return can('jobs');
-    if (access === 'staff') return can('messages');
-    if (access === 'crm') return can('crm-solar') || can('crm-computers');
-    if (access === 'team') return can('team');
-    if (access === 'orders') return can('orders');
-    if (access === 'media') return can('media');
-    if (access === 'blog') return can('blog');
-    if (access === 'submissions') return can('submissions');
-    if (access === 'analytics') return can('analytics');
-    return false;
-  };
-  const visibleItems = navItems.filter((i) => canSee(i.access));
-
-  // The four tabs on the phone's bar, by who is looking: the pages that
-  // person opens all day, most wanted first. AdminTabBar takes the first
-  // four of these they are allowed to see.
-  const favorites = isAdmin
-    ? ['/admin', '/admin/jobs', '/admin/chat', '/admin/crm', '/admin/orders']
-    : isInstaller && !isSolarStaff
-      ? ['/admin/jobs', '/admin/team', '/admin/files', '/admin/chat']
-      : isSolarStaff
-        ? ['/admin/jobs', '/admin/chat', '/admin/crm', '/admin/prices', '/admin/team']
-        : isShopManager
-          ? ['/admin/orders', '/admin/chat', '/admin/products', '/admin/crm', '/admin/team']
-          : ['/admin/chat', '/admin/crm', '/admin/orders', '/admin/products', '/admin/team'];
+  const visibleItems = ADMIN_NAV.filter((i) => canOpen(i.access, isAdmin, can));
 
   // Keep staff out of pages they can't see (also handles the /admin index).
   const path = location.pathname;
@@ -257,21 +192,11 @@ export default function AdminLayout() {
       {/* Full-bleed like hPanel: the dashboard uses the whole window width
           instead of the shop's centred column. */}
       <div className="w-full px-4 py-6 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[240px,minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-20 lg:self-start">
-            <AdminMobileNav
-              items={visibleItems}
-              favorites={favorites}
-              alerts={alerts}
-              alertFor={ALERT_FOR}
-              storeName={settings?.storeName ?? 'Alwaidh'}
-              email={user.email}
-              language={lang}
-              onNotifications={() => setNotifOpen(true)}
-              onLanguage={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-              onSignOut={() => signOut()}
-            />
-            <div className="card hidden overflow-hidden lg:block">
+        <div className="grid gap-6 md:grid-cols-[240px,minmax(0,1fr)]">
+          <aside className="hidden md:sticky md:top-20 md:block md:self-start">
+            {/* The phone's navigation is the drawer, like the shop's; the
+                sidebar is for anything wider. */}
+            <div className="card hidden overflow-hidden md:block">
               <div className="border-b border-slate-100 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   {t('Admin')}
