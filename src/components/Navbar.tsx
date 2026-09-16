@@ -35,7 +35,8 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   // In the dashboard on a phone the header sheds what is not for staff.
-  const onDashboard = hasAdminAccess && useLocation().pathname.startsWith('/admin');
+  const { pathname } = useLocation();
+  const onDashboard = hasAdminAccess && pathname.startsWith('/admin');
 
 
   const searchRef = useRef<HTMLDivElement>(null);
