@@ -47,18 +47,39 @@ export default function AdminLayout() {
   const alerts = useStaffAlerts();
   const [push, setPush] = useState<PushState>('unsupported');
   const [notifOpen, setNotifOpen] = useState(false);
-  // The laptop's sidebar is a rail of icons; a click on it opens the
-  // names, a click anywhere else (or a page change) closes them again.
-  const [railOpen, setRailOpen] = useState(false);
+  // The laptop's sidebar is a rail of icons. A click on it PEEKS the
+  // names over the page, and a click anywhere else (or a page change)
+  // folds it. The chevron at its foot PINS it open instead: the page
+  // moves over, and it stays open on every page and every visit until
+  // it is folded again.
+  const [pinned, setPinned] = useState(() => {
+    try {
+      return localStorage.getItem('alwaidh.rail.open') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [peek, setPeek] = useState(false);
+  const railOpen = pinned || peek;
+  const setRailOpen = (open: boolean) => setPeek(open);
+  const pin = (next: boolean) => {
+    setPinned(next);
+    setPeek(false);
+    try {
+      localStorage.setItem('alwaidh.rail.open', next ? '1' : '0');
+    } catch {
+      /* private mode: it just won't remember */
+    }
+  };
   const railRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!railOpen) return;
+    if (!peek) return;
     const away = (e: MouseEvent) => {
-      if (railRef.current && !railRef.current.contains(e.target as Node)) setRailOpen(false);
+      if (railRef.current && !railRef.current.contains(e.target as Node)) setPeek(false);
     };
     document.addEventListener('mousedown', away);
     return () => document.removeEventListener('mousedown', away);
-  }, [railOpen]);
+  }, [peek]);
 
   // Notification permission state. (Tap handling lives in Layout, so a
   // notification can cold-start the app and still land on its page.)
@@ -66,7 +87,7 @@ export default function AdminLayout() {
     pushState().then(setPush);
   }, []);
   const location = useLocation();
-  useEffect(() => setRailOpen(false), [location.pathname]);
+  useEffect(() => setPeek(false), [location.pathname]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   // Website notifications: while a dashboard tab is open (even in the
@@ -199,7 +220,7 @@ export default function AdminLayout() {
       {/* Full-bleed like hPanel: the dashboard uses the whole window width
           instead of the shop's centred column. */}
       <div className="w-full px-4 py-6 sm:px-6">
-        <div className="grid gap-6 md:grid-cols-[4.5rem,minmax(0,1fr)]">
+        <div className={`grid gap-6 ${pinned ? 'md:grid-cols-[15rem,minmax(0,1fr)]' : 'md:grid-cols-[4.5rem,minmax(0,1fr)]'}`}>
           <aside
             ref={railRef}
             className="relative hidden md:sticky md:top-20 md:block md:self-start"
@@ -210,7 +231,7 @@ export default function AdminLayout() {
           >
             <div
               className={`card overflow-hidden transition-[width,box-shadow] duration-200 ${
-                railOpen ? 'absolute inset-y-0 start-0 z-40 w-60 shadow-2xl' : 'w-[4.5rem]'
+                pinned ? 'w-60' : peek ? 'absolute inset-y-0 start-0 z-40 w-60 shadow-2xl' : 'w-[4.5rem]'
               }`}
               onClick={(e) => {
                 // A click on the rail's own body opens it; the icons are
@@ -220,8 +241,8 @@ export default function AdminLayout() {
             >
               <button
                 type="button"
-                onClick={() => setRailOpen((v) => !v)}
-                title={railOpen ? t('Collapse') : t('Expand')}
+                onClick={() => pin(!pinned)}
+                title={pinned ? t('Collapse') : t('Expand')}
                 className={`flex w-full items-center gap-3 border-b border-slate-100 px-3 py-3 text-start ${railOpen ? '' : 'justify-center'}`}
               >
                 <span
@@ -334,6 +355,29 @@ export default function AdminLayout() {
                       <path d="m15 8 4 4-4 4M19 12H9" />
                     </svg>
                     {railOpen && t('Sign out')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => pin(!pinned)}
+                    title={pinned ? t('Collapse') : t('Expand')}
+                    className={`mt-2 flex w-full items-center justify-center gap-2 rounded-md py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 ${railOpen ? 'px-3' : 'px-0'}`}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      // Points the way it will move: out when folded, back when open.
+                      style={{ transform: (pinned ? 1 : 0) ^ (document.dir === 'rtl' ? 1 : 0) ? 'rotate(180deg)' : undefined }}
+                    >
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
+                    {railOpen && (pinned ? t('Collapse') : t('Keep open'))}
                   </button>
                 </div>
               </nav>
