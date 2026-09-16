@@ -64,6 +64,11 @@ export function useScrollLock(active = true): void {
   }, [active]);
 }
 
+/** Is any pop-up up right now? For code that runs outside React's render. */
+export function anyModalOpen(): boolean {
+  return depth > 0;
+}
+
 function subscribe(fn: () => void): () => void {
   listeners.add(fn);
   return () => {
