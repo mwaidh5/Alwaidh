@@ -255,6 +255,7 @@ const AR: Record<string, string> = {
   Orders: 'الطلبات',
   Users: 'المستخدمون',
   Submissions: 'الرسائل',
+  Event: 'الفعالية',
   Analytics: 'التحليلات',
   Settings: 'الإعدادات',
   Admin: 'الإدارة',
