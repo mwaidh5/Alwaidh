@@ -18,7 +18,6 @@ import {
 import NotificationSettings from '../../components/NotificationSettings';
 import { AdminIcon } from './adminIcons';
 import { ADMIN_NAV, ALERT_FOR, canOpen } from '../../lib/adminNav';
-import { useNotificationAsk } from '../../lib/drawer';
 import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -125,12 +124,6 @@ export default function AdminLayout() {
   }, [push, realIsAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, viewAs, user]);
 
   useEffect(() => subscribeSettings(setSettings), []);
-
-  // The drawer's "Notifications" row asks; this layout owns the dialog.
-  const notifAsk = useNotificationAsk();
-  useEffect(() => {
-    if (notifAsk > 0) setNotifOpen(true);
-  }, [notifAsk]);
 
   // Opening a section marks it read on this device — and being in the
   // dashboard at all empties the phone's notification tray: the person

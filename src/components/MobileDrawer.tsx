@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import LangSwitch from './LangSwitch';
-import { askNotificationSettings, closeDrawer, useDrawerOpen } from '../lib/drawer';
+import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 import { ADMIN_NAV, ALERT_FOR, canOpen, favoritePaths } from '../lib/adminNav';
 import { useStaffAlerts } from '../lib/useStaffAlerts';
 import { AdminIcon } from '../pages/admin/adminIcons';
@@ -241,8 +241,8 @@ function DrawerRow({
 
 /**
  * The dashboard, for the people who have one: the four pages they open
- * all day, then More for the rest, then the notification switches. Its
- * own component so the alert counts are only subscribed to by staff.
+ * all day, then More for the rest. Its own component so the alert counts
+ * are only subscribed to by staff.
  */
 function StaffSection({ open, dir, onTap }: { open: boolean; dir: string; onTap: (to: string) => void }) {
   const { t } = useLang();
@@ -296,19 +296,6 @@ function StaffSection({ open, dir, onTap }: { open: boolean; dir: string; onTap:
           )}
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => {
-          closeDrawer();
-          askNotificationSettings();
-        }}
-        className="flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 active:bg-white/10"
-      >
-        <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-white/10 text-white/90">
-          <BellIcon />
-        </span>
-        {t('Notifications')}
-      </button>
     </>
   );
 }
@@ -321,14 +308,6 @@ function MoreIcon({ up }: { up: boolean }) {
   );
 }
 
-function BellIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
-      <path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  );
-}
 
 const stroke = {
   width: 18,

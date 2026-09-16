@@ -1,4 +1,5 @@
 import { useLang } from '../lib/i18n';
+import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 
 /**
  * The EN | عربي capsule from the design: a dark pill with a white thumb
@@ -8,7 +9,15 @@ import { useLang } from '../lib/i18n';
  */
 export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
   const { lang, setLang } = useLang();
+  const drawerOpen = useDrawerOpen();
   const idx = lang === 'ar' ? 1 : 0;
+  // From inside the drawer, close it first: the reading direction flips
+  // with the language, and with it the side the page card slides to —
+  // switched with the drawer open, the card lurched across the screen.
+  const pick = (l: 'en' | 'ar') => {
+    if (drawerOpen) closeDrawer();
+    setLang(l);
+  };
   return (
     <div
       dir="ltr"
@@ -25,7 +34,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
       />
       <button
         type="button"
-        onClick={() => setLang('en')}
+        onClick={() => pick('en')}
         aria-pressed={lang === 'en'}
         className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-200 ${
           lang === 'en' ? 'text-slate-900' : 'text-white/80'
@@ -35,7 +44,7 @@ export default function LangSwitch({ frosted = false }: { frosted?: boolean }) {
       </button>
       <button
         type="button"
-        onClick={() => setLang('ar')}
+        onClick={() => pick('ar')}
         aria-pressed={lang === 'ar'}
         className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-bold transition-colors duration-200 ${
           lang === 'ar' ? 'text-slate-900' : 'text-white/80'
