@@ -545,6 +545,8 @@ const AR: Record<string, string> = {
 
   // ---- Notification settings ----
   Notifications: 'الإشعارات',
+  Collapse: 'تصغير',
+  Expand: 'توسيع',
   'Solar power': 'الطاقة الشمسية',
   'Computers & cameras': 'الحاسبات والكاميرات',
   'Which alerts reach this device — jobs, messages, orders, team chat.': 'أي تنبيهات توصل لهذا الجهاز — الأعمال، الرسائل، الطلبات، دردشة الفريق.',

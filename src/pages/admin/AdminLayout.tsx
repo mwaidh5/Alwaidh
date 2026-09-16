@@ -47,6 +47,18 @@ export default function AdminLayout() {
   const alerts = useStaffAlerts();
   const [push, setPush] = useState<PushState>('unsupported');
   const [notifOpen, setNotifOpen] = useState(false);
+  // The laptop's sidebar is a rail of icons; a click on it opens the
+  // names, a click anywhere else (or a page change) closes them again.
+  const [railOpen, setRailOpen] = useState(false);
+  const railRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!railOpen) return;
+    const away = (e: MouseEvent) => {
+      if (railRef.current && !railRef.current.contains(e.target as Node)) setRailOpen(false);
+    };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, [railOpen]);
 
   // Notification permission state. (Tap handling lives in Layout, so a
   // notification can cold-start the app and still land on its page.)
@@ -54,6 +66,7 @@ export default function AdminLayout() {
     pushState().then(setPush);
   }, []);
   const location = useLocation();
+  useEffect(() => setRailOpen(false), [location.pathname]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
   // Website notifications: while a dashboard tab is open (even in the
@@ -186,100 +199,141 @@ export default function AdminLayout() {
       {/* Full-bleed like hPanel: the dashboard uses the whole window width
           instead of the shop's centred column. */}
       <div className="w-full px-4 py-6 sm:px-6">
-        <div className="grid gap-6 md:grid-cols-[240px,minmax(0,1fr)]">
-          <aside className="hidden md:sticky md:top-20 md:block md:self-start">
-            {/* The phone's navigation is the drawer, like the shop's; the
-                sidebar is for anything wider. */}
-            <div className="card hidden overflow-hidden md:block">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  {t('Admin')}
-                </p>
-                <p className="truncate text-sm font-bold" style={{ color: 'var(--hp-ink)' }}>
-                  {settings?.storeName ?? 'Alwaidh'}
-                </p>
-              </div>
+        <div className="grid gap-6 md:grid-cols-[4.5rem,minmax(0,1fr)]">
+          <aside
+            ref={railRef}
+            className="relative hidden md:sticky md:top-20 md:block md:self-start"
+            // The rail: 4.5rem of icons in the page's flow. Open, the same
+            // card grows to 15rem and lies OVER the content instead of
+            // pushing it, so nothing on the page moves.
+            style={{ minHeight: railOpen ? 0 : undefined }}
+          >
+            <div
+              className={`card overflow-hidden transition-[width,box-shadow] duration-200 ${
+                railOpen ? 'absolute inset-y-0 start-0 z-40 w-60 shadow-2xl' : 'w-[4.5rem]'
+              }`}
+              onClick={(e) => {
+                // A click on the rail's own body opens it; the icons are
+                // links and go straight to their page instead.
+                if (!railOpen && !(e.target as HTMLElement).closest('a,button')) setRailOpen(true);
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setRailOpen((v) => !v)}
+                title={railOpen ? t('Collapse') : t('Expand')}
+                className={`flex w-full items-center gap-3 border-b border-slate-100 px-3 py-3 text-start ${railOpen ? '' : 'justify-center'}`}
+              >
+                <span
+                  className="grid h-9 w-9 flex-none place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: 'var(--hp)' }}
+                >
+                  {(settings?.storeName ?? 'A').charAt(0).toUpperCase()}
+                </span>
+                {railOpen && (
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">{t('Admin')}</span>
+                    <span className="block truncate text-sm font-bold" style={{ color: 'var(--hp-ink)' }}>
+                      {settings?.storeName ?? 'Alwaidh'}
+                    </span>
+                  </span>
+                )}
+              </button>
               <nav>
-                {/* The same groups the phone menu uses — a flat list of
-                    fifteen rows made people hunt; four labelled clusters
-                    read at a glance. */}
                 {[...new Set(visibleItems.map((i) => i.group))].map((group) => (
-                <ul key={group} className="space-y-0.5 p-2 pt-1 [&+ul]:border-t [&+ul]:border-slate-100">
-                  <li className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                    {t(String(group))}
-                  </li>
-                  {visibleItems.filter((i) => i.group === group).map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        end={item.end}
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                          e.preventDefault();
-                          smoothNavigate(navigate, item.to);
-                        }}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                            isActive
-                              ? 'bg-brand-50 font-semibold text-brand-700'
-                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                          }`
-                        }
-                      >
-                        <AdminIcon to={item.to} size={18} />
-                        <span className="flex-1">{t(item.label)}</span>
-                        {(() => {
-                          const key = ALERT_FOR[item.to];
-                          const count = key ? alerts[key] : 0;
-                          return count > 0 ? (
-                            <span
-                              title={t('New since you last looked')}
-                              className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white"
+                  <ul key={group} className="space-y-0.5 p-2 pt-1 [&+ul]:border-t [&+ul]:border-slate-100">
+                    {railOpen && (
+                      <li className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                        {t(String(group))}
+                      </li>
+                    )}
+                    {visibleItems
+                      .filter((i) => i.group === group)
+                      .map((item) => {
+                        const key = ALERT_FOR[item.to];
+                        const count = key ? alerts[key] : 0;
+                        return (
+                          <li key={item.to}>
+                            <NavLink
+                              to={item.to}
+                              end={item.end}
+                              title={railOpen ? undefined : t(item.label)}
+                              onClick={(e) => {
+                                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                                e.preventDefault();
+                                smoothNavigate(navigate, item.to);
+                              }}
+                              className={({ isActive }) =>
+                                `relative flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium transition ${
+                                  railOpen ? 'px-3' : 'justify-center px-0'
+                                } ${
+                                  isActive
+                                    ? 'bg-brand-50 font-semibold text-brand-700'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }`
+                              }
                             >
-                              {count > 99 ? '99+' : count}
-                            </span>
-                          ) : null;
-                        })()}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
+                              <AdminIcon to={item.to} size={20} />
+                              {railOpen && <span className="flex-1">{t(item.label)}</span>}
+                              {count > 0 &&
+                                (railOpen ? (
+                                  <span
+                                    title={t('New since you last looked')}
+                                    className="grid h-5 min-w-5 flex-none place-items-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white"
+                                  >
+                                    {count > 99 ? '99+' : count}
+                                  </span>
+                                ) : (
+                                  <span className="absolute end-2 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                                    {count > 9 ? '9+' : count}
+                                  </span>
+                                ))}
+                            </NavLink>
+                          </li>
+                        );
+                      })}
+                  </ul>
                 ))}
-                <div className="border-t border-slate-200 p-3 text-xs text-slate-500">
-                  <p className="mb-1 text-[10px] text-slate-400" dir="ltr" title="The build this browser is running">
-                    v{__APP_BUILD__}
-                  </p>
-                  <p className="truncate">
-                    {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
-                  </p>
+                <div className={`border-t border-slate-200 text-xs text-slate-500 ${railOpen ? 'p-3' : 'p-2'}`}>
+                  {railOpen && (
+                    <>
+                      <p className="mb-1 text-[10px] text-slate-400" dir="ltr" title="The build this browser is running">
+                        v{__APP_BUILD__}
+                      </p>
+                      <p className="truncate">
+                        {t('Signed in as')} <span className="font-semibold text-slate-700">{user.email}</span>
+                      </p>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => setNotifOpen(true)}
-                    className={`mt-2 w-full rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                    title={push === 'granted' ? t('Notifications') : push === 'denied' ? t('Notifications blocked') : t('Turn on notifications')}
+                    className={`mt-2 flex w-full items-center justify-center gap-2 rounded-md border py-1.5 text-sm font-semibold ${railOpen ? 'px-3' : 'px-0'} ${
                       push === 'granted'
                         ? 'border-green-300 bg-green-50 text-green-800'
                         : 'border-slate-300 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {push === 'granted'
-                      ? `🔔 ${t('Notifications')}`
-                      : push === 'denied'
-                        ? `🔕 ${t('Notifications blocked')}`
-                        : `🔔 ${t('Turn on notifications')}`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    {lang === 'ar' ? 'English' : 'العربية'}
+                    <span aria-hidden>{push === 'denied' ? '🔕' : '🔔'}</span>
+                    {railOpen &&
+                      (push === 'granted'
+                        ? t('Notifications')
+                        : push === 'denied'
+                          ? t('Notifications blocked')
+                          : t('Turn on notifications'))}
                   </button>
                   <button
                     type="button"
                     onClick={() => signOut()}
-                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    title={t('Sign out')}
+                    className={`mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 ${railOpen ? 'px-3' : 'px-0'}`}
                   >
-                    {t('Sign out')}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+                      <path d="m15 8 4 4-4 4M19 12H9" />
+                    </svg>
+                    {railOpen && t('Sign out')}
                   </button>
                 </div>
               </nav>
