@@ -12,7 +12,9 @@ import { useSeo, organizationJsonLd } from '../lib/seo';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
-const PHONE = '+964 774 420 5582';
+// One line each: solar, and computers & cameras.
+const PHONE_SOLAR = '+964 774 420 5582';
+const PHONE_TECH = '+964 770 539 7778';
 const EMAIL = 'support@alwaidh.com';
 
 /* The three identities, exactly as the canvas lays them out. Images come
@@ -434,7 +436,8 @@ export default function About() {
                 [
                   ['Showroom', t('Sinaa Street, Baghdad, Iraq'), null],
                   ['Hours', t('Saturday – Thursday, 8:30 AM – 3:30 PM'), null],
-                  ['Phone', PHONE, `tel:${PHONE.replace(/\s/g, '')}`],
+                  ['Solar power', PHONE_SOLAR, `tel:${PHONE_SOLAR.replace(/\s/g, '')}`],
+                  ['Computers & cameras', PHONE_TECH, `tel:${PHONE_TECH.replace(/\s/g, '')}`],
                   ['Email', EMAIL, `mailto:${EMAIL}`],
                 ] as [string, string, string | null][]
               ).map(([k, v, href], i, arr) => (
