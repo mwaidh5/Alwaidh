@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   // its original com.alwaidh.staff bundle id (set in Xcode), because that
   // one is already provisioned, signed and on TestFlight.
   appId: 'com.alwaidh.app',
-  appName: 'Alwaidh',
+  appName: 'Alwaidh-الواعظ',
   webDir: 'dist',
   server: {
     // The apps load the live site, so every web deploy updates them

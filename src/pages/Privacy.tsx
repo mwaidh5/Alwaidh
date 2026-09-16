@@ -16,7 +16,7 @@ export default function Privacy() {
       <div dir="ltr" className="mx-auto max-w-3xl text-left">
         <h1 className="text-3xl font-extrabold text-slate-900">Privacy Policy</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Applies to the {store} website and the “{store} Staff” mobile app.
+          Applies to the {store} website and the {store} mobile apps.
         </p>
 
         <div className="mt-8 space-y-8 text-slate-700">

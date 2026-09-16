@@ -22,8 +22,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['apple-touch-icon.png', 'favicon.svg'],
       manifest: {
-        name: 'Alwaidh Staff',
-        short_name: 'Alwaidh',
+        name: 'Alwaidh-الواعظ',
+        short_name: 'Alwaidh-الواعظ',
         description: 'Alwaidh staff dashboard — products, solar jobs, and prices.',
         start_url: '/admin',
         scope: '/',
