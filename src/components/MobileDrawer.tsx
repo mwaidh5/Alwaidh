@@ -304,9 +304,20 @@ function StaffSection({ open, dir, onTap }: { open: boolean; dir: string; onTap:
       {favorites.map((i, n) => (
         <DrawerRow key={i.to} item={row(i)} i={n} open={open} dir={dir} onTap={onTap} />
       ))}
-      {more && rest.map((i, n) => (
-        <DrawerRow key={i.to} item={row(i)} i={favorites.length + n} open={open} dir={dir} onTap={onTap} />
-      ))}
+      {more &&
+        ['Work', 'Shop', 'Team', 'Manage']
+          .filter((g) => rest.some((i) => i.group === g))
+          .map((g) => (
+            <div key={g}>
+              {/* The same groups the laptop's rail uses, so the two read as one. */}
+              <p className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">{t(g)}</p>
+              {rest
+                .filter((i) => i.group === g)
+                .map((i, n) => (
+                  <DrawerRow key={i.to} item={row(i)} i={favorites.length + n} open={open} dir={dir} onTap={onTap} />
+                ))}
+            </div>
+          ))}
       {rest.length > 0 && (
         <button
           type="button"
