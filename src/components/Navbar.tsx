@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../lib/useProducts';
@@ -34,6 +34,8 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  // In the dashboard on a phone the header sheds what is not for staff.
+  const onDashboard = hasAdminAccess && useLocation().pathname.startsWith('/admin');
 
 
   const searchRef = useRef<HTMLDivElement>(null);
@@ -147,11 +149,16 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Language switch — the sliding EN | عربي capsule. */}
-          <LangSwitch />
+          {/* Language switch — the sliding EN | عربي capsule. On a phone it
+              lives in the drawer instead: it is touched once a year and
+              was taking a third of the header. */}
+          <span className="hidden md:block">
+            <LangSwitch />
+          </span>
 
-          {/* Search (icon only) */}
-          <div className="relative" ref={searchRef}>
+          {/* Search (icon only) — not in the dashboard on a phone, where
+              nothing in it is for sale. */}
+          <div className={`relative ${onDashboard ? 'hidden md:block' : ''}`} ref={searchRef}>
             <button
               type="button"
               onClick={() => {
@@ -227,13 +234,26 @@ export default function Navbar() {
 
           {user ? (
             <div className="relative flex-none">
+              {/* On a phone the circle is simply the way to your account;
+                  sign-out and the dashboard live in the drawer. The menu
+                  under it is the laptop's. */}
+              <Link
+                to="/account"
+                aria-label={t('My account')}
+                className="flex h-10 flex-none items-center rounded-full border border-slate-300 bg-white p-1 md:hidden"
+              >
+                <Avatar
+                  photo={user.photoURL}
+                  initial={(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                />
+              </Link>
               <button
                 type="button"
                 onClick={() => {
                   setMenuOpen((o) => !o);
                   setSearchOpen(false);
                 }}
-                className="flex h-10 flex-none items-center gap-2 rounded-full border border-slate-300 bg-white p-1 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:pe-3"
+                className="hidden h-10 flex-none items-center gap-2 rounded-full border border-slate-300 bg-white p-1 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:pe-3 md:flex"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -298,7 +318,9 @@ export default function Navbar() {
 
           <Link
             to="/cart"
-            className="relative inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:px-3"
+            className={`relative h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:px-3 ${
+              onDashboard ? 'hidden md:inline-flex' : 'inline-flex'
+            }`}
             aria-label={t('Cart')}
           >
             <span className="hidden sm:inline">{t('Cart')}</span>
