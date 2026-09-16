@@ -6,6 +6,9 @@ function isNativeApp(): boolean {
 
 export type SaveResult = 'saved' | 'shared' | 'opened' | 'failed';
 
+/** Why the last save failed in the app, for the message on the button. */
+export let lastSaveError = '';
+
 /**
  * Hand a generated file to the person, wherever they are running.
  *
@@ -56,9 +59,20 @@ export async function saveFile(blob: Blob, filename: string): Promise<SaveResult
       data,
       directory: Directory.Cache,
     });
-    await Share.share({ title: filename, url: written.uri });
+    try {
+      // Android's sheet wants the file in `files`; iOS takes it as `url`.
+      await Share.share({ title: filename, files: [written.uri] });
+    } catch (first) {
+      const msg = first instanceof Error ? first.message : String(first);
+      // A dismissed sheet is not a failure — the person changed their mind.
+      if (/cancel/i.test(msg)) return 'shared';
+      await Share.share({ title: filename, url: written.uri });
+    }
     return 'shared';
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/cancel/i.test(msg)) return 'shared';
+    lastSaveError = msg;
     console.warn('Native save unavailable, opening instead:', e);
   }
 

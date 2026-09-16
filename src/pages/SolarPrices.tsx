@@ -13,7 +13,7 @@ import {
   type InstallmentRow,
 } from '../lib/solarInstallmentsStore';
 import { useSettings } from '../lib/useSettings';
-import { saveFile } from '../lib/savePdf';
+import { lastSaveError, saveFile } from '../lib/savePdf';
 import { openChat } from '../lib/chatPanel';
 import { useSeo, organizationJsonLd } from '../lib/seo';
 import { useLang } from '../lib/i18n';
@@ -167,7 +167,11 @@ export default function SolarPrices() {
         mode === 'plan' ? 'alwaidh-solar-installments.pdf' : 'alwaidh-solar-prices.pdf',
       );
       if (result === 'failed') {
-        setSaveError('Could not save the file on this device. Open alwaidh.com in a browser to download it.');
+        // The reason rides along: "not implemented" means an app built
+        // before the share plugins, which only a new install can fix.
+        setSaveError(
+          `Could not save the file on this device${lastSaveError ? ` (${lastSaveError})` : ''}. Open alwaidh.com in a browser to download it.`,
+        );
       }
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Could not prepare the file.');
