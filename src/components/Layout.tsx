@@ -279,7 +279,11 @@ export default function Layout() {
       {/* Keyed on the path so every page arrives with the same short slide,
           including one product to the next — where React would otherwise
           reuse the component and the change would just blink. */}
-      <main key={location.pathname} className="page-enter flex-1">
+      {/* Keyed by SECTION, not path: the dashboard shell inside /admin
+          must live across its own page changes, or every one of them
+          rebuilt the sidebar and its listeners and blinked white. Its
+          pages fade in on their own, inside the shell. */}
+      <main key={location.pathname.startsWith('/admin') ? '/admin' : location.pathname} className="page-enter flex-1">
         <Outlet />
       </main>
       {/* Phones have the tab bar; a wall of links under it is what a website

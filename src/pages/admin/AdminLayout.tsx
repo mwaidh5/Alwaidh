@@ -314,7 +314,10 @@ export default function AdminLayout() {
               </div>
             )}
             {!user.emailVerified && <UnverifiedBanner email={user.email} />}
-            <Outlet />
+            {/* The page changes; the shell around it does not. */}
+            <div key={location.pathname} className="page-enter">
+              <Outlet />
+            </div>
           </section>
         </div>
       </div>
