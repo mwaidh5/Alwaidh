@@ -198,6 +198,17 @@
   .modal-backdrop > * {
     animation: panel-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
+  /* The dashboard's menu slides in from the reading edge, the page
+     staying put beside it. --rail-from is set inline: -100% in English,
+     100% in Arabic, where the edge is on the right. */
+  .rail-in {
+    animation: rail-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  @keyframes rail-in {
+    from {
+      transform: translateX(var(--rail-from, -100%));
+    }
+  }
   /* The chat panel grows from the bubble in the corner it belongs to. */
   .chat-in {
     transform-origin: bottom right;

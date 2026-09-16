@@ -17,6 +17,7 @@ import {
 } from '../../lib/push';
 import NotificationSettings from '../../components/NotificationSettings';
 import AdminMobileNav, { type NavItem } from './AdminMobileNav';
+import { AdminIcon } from './adminIcons';
 import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -301,7 +302,7 @@ export default function AdminLayout() {
                           }`
                         }
                       >
-                        <span aria-hidden>{item.icon}</span>
+                        <AdminIcon to={item.to} size={18} />
                         <span className="flex-1">{t(item.label)}</span>
                         {(() => {
                           const key = ALERT_FOR[item.to];
