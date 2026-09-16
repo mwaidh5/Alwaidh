@@ -177,6 +177,21 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Event sign-ups: the public form writes one shape and one shape
+    // only; the office reads the list, ticks people off, and clears it.
+    match /eventRegistrations/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['event', 'name', 'company', 'phone', 'people', 'arrived', 'createdAt'])
+        && request.resource.data.event is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 80
+        && request.resource.data.company is string && request.resource.data.company.size() <= 80
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 10 && request.resource.data.phone.size() <= 20
+        && request.resource.data.people is int
+        && request.resource.data.arrived == false;
+      allow read, update, delete: if isAdmin() || isComputerStaff() || hasPerm('submissions');
+    }
+
     // Site settings (incl. role assignments) — public read so the app can
     // resolve roles before sign-in; admin write only.
     // What each staff device is looking at, so notifications can skip

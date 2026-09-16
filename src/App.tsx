@@ -24,6 +24,8 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import Lead from './pages/Lead';
 import AdminSubmissions from './pages/admin/AdminSubmissions';
+import AdminEvent from './pages/admin/AdminEvent';
+import TiandyEvent from './pages/TiandyEvent';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminSolarPrices from './pages/admin/AdminSolarPrices';
@@ -62,6 +64,7 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/delete-account" element={<DeleteAccount />} />
+        <Route path="/tiandy-event" element={<TiandyEvent />} />
         <Route path="/login" element={<Login />} />
         {/* Where the links in account emails land — see pages/AuthAction. */}
         <Route path="/auth/action" element={<AuthAction />} />
@@ -72,6 +75,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="submissions" element={<AdminSubmissions />} />
+          <Route path="event" element={<AdminEvent />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="prices" element={<AdminSolarPrices />} />

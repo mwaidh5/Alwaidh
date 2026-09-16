@@ -18,7 +18,8 @@ export type Access =
   | 'media'
   | 'blog'
   | 'submissions'
-  | 'analytics';
+  | 'analytics'
+  | 'event';
 
 export interface AdminNavItem {
   to: string;
@@ -51,6 +52,8 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: '/admin/team', label: 'Team chat', access: 'team', group: 'Team' },
   { to: '/admin/files', label: 'Files', access: 'team', group: 'Team' },
   { to: '/admin/submissions', label: 'Submissions', access: 'submissions', group: 'Team' },
+  // Temporary: the Tiandy event's guest list. Remove with the page after.
+  { to: '/admin/event', label: 'Event', access: 'event', group: 'Team' },
   { to: '/admin/users', label: 'Users', access: 'admin', group: 'Manage' },
   { to: '/admin/analytics', label: 'Analytics', access: 'analytics', group: 'Manage' },
   { to: '/admin/settings', label: 'Settings', access: 'admin', group: 'Manage' },
@@ -86,6 +89,8 @@ export function canOpen(access: Access, isAdmin: boolean, can: (p: Permission) =
       return can('submissions');
     case 'analytics':
       return can('analytics');
+    case 'event':
+      return can('submissions');
     default:
       return false;
   }
