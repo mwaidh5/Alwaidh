@@ -18,6 +18,7 @@ import {
 import NotificationSettings from '../../components/NotificationSettings';
 import { AdminIcon } from './adminIcons';
 import { ADMIN_NAV, ALERT_FOR, canOpen } from '../../lib/adminNav';
+import { smoothNavigate } from '../../lib/smoothNav';
 import { sendAccountEmail } from '../../lib/accountEmail';
 
 // access: which role may see each page. 'admin' = admins only,
@@ -212,6 +213,11 @@ export default function AdminLayout() {
                       <NavLink
                         to={item.to}
                         end={item.end}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                          e.preventDefault();
+                          smoothNavigate(navigate, item.to);
+                        }}
                         className={({ isActive }) =>
                           `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
                             isActive

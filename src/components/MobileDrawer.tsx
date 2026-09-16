@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import LangSwitch from './LangSwitch';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
 import { anyModalOpen } from '../lib/useScrollLock';
+import { smoothNavigate } from '../lib/smoothNav';
 import { ADMIN_NAV, ALERT_FOR, canOpen, favoritePaths } from '../lib/adminNav';
 import { useStaffAlerts } from '../lib/useStaffAlerts';
 import { AdminIcon } from '../pages/admin/adminIcons';
@@ -238,10 +239,16 @@ function DrawerRow({
   onTap: (to: string) => void;
 }) {
   const { t } = useLang();
+  const navigate = useNavigate();
   return (
     <Link
       to={item.to}
-      onClick={() => onTap(item.to)}
+      onClick={(e) => {
+        onTap(item.to);
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        if (item.to !== window.location.pathname) smoothNavigate(navigate, item.to);
+      }}
       className={`drawer-item flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
         open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
       }`}

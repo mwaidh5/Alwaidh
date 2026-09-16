@@ -5,6 +5,7 @@ import Footer from './Footer';
 import ChatWidget from './ChatWidget';
 import BottomNav from './BottomNav';
 import StaffTip from './StaffTip';
+import RouteProgress from './RouteProgress';
 import PullToRefresh from './PullToRefresh';
 import MobileDrawer from './MobileDrawer';
 import { trackPageView } from '../lib/ga';
@@ -306,6 +307,7 @@ export default function Layout() {
           screen and steps aside on its own, on the same curve. */}
       <BottomNav />
       <StaffTip />
+      <RouteProgress />
     </>
   );
 }

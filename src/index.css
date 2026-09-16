@@ -582,12 +582,32 @@
       transform: translateY(-6px);
     }
   }
+  /* A page settles into place; it does NOT fade in from nothing — that
+     fade was a flash of white between every two screens. Where the
+     browser can cross-fade the old screen into the new one it does that
+     instead (see lib/smoothNav.ts), and this settle rides along. */
   @keyframes page-enter {
   from {
-    opacity: 0;
+    transform: translateY(6px);
   }
   to {
-    opacity: 1;
+    transform: translateY(0);
+  }
+}
+::view-transition-old(root) {
+  animation: 140ms ease-out both vt-out;
+}
+::view-transition-new(root) {
+  animation: 200ms ease-out both vt-in;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
   }
 }
 
