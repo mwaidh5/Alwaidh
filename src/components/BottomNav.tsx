@@ -1,10 +1,11 @@
-import { startTransition, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../lib/i18n';
 import { useAnyModalOpen } from '../lib/useScrollLock';
 import { toggleChat, useChatUnread } from '../lib/chatPanel';
 import { openDrawer, useDrawerOpen } from '../lib/drawer';
+import { smoothNavigate } from '../lib/smoothNav';
 
 /**
  * The phone's main navigation: a floating glass bar over the page, the way
@@ -135,8 +136,8 @@ export default function BottomNav() {
                   return;
                 }
                 setPressed(i);
-                // The bar has already answered; the page may take its time.
-                startTransition(() => navigate(item.to));
+                // The bar has already answered; the page cross-fades in.
+                smoothNavigate(navigate, item.to);
               }}
             >
               {inside}
