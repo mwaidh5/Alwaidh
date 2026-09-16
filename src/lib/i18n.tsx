@@ -545,6 +545,14 @@ const AR: Record<string, string> = {
 
   // ---- Notification settings ----
   Notifications: 'الإشعارات',
+  'Which alerts reach this device — jobs, messages, orders, team chat.': 'أي تنبيهات توصل لهذا الجهاز — الأعمال، الرسائل، الطلبات، دردشة الفريق.',
+  'Manage notifications': 'إدارة الإشعارات',
+  'A few things moved': 'تغيّرت أماكن بعض الأشياء',
+  'Your dashboard pages are in the menu, under “Dashboard”. Tap “More” for the rest.': 'صفحات لوحة التحكم صارت بالقائمة ☰ تحت «لوحة التحكم» — واضغط «المزيد» للباقي.',
+  'Already inside? Tapping “Dashboard” in the bottom bar opens the same menu.': 'وإذا انت داخل لوحة التحكم، ضغطة على «لوحة التحكم» بالشريط تفتح نفس القائمة.',
+  'Language is at the bottom of the menu.': 'اللغة صارت بأسفل القائمة.',
+  'Notification settings are in “My account”.': 'إعدادات الإشعارات صارت بصفحة «حسابي».',
+  'Got it': 'فهمت',
   'Notifications blocked': 'الإشعارات محظورة',
   'Turning on…': 'جاري التفعيل…',
   'Notifications are on for this device.': 'الإشعارات مفعّلة على هذا الجهاز.',

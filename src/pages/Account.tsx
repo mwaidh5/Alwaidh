@@ -14,6 +14,7 @@ import { recordUserLogin } from '../lib/userStore';
 import { listOrdersForUser, type Order, type OrderStatus } from '../lib/orderStore';
 import { formatPrice } from '../lib/format';
 import { useLang } from '../lib/i18n';
+import NotificationSettings from '../components/NotificationSettings';
 
 const STATUS_BADGES: Record<OrderStatus, string> = {
   pending: 'bg-amber-100 text-amber-800',
@@ -46,6 +47,7 @@ export default function Account() {
           <div className="space-y-6">
             <ProfileCard />
             <SecurityCard onSendReset={sendPasswordReset} />
+            <NotificationsCard />
             <DeleteAccountCard />
           </div>
           <OrdersCard uid={user.uid} />
@@ -499,6 +501,34 @@ function OrdersCard({ uid }: { uid: string }) {
  * password, for Google or Apple it is their own sheet, which the auth
  * context handles.
  */
+/**
+ * Which alerts reach this phone — for staff only. The switches used to
+ * live in the dashboard's sidebar, which a phone no longer shows; the
+ * account page is the one place every device reaches.
+ */
+function NotificationsCard() {
+  const { hasAdminAccess, isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller, user } = useAuth();
+  const { t } = useLang();
+  const [open, setOpen] = useState(false);
+  if (!hasAdminAccess) return null;
+  return (
+    <div className="card p-5">
+      <h2 className="text-base font-bold text-slate-900">{t('Notifications')}</h2>
+      <p className="mt-1 text-sm text-slate-600">{t('Which alerts reach this device — jobs, messages, orders, team chat.')}</p>
+      <button type="button" onClick={() => setOpen(true)} className="btn-secondary mt-4 w-full">
+        {t('Manage notifications')}
+      </button>
+      {open && (
+        <NotificationSettings
+          roles={{ isAdmin, isComputerStaff, isSolarStaff, isShopManager, isInstaller }}
+          email={user?.email ?? null}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function DeleteAccountCard() {
   const { deleteAccount, user } = useAuth();
   const { t } = useLang();
