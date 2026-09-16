@@ -42,7 +42,7 @@ export default function AdminLayout() {
     setViewAsEmail,
     signOut,
   } = useAuth();
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   const navigate = useNavigate();
   const alerts = useStaffAlerts();
   const [push, setPush] = useState<PushState>('unsupported');
