@@ -29,9 +29,14 @@ function emit(): void {
 export function useScrollLock(active = true): void {
   useEffect(() => {
     if (!active) return;
-    const { body } = document;
+    const { body, documentElement: root } = document;
     if (depth === 0) {
       savedY = window.scrollY;
+      // A pinned page is one a downward drag can no longer scroll — which
+      // on Android is the very gesture that reloads the app, pop-up and
+      // half-written note included. Off until the last pop-up closes.
+      root.style.overscrollBehaviorY = 'none';
+      body.style.overscrollBehaviorY = 'none';
       body.style.position = 'fixed';
       body.style.top = `-${savedY}px`;
       body.style.left = '0';
@@ -44,6 +49,8 @@ export function useScrollLock(active = true): void {
       depth -= 1;
       emit();
       if (depth > 0) return;
+      root.style.overscrollBehaviorY = '';
+      body.style.overscrollBehaviorY = '';
       body.style.position = '';
       body.style.top = '';
       body.style.left = '';
