@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../lib/i18n';
 import LangSwitch from './LangSwitch';
 import { closeDrawer, useDrawerOpen } from '../lib/drawer';
+import { anyModalOpen } from '../lib/useScrollLock';
 import { ADMIN_NAV, ALERT_FOR, canOpen, favoritePaths } from '../lib/adminNav';
 import { useStaffAlerts } from '../lib/useStaffAlerts';
 import { AdminIcon } from '../pages/admin/adminIcons';
@@ -42,7 +43,19 @@ export default function MobileDrawer() {
   // menu open (the frame is measured once, at opening). So the touch
   // itself is refused while the menu is up, except inside the menu's own
   // list, which must still scroll when there are more links than screen.
+  //
+  // ONE handler, held for the life of the component and added/removed by
+  // reference. It used to be a fresh closure per opening, removed by the
+  // timer from that opening's cleanup - and re-opening inside the 560ms
+  // cleared that timer, orphaning the old handler on the document for
+  // ever: every scroll on every page refused, until a reload. That was
+  // the iPhone's "scrolling stops working after a while".
   const unlockTimer = useRef(0);
+  const guard = useRef((e: TouchEvent) => {
+    const t = e.target;
+    if (t instanceof Element && t.closest('[data-drawer-scroll]')) return;
+    e.preventDefault();
+  });
   useEffect(() => {
     if (!open) return;
     window.clearTimeout(unlockTimer.current);
@@ -50,23 +63,31 @@ export default function MobileDrawer() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeDrawer();
     };
-    const onTouchMove = (e: TouchEvent) => {
-      const t = e.target;
-      if (t instanceof Element && t.closest('[data-drawer-scroll]')) return;
-      e.preventDefault();
-    };
+    const onTouchMove = guard.current;
     window.addEventListener('keydown', onKey);
+    // Adding the same function twice is a no-op, so a re-open while the
+    // previous lock is still winding down leaves exactly one on.
     document.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
       window.removeEventListener('keydown', onKey);
       // The touch lock, like the overflow lock, outlives the close by the
       // length of the slide home.
       unlockTimer.current = window.setTimeout(() => {
-        document.body.style.overflow = '';
+        // A pop-up that opened meanwhile owns the overflow now; leave it.
+        if (!anyModalOpen()) document.body.style.overflow = '';
         document.removeEventListener('touchmove', onTouchMove);
       }, 560);
     };
   }, [open]);
+  // Gone for good (the layout unmounting): nothing may outlive us.
+  useEffect(() => {
+    const onTouchMove = guard.current;
+    return () => {
+      window.clearTimeout(unlockTimer.current);
+      document.removeEventListener('touchmove', onTouchMove);
+      if (!anyModalOpen()) document.body.style.overflow = '';
+    };
+  }, []);
 
   const onDashboard = hasAdminAccess && location.pathname.startsWith('/admin');
 
