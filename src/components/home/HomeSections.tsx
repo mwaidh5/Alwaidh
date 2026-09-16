@@ -16,11 +16,16 @@ import {
  * camera pitch, and a plain way to reach a person.
  */
 
+// One line each: solar, and computers & cameras.
 const PHONE = '0774 420 5582';
 const PHONE_TEL = '+9647744205582';
+const PHONE_TECH = '0770 539 7778';
+const PHONE_TECH_TEL = '+9647705397778';
 
 const AR: Record<string, string> = {
   'Solar energy': 'طاقة شمسية',
+  'Solar': 'الطاقة الشمسية',
+  'Computers & cameras': 'حاسبات وكاميرات',
   'Security cameras': 'كاميرات مراقبة',
   'Size your solar system': 'اختر حجم منظومتك',
   'Slide to the amps your house runs on. The price is the real one.': 'اسحب على الأمبير اللي يشتغل بيه بيتك. السعر هو السعر الحقيقي.',
@@ -275,8 +280,11 @@ export function TalkToUs() {
             >
               💬 {t('Open the chat')}
             </button>
-            <a href={`tel:${PHONE_TEL}`} dir="ltr" className="rounded-full border border-white/40 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
-              📞 {PHONE}
+            <a href={`tel:${PHONE_TEL}`} className="rounded-full border border-white/40 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
+              📞 {t('Solar')} <span dir="ltr">{PHONE}</span>
+            </a>
+            <a href={`tel:${PHONE_TECH_TEL}`} className="rounded-full border border-white/40 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10">
+              💻 {t('Computers & cameras')} <span dir="ltr">{PHONE_TECH}</span>
             </a>
             <a
               href={SHOP_LOCATION.maps}
