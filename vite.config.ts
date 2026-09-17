@@ -1,20 +1,42 @@
 import { defineConfig } from 'vite';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
+// Baghdad time, not UTC: the stamp exists so the owner can match "the
+// build at 4am" to what he sees, and he reads his clock, not Greenwich.
+const BUILD_STAMP = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Baghdad' }).slice(0, 16);
+
+/**
+ * The stamp, written beside the build as /version.json. The running app
+ * compares itself to it (src/lib/swUpdate.ts) and reloads when they
+ * differ — the one update path that works even when the service worker
+ * never notices a newer copy.
+ */
+function versionFile() {
+  return {
+    name: 'alwaidh-version-file',
+    closeBundle() {
+      const dir = resolve(process.cwd(), 'dist');
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(resolve(dir, 'version.json'), JSON.stringify({ build: BUILD_STAMP }));
+    },
+  };
+}
+
 export default defineConfig({
   // Stamped at build time so the dashboard can show which version a device
   // is actually running — the quickest way to spot a stale one.
   define: {
     // Baghdad time, not UTC: the stamp exists so the owner can match "the
     // build at 4am" to what he sees, and he reads his clock, not Greenwich.
-    __APP_BUILD__: JSON.stringify(
-      new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Baghdad' }).slice(0, 16),
-    ),
+    __APP_BUILD__: JSON.stringify(BUILD_STAMP),
   },
   plugins: [
     react(),
+    versionFile(),
     VitePWA({
       registerType: 'autoUpdate',
       // Registered by hand in src/lib/swUpdate.ts, which also keeps checking
