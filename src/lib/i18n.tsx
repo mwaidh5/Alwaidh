@@ -545,6 +545,7 @@ const AR: Record<string, string> = {
 
   // ---- Notification settings ----
   Notifications: 'الإشعارات',
+  Photos: 'صور',
   'Keep open': 'إبقاء مفتوحاً',
   Collapse: 'تصغير',
   Expand: 'توسيع',

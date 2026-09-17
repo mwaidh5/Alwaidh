@@ -172,6 +172,7 @@ export default function JobActivity({ job }: { job: Job }) {
   const me = user?.email?.toLowerCase() ?? '';
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const pdfInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribeJobActivity(job.id, setEvents), [job.id]);
 
@@ -500,18 +501,41 @@ export default function JobActivity({ job }: { job: Job }) {
         )}
         {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
         <div className="mt-2 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => fileInput.current?.click()}
-            className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            📎 {t('Attach')}
-          </button>
+          {/* Two pickers, not one: Android offers the photo gallery only
+              when a picker asks for images alone — images and PDFs in the
+              same input got the bare file browser and the camera. */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              📷 {t('Photos')}
+            </button>
+            <button
+              type="button"
+              onClick={() => pdfInput.current?.click()}
+              className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              📄 PDF
+            </button>
+          </div>
           <input
             ref={fileInput}
             type="file"
             multiple
-            accept="image/*,application/pdf"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) attach(e.target.files);
+              e.target.value = '';
+            }}
+          />
+          <input
+            ref={pdfInput}
+            type="file"
+            multiple
+            accept="application/pdf"
             className="hidden"
             onChange={(e) => {
               if (e.target.files?.length) attach(e.target.files);
