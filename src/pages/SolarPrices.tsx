@@ -209,13 +209,14 @@ export default function SolarPrices() {
   /** A price cell with its column label, or null when the row has none. */
   function pickPrice(row: PriceRow, key: string): { value: string; label: string } | null {
     const v = row.values[key];
-    if (!v || v === '-') return null;
+    if (!v || v === '-' || v === '/') return null;
     const col = columns.find((c) => c.key === key);
     if (!col) return { value: v, label: '' };
     const label = columnLabel(col);
     return { value: v, label: col.sub && !label.includes(col.sub) ? `${label} ${col.sub}` : label };
   }
   const specCols = columns.filter((c) => c.key !== 'capacity');
+  const usesBigBattery = (row: PriceRow) => new RegExp(String(EXTRA_BATTERY_KWH)).test(row.values['batteries'] ?? '');
   /** A cell for the photographed sheet, with each number pinned LTR so
       html2canvas can't scatter its digits when the line wraps. */
   function sheetCell(v: string) {
@@ -488,7 +489,7 @@ export default function SolarPrices() {
                     .filter((c) => !isPrice(c.key))
                     .map((c) => {
                       const v = row.values[c.key];
-                      if (!v || v === '-') return null;
+                      if (!v || v === '-' || v === '/') return null;
                       return (
                         <div
                           key={c.key}
@@ -502,7 +503,9 @@ export default function SolarPrices() {
                       );
                     })}
                 </dl>
-                {extraBatteryHours(cap.n) > 0 && (
+                {/* Only where the extra battery is the same one already
+                    in the system: the small sizes use acid or 8 KWh ones. */}
+                {usesBigBattery(row) && extraBatteryHours(cap.n) > 0 && (
                   <p className="rounded-2xl bg-slate-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
                     🔋{' '}
                     {t('Extra {kwh} KWh battery: {price} IQD, about {hours} more backup hours.')
@@ -532,7 +535,7 @@ export default function SolarPrices() {
                     type="button"
                     onClick={() =>
                       openChat(
-                        t('Hi! I am interested in the {system} system — could you give me the details?').replace(
+                        t('Hi! I am interested in the {system} system for CASH — could you give me the details and what it includes?').replace(
                           '{system}',
                           `${cap.n} ${cap.unit || t('Amp')}`,
                         ),
