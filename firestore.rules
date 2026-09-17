@@ -187,7 +187,6 @@ service cloud.firestore {
         && request.resource.data.company is string && request.resource.data.company.size() <= 80
         && request.resource.data.phone is string
         && request.resource.data.phone.size() >= 10 && request.resource.data.phone.size() <= 20
-        && request.resource.data.people is int
         && request.resource.data.arrived == false;
       allow read, update, delete: if isAdmin() || isComputerStaff() || hasPerm('submissions');
     }
