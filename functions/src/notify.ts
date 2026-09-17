@@ -96,6 +96,47 @@ export async function sameAs(emails: Iterable<string>): Promise<Set<string>> {
   return out;
 }
 
+/** "ahmed.ali@gmail.com" → "Ahmed Ali", the same as the app does. */
+function prettyHandle(email: string): string {
+  const handle = (email.split('@')[0] ?? '').replace(/[._-]+/g, ' ').trim();
+  if (!handle) return email;
+  return handle.replace(/\w/g, (c) => c.toUpperCase());
+}
+
+let nameBook: { at: number; names: Record<string, string> } | null = null;
+
+/**
+ * What to call a person in a notification: the owner's name book in
+ * settings first, then the name they typed on their own profile, and only
+ * then the front of their email address. The book is kept for five
+ * minutes; a profile lookup is one small read.
+ */
+export async function staffName(email: unknown): Promise<string> {
+  const e = String(email ?? '').trim().toLowerCase();
+  if (!e) return 'Someone';
+  const db = getFirestore();
+  if (!nameBook || Date.now() - nameBook.at > 5 * 60_000) {
+    const site = (await db.doc('settings/site').get()).data() ?? {};
+    const raw = (site.staffNames && typeof site.staffNames === 'object' ? site.staffNames : {}) as Record<string, unknown>;
+    const names: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      const name = String(v ?? '').trim();
+      if (name) names[k.toLowerCase()] = name;
+    }
+    nameBook = { at: Date.now(), names };
+  }
+  if (nameBook.names[e]) return nameBook.names[e];
+  try {
+    const snap = await db.collection('users').where('email', '==', e).limit(1).get();
+    const u = snap.docs[0]?.data();
+    const own = String(u?.customName ?? u?.displayName ?? '').trim();
+    if (own) return own;
+  } catch {
+    /* no profile, or none we may read — the handle will do */
+  }
+  return prettyHandle(e);
+}
+
 /** The role lists, read fresh so newly added staff get pings immediately. */
 export async function staffLists(): Promise<{ admins: string[]; jobs: string[]; messages: string[] }> {
   const site = (await getFirestore().doc('settings/site').get()).data() ?? {};
