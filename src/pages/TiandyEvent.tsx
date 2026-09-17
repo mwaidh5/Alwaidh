@@ -29,7 +29,6 @@ export default function TiandyEvent() {
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
-  const [people, setPeople] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(() => {
@@ -47,7 +46,7 @@ export default function TiandyEvent() {
     if (!phoneLooksRight(phone)) return setError('رقم الهاتف لازم يكون 11 رقم ويبدأ بـ 07.');
     setBusy(true);
     try {
-      await registerForEvent({ name, company, phone, people });
+      await registerForEvent({ name, company, phone });
       try {
         localStorage.setItem(DONE_KEY, '1');
       } catch {
@@ -97,7 +96,6 @@ export default function TiandyEvent() {
             setName('');
             setCompany('');
             setPhone('');
-            setPeople(1);
             setDone(false);
           }} />
         ) : (
@@ -115,14 +113,6 @@ export default function TiandyEvent() {
             <label className="mt-4 block">
               <span className="mb-1 block text-sm font-bold text-slate-800">رقم الهاتف *</span>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} required inputMode="tel" autoComplete="tel" dir="ltr" className="input w-full text-left" placeholder="07xx xxx xxxx" />
-            </label>
-            <label className="mt-4 block">
-              <span className="mb-1 block text-sm font-bold text-slate-800">عدد الحضور</span>
-              <select value={people} onChange={(e) => setPeople(Number(e.target.value))} className="input w-full">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>{n === 1 ? 'شخص واحد' : n === 2 ? 'شخصين' : `${n} أشخاص`}</option>
-                ))}
-              </select>
             </label>
 
             {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}

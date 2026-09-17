@@ -37,7 +37,6 @@ export interface EventRegistration {
   name: string;
   company: string;
   phone: string;
-  people: number;
   arrived: boolean;
   createdAtMs: number;
 }
@@ -91,7 +90,6 @@ export async function registerForEvent(input: {
   name: string;
   company: string;
   phone: string;
-  people: number;
 }): Promise<void> {
   if (!db) throw new Error('Not connected.');
   await addDoc(collection(db, COLLECTION), {
@@ -99,7 +97,6 @@ export async function registerForEvent(input: {
     name: input.name.trim().slice(0, 80),
     company: input.company.trim().slice(0, 80),
     phone: cleanPhone(input.phone),
-    people: Math.min(10, Math.max(1, Math.round(input.people) || 1)),
     arrived: false,
     createdAt: serverTimestamp(),
   });
@@ -126,7 +123,6 @@ export function subscribeEventRegistrations(
               name: String(v.name ?? ''),
               company: String(v.company ?? ''),
               phone: String(v.phone ?? ''),
-              people: Number(v.people ?? 1),
               arrived: Boolean(v.arrived),
               createdAtMs: ms(v.createdAt),
             };

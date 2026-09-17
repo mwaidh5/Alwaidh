@@ -55,7 +55,6 @@ export default function AdminEvent() {
     if (!q) return list ?? [];
     return (list ?? []).filter((r) => `${r.name} ${r.company} ${r.phone}`.toLowerCase().includes(q));
   }, [list, query]);
-  const coming = (list ?? []).reduce((n, r) => n + r.people, 0);
   const arrived = (list ?? []).filter((r) => r.arrived).length;
 
   async function saveDetails() {
@@ -114,7 +113,7 @@ export default function AdminEvent() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Tiandy event</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {list ? `${list.length} registered · ${coming} coming · ${arrived} arrived` : t('Loading…')}
+            {list ? `${list.length} registered · ${arrived} arrived` : t('Loading…')}
           </p>
         </div>
         <button
@@ -201,7 +200,6 @@ export default function AdminEvent() {
                   <th className="px-2 py-2 text-start">Name</th>
                   <th className="px-2 py-2 text-start">Company</th>
                   <th className="px-2 py-2 text-start">Phone</th>
-                  <th className="px-2 py-2 text-start">People</th>
                   <th className="px-2 py-2 text-start">Registered</th>
                   <th className="px-2 py-2 text-start">Arrived</th>
                   {isAdmin && <th className="px-2 py-2" />}
@@ -214,7 +212,6 @@ export default function AdminEvent() {
                     <td className="px-2 py-2 font-semibold text-slate-900" dir="auto">{r.name}</td>
                     <td className="px-2 py-2 text-slate-700" dir="auto">{r.company || '—'}</td>
                     <td className="px-2 py-2" dir="ltr"><a href={`tel:${r.phone}`} className="font-semibold text-brand-700 hover:underline">{r.phone}</a></td>
-                    <td className="px-2 py-2 text-slate-700">{r.people}</td>
                     <td className="px-2 py-2 text-xs text-slate-500">{when(r.createdAtMs)}</td>
                     <td className="px-2 py-2">
                       <input type="checkbox" checked={r.arrived} onChange={(e) => setArrived(r.id, e.target.checked).catch(() => undefined)} className="h-5 w-5 rounded border-slate-300" style={{ accentColor: GREEN }} />
@@ -244,7 +241,7 @@ export default function AdminEvent() {
       {list && list.length > 0 && (
         <div aria-hidden className="pointer-events-none fixed -left-[3000px] top-0">
           {chunk(list, ROWS_PER_PAGE).map((rows, p, all) => (
-            <PrintPage key={p} rows={rows} first={p * ROWS_PER_PAGE} page={p + 1} pages={all.length} cfg={cfg} total={list.length} coming={coming} />
+            <PrintPage key={p} rows={rows} first={p * ROWS_PER_PAGE} page={p + 1} pages={all.length} cfg={cfg} total={list.length} />
           ))}
         </div>
       )}
@@ -266,7 +263,6 @@ function PrintPage({
   pages,
   cfg,
   total,
-  coming,
 }: {
   rows: EventRegistration[];
   first: number;
@@ -274,7 +270,6 @@ function PrintPage({
   pages: number;
   cfg: EventConfig | null;
   total: number;
-  coming: number;
 }) {
   return (
     <div data-event-page dir="rtl" className="flex flex-col bg-white" style={{ width: 794, height: 1123, fontFamily: 'inherit' }}>
@@ -291,7 +286,7 @@ function PrintPage({
         </div>
       </div>
       <div className="flex items-center justify-between px-10 py-3 text-xs font-semibold text-slate-500">
-        <span>{total} مسجّل · {coming} شخص متوقع</span>
+        <span>{total} مسجّل</span>
         <span>صفحة {page} من {pages}</span>
       </div>
       <table className="mx-10 border-collapse text-[13px]">
@@ -302,7 +297,6 @@ function PrintPage({
             <th className="px-3 py-2 text-start font-bold">الاسم</th>
             <th className="px-3 py-2 text-start font-bold">الشركة / المحل</th>
             <th className="w-36 px-3 py-2 text-start font-bold">الهاتف</th>
-            <th className="w-14 px-2 py-2 text-center font-bold">العدد</th>
           </tr>
         </thead>
         <tbody>
@@ -315,7 +309,6 @@ function PrintPage({
               <td className="px-3 py-2 font-bold text-slate-900">{r.name}</td>
               <td className="px-3 py-2 text-slate-700">{r.company}</td>
               <td className="px-3 py-2 text-slate-800" dir="ltr">{r.phone}</td>
-              <td className="px-2 py-2 text-center text-slate-700">{r.people}</td>
             </tr>
           ))}
         </tbody>
