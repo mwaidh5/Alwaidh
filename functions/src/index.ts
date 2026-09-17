@@ -19,7 +19,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { createTransport } from 'nodemailer';
 import { buildEmail, buildOrderEmail, buildStockEmail, type EmailKind } from './emails';
-import { push, pushUsers, sameAs, staffLists, userTopic, viewersOf } from './notify';
+import { push, pushUsers, sameAs, staffLists, userTopic, viewersOf, staffName } from './notify';
 
 initializeApp();
 
@@ -155,7 +155,7 @@ export const notifyJobActivity = onDocumentCreated(
     const snap = await getFirestore().doc(`jobs/${event.params.jobId}`).get();
     const job = snap.data() ?? {};
     const customer = preview(job.customer, 40) || 'a job';
-    const who = preview(String(entry.by ?? '').split('@')[0], 24) || 'Someone';
+    const who = preview(await staffName(entry.by), 24) || 'Someone';
     const mentions = new Set(
       (Array.isArray(entry.mentions) ? entry.mentions.map(String) : []).map((m) => m.toLowerCase()),
     );
@@ -251,7 +251,7 @@ export const notifyTeamMessage = onDocumentCreated(
     const author = String(msg.by ?? '');
     const members: string[] = Array.isArray(chat.members) ? chat.members.map(String) : [];
     const mentions: string[] = Array.isArray(msg.mentions) ? msg.mentions.map(String) : [];
-    const from = preview(author.split('@')[0], 24) || 'A colleague';
+    const from = preview(await staffName(author), 24) || 'A colleague';
     const where = chat.name ? ` (${preview(chat.name, 24)})` : '';
     const body =
       preview(msg.text) ||
