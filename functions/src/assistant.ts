@@ -44,7 +44,7 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
   const cashSheet = sheetSnap.docs
     .map((d) => {
       const v = (d.data().values ?? {}) as Record<string, string>;
-      return Object.entries(v)
+      return `id=${d.id} | ` + Object.entries(v)
         .filter(([, val]) => val && val !== '-')
         .map(([k, val]) => `${k}: ${val}`)
         .join(', ');
@@ -61,14 +61,14 @@ async function loadShopFacts(db: Firestore, knowledge: string): Promise<string> 
         const total = Math.round((cash * (1 + 0.03 * y + 0.015)) / 1000) * 1000;
         return `${y}y total ${k(total)} (${k(total / (12 * y))}/month)`;
       };
-      return `${r.sizeAmp}A: inverter ${r.inverterKw}kW, ${r.panelsCount} panels, battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, cash ${k(cash)} IQD; installments: ${[1, 2, 3, 4, 5, 6, 7].map(plan).join('; ')}`;
+      return `id=${d.id} | ${r.sizeAmp}A: inverter ${r.inverterKw}kW, ${r.panelsCount} panels, battery ${r.batteryKwh}kWh (${r.batteryLabel}), backup ${r.backupHours}h, cash ${k(cash)} IQD; installments: ${[1, 2, 3, 4, 5, 6, 7].map(plan).join('; ')}`;
     })
     .join('\n');
 
   return [
     '- Solar installments (Central Bank initiative, 1–7 year plans): every system on the INSTALLMENT SHEET lists its cash price and, for each plan length, the total and the monthly payment already worked out. Quote those figures as written; never compute your own.',
     '- A question about a system that is on either sheet — by amps, by KW, by plan length, or "details" of it — IS answered from the facts: give that row\'s figures (for installments: the monthly payment for the plan asked, and the size, panels, battery and backup). Do not hand such a question to the team.',
-    '- Extra backup on any solar system: each additional 16 KWh battery costs 2,700,000 IQD and adds about (60 ÷ system amps) hours of backup — roughly 3 hours on a 20 A system, 1 hour on a 60 A system.',
+    '- Extra backup on a system whose batteries are 16 KWh lithium (15 A and up): each additional 16 KWh battery costs 2,700,000 IQD and adds about (60 ÷ system amps) hours of backup — roughly 3 hours on a 20 A system, 1 hour on a 60 A system. The 5 A (acid batteries) and 10 A (8 KWh battery) systems do not take that battery; for those, hand the question to the team.',
     '- A CHANGED system (an extra battery, a bigger inverter): the sheets price the standard build only, so work it out. Start from that row\'s CASH price; ADD the full cash price of a part that is being added (a second 16 KWh battery: 2,700,000), or, when a part is being REPLACED by a bigger one, add only the DIFFERENCE between the two prices. Every inverter we fit is SAJ and every SAJ price is in the PRODUCTS list below — read the two prices from there and subtract.',
     '- Then the instalment on a changed system: new cash total × the plan factor, rounded to the nearest thousand, and the monthly payment is that total ÷ (12 × years). Plan factors: 1 year 1.045, 2 years 1.075, 3 years 1.105, 4 years 1.135, 5 years 1.165, 6 years 1.195, 7 years 1.225. Show the customer the monthly payment, and say plainly that it is for the system with the change.',
     '- Never do this arithmetic for a STANDARD system: those totals are listed above already.',
@@ -227,6 +227,51 @@ async function noteStaffAnswer(db: Firestore, chatId: string, text: string, by: 
   } catch (e) {
     console.warn('assistant gap answer:', e instanceof Error ? e.message : e);
   }
+}
+
+const money = (n: number) => (Math.round(n / 1000) * 1000).toLocaleString('en-US');
+
+/**
+ * A system from either price sheet as the card staff send from the ☀️
+ * picker — the same shape, built the same way, so the customer sees
+ * what is in it, the price and every plan's monthly payment.
+ */
+async function systemCardFor(db: Firestore, kind: 'cash' | 'plan', id: string): Promise<Record<string, unknown> | null> {
+  if (kind === 'cash') {
+    const snap = await db.doc(`solarPrices/${id}`).get();
+    const v = (snap.data()?.values ?? null) as Record<string, string> | null;
+    if (!v) return null;
+    const labels: Record<string, string> = { inverter: 'العاكسة', panels: 'عدد الألواح', batteries: 'البطاريات', backup: 'ساعات التغذية' };
+    const blank = (s?: string) => !s || s === '-' || s === '/';
+    return {
+      kind: 'cash',
+      title: `منظومة ${v.capacity ?? ''} — نقداً`,
+      rows: Object.keys(labels)
+        .filter((k) => !blank(v[k]))
+        .map((k) => ({ label: labels[k], value: v[k] })),
+      price: `${v.price ?? ''} دينار`,
+      extra: blank(v.priceWithInverter) ? '' : `مع انفيرتر IP65: ${v.priceWithInverter} دينار`,
+      plans: [],
+    };
+  }
+  const snap = await db.doc(`solarInstallments/${id}`).get();
+  const r = snap.data();
+  if (!r) return null;
+  const cash = Number(r.cash) > 0 ? Number(r.cash) : Math.round(Number(r.price7 ?? 0) / 1.225 / 1000) * 1000;
+  const total = (y: number) => Math.round((cash * (1 + 0.03 * y + 0.015)) / 1000) * 1000;
+  return {
+    kind: 'plan',
+    title: `منظومة ${r.sizeAmp} أمبير — تقسيط مبادرة البنك المركزي`,
+    rows: [
+      { label: 'العاكسة', value: `${r.inverterKw} كيلو واط IP65` },
+      { label: 'الألواح', value: `${r.panelsCount} لوح Jinko 650W` },
+      { label: 'البطاريات', value: `${r.batteryKwh} كيلو واط ساعة — ${r.batteryLabel ?? ''}` },
+      { label: 'ساعات التغذية', value: `${r.backupHours} ساعة` },
+    ],
+    price: `نقداً: ${money(cash)} دينار`,
+    extra: 'السعر يشمل التنصيب والتشغيل',
+    plans: [3, 5, 7].map((y) => ({ years: y, total: total(y), monthly: Math.round(total(y) / (12 * y) / 1000) * 1000 })),
+  };
 }
 
 /** The shop's location card - the same one staff send with the 📍 button. */
@@ -418,6 +463,10 @@ export const assistantReply = onDocumentCreated(
       '- When the customer asks where the shop is, how to get there, or for the location or a map, send the location card: put a line at the very START of your reply, before any other text, exactly:',
       'LOCATION',
       '- The card already shows the address with Google Maps and Waze buttons, so write one short sentence beside it and do NOT type the address or a link yourself.',
+      '- When the customer asks about ONE specific system from either sheet (by amps, KW, cash or a plan), attach that system\'s card: put a line at the very START of your reply, before any other text, exactly:',
+      'SYSTEM: cash:<id>   (a row of the CASH PRICE SHEET)   or   SYSTEM: plan:<id>   (a row of the INSTALLMENT SHEET)',
+      '- Use the id written at the start of that row. cash: when they ask about the cash price or say نقداً; plan: when they ask about installments / تقسيط / a plan of N years. The card already lists the inverter, panels, batteries, backup hours, the price and every plan\'s monthly payment — so beside it write two or three warm sentences: confirm the system, name the monthly payment for the plan they asked (or the cash price), and mention what comes included (installation, warranty). Never retype the whole table.',
+      '- At most one SYSTEM line, and only an id that appears in the sheets.',
       '- Keep every reply under 100 words. Recommend ONE best option, not a list.',
       facts,
     ].join('\n');
@@ -447,6 +496,7 @@ export const assistantReply = onDocumentCreated(
     // same attachment staff send by hand.
     let card: Record<string, unknown> | null = null;
     let place: Record<string, unknown> | null = null;
+    let systemCard: Record<string, unknown> | null = null;
     let needsStaff = !reply;
     const kept: string[] = [];
     for (const line of reply.split('\n')) {
@@ -457,6 +507,11 @@ export const assistantReply = onDocumentCreated(
       if (/^\s*LOCATION\s*$/.test(line)) {
         place = SHOP_PLACE;
         continue;
+      }
+      const sm = /^\s*SYSTEM:\s*(cash|plan):\s*([\w-]+)\s*$/i.exec(line);
+      if (sm && !systemCard) {
+        systemCard = await systemCardFor(db, sm[1].toLowerCase() as 'cash' | 'plan', sm[2]);
+        if (systemCard) continue;
       }
       const m = /^\s*PRODUCT:\s*([\w-]+)\s*$/.exec(line);
       if (m && !card) {
@@ -509,11 +564,12 @@ export const assistantReply = onDocumentCreated(
       text: body,
       ...(card ? { product: card } : {}),
       ...(place ? { place } : {}),
+      ...(systemCard ? { system: systemCard } : {}),
       at: FieldValue.serverTimestamp(),
     });
     await db.doc(`chats/${chatId}`).set(
       {
-        lastText: body || `📦 ${String(card?.name ?? '')}`,
+        lastText: body || (systemCard ? `☀️ ${String(systemCard.title ?? '')}` : `📦 ${String(card?.name ?? '')}`),
         lastFrom: 'staff',
         lastAt: FieldValue.serverTimestamp(),
         unreadForGuest: FieldValue.increment(1),

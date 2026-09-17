@@ -1054,8 +1054,8 @@ const AR: Record<string, string> = {
   'AC cabling is included up to 20 metres; any extra length is charged.': 'السعر يشمل كيبل التيار المتناوب بين الانفيرتر والبورد الوطني الى حد 15 متر، وأي زيادة تكون مقابل ثمن.',
   'Every plan is calculated from the published 7-year total.':
     'كل الخطط محسوبة من السعر النهائي المعلن لسبع سنوات.',
-  'Hi! I am interested in the {system} system — could you give me the details?':
-    'مرحباً! أرغب بالاستفسار عن منظومة {system} — ممكن التفاصيل والسعر؟',
+  'Hi! I am interested in the {system} system for CASH — could you give me the details and what it includes?':
+    'مرحباً! أرغب بالاستفسار عن منظومة {system} نقداً — ممكن التفاصيل والسعر وشنو تشمل؟',
   'Hi! I am interested in the {system} installment system on a {years}-year plan — could you give me the details?':
     'مرحباً! أرغب بالاستفسار عن منظومة التقسيط {system} بخطة {years} سنوات — ممكن التفاصيل؟',
   'Order tracking': 'تتبع الطلب',
