@@ -44,4 +44,48 @@ export function keepFresh(): void {
   });
 
   void update;
+  watchVersion();
+}
+
+/**
+ * The belt to the brace above: ask the server which build it is serving,
+ * and if it is not the one running, throw away every stored copy and
+ * start again. Checked on launch, whenever the app comes back to the
+ * foreground, and every few minutes while it is open — so a phone that
+ * has been sitting on last week's build is on this week's within a
+ * minute of being picked up, service worker or no service worker.
+ */
+function watchVersion(): void {
+  const RELOADED_FOR = 'alwaidh.reloadedFor.v1';
+  let busy = false;
+  const check = async () => {
+    if (busy || document.visibilityState === 'hidden') return;
+    busy = true;
+    try {
+      const res = await fetch(`/version.json?_=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const { build } = (await res.json()) as { build?: string };
+      if (!build || build === __APP_BUILD__) return;
+      // Once per newer build: if a reload somehow still lands on the old
+      // copy, do not spin — the next launch will try again.
+      if (localStorage.getItem(RELOADED_FOR) === build) return;
+      localStorage.setItem(RELOADED_FOR, build);
+      const regs = await navigator.serviceWorker.getRegistrations().catch(() => []);
+      await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
+      if ('caches' in window) {
+        const keys = await caches.keys().catch(() => []);
+        await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
+      }
+      window.location.reload();
+    } catch {
+      /* offline, or a proxy in the way — nothing to do until next time */
+    } finally {
+      busy = false;
+    }
+  };
+  window.setTimeout(check, 3000);
+  window.setInterval(check, 3 * 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') check();
+  });
 }
