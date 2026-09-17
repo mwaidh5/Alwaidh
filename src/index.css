@@ -179,8 +179,13 @@
      `position: fixed` children. That sized the job pop-ups to the whole
      page instead of the screen, so they opened somewhere above the top of
      it. Opacity makes a stacking context, not a containing block. */
+  /* backwards, not both: the entrance is a transform, and a transform
+     that stays on the page - even an identity one - turns every
+     position: fixed pop-up inside it into a child of the page instead of
+     the screen. With "both" the Edit dialog landed at the foot of the
+     page, half off-screen. Let go once the slide is over. */
   .page-enter {
-    animation: page-enter 180ms ease-out both;
+    animation: page-enter 180ms ease-out backwards;
   }
   @media (prefers-reduced-motion: reduce) {
     .page-enter {
