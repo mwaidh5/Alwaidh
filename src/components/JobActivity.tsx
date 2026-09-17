@@ -221,14 +221,15 @@ export default function JobActivity({ job }: { job: Job }) {
     setPending((p) => [...p, ...items]);
     const mark = (id: string, phase: UploadPhase, percent: number) =>
       setPending((p) => p.map((x) => (x.id === id ? { ...x, phase, percent } : x)));
+    const done: JobAttachment[] = [];
     for (let i = 0; i < chosen.length; i++) {
       const file = chosen[i];
       const item = items[i];
       try {
         const up = await uploadJobCommentFile(file, job.id, (info) => mark(item.id, info.phase, info.percent));
         mark(item.id, 'done', 100);
-        setFiles((f) => [...f, { url: up.url, name: file.name, kind: up.kind }]);
-        // The tick shows for a moment, then the file joins the attached list.
+        done.push({ url: up.url, name: file.name, kind: up.kind });
+        // The tick shows for a moment, then the file is in the thread.
         setTimeout(() => setPending((p) => p.filter((x) => x.id !== item.id)), 700);
       } catch (e) {
         mark(item.id, 'failed', 0);
@@ -237,6 +238,17 @@ export default function JobActivity({ job }: { job: Job }) {
       } finally {
         if (item.preview) setTimeout(() => URL.revokeObjectURL(item.preview), 3000);
         setUploading((n) => n - 1);
+      }
+    }
+    // Straight into the comments, no Send: on a site nobody presses Send.
+    // Files chosen together travel as one comment; if the post fails they
+    // wait beside the box instead, so nothing is lost.
+    if (done.length) {
+      try {
+        await addJobComment(job.id, '', [], done);
+      } catch (e) {
+        setFiles((f) => [...f, ...done]);
+        setError(e instanceof Error ? e.message : 'Could not post the photos.');
       }
     }
   }
