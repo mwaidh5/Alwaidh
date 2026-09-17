@@ -13,7 +13,8 @@ const AR: Record<string, string> = {
   // ---- Navigation & shell ----
   Home: 'الرئيسية',
   Shop: 'المتجر',
-  'Solar Prices': 'أسعار الطاقة الشمسية',
+  'Solar Prices': 'أسعار المنظومات',
+  'Update system prices': 'تحديث أسعار المنظومات',
   Cart: 'السلة',
   About: 'من نحن',
   'Contact us': 'اتصل بنا',

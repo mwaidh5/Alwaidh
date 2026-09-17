@@ -45,7 +45,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: '/admin/crm', label: 'CRM', access: 'crm', group: 'Work' },
   { to: '/admin/orders', label: 'Orders', access: 'orders', group: 'Work' },
   { to: '/admin/products', label: 'Products', access: 'products', group: 'Shop' },
-  { to: '/admin/prices', label: 'Solar Prices', access: 'solar', group: 'Shop' },
+  { to: '/admin/prices', label: 'Update system prices', access: 'solar', group: 'Shop' },
   { to: '/admin/media', label: 'Media', access: 'media', group: 'Shop' },
   { to: '/admin/blog', label: 'Blog', access: 'blog', group: 'Shop' },
   { to: '/admin/chat', label: 'Messages', access: 'staff', group: 'Team' },

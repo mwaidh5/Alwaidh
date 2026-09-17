@@ -249,7 +249,9 @@ function DrawerRow({
         e.preventDefault();
         if (item.to !== window.location.pathname) smoothNavigate(navigate, item.to);
       }}
-      className={`drawer-item flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
+      // pe-12: the page card overlaps this end of the panel, and a count
+      // sitting at the row's end was hiding under it.
+      className={`drawer-item flex items-center gap-4 rounded-xl py-3 pe-12 ps-3 text-[15px] font-semibold text-white/90 transition-[transform,opacity] duration-[220ms] ease-out active:bg-white/10 ${
         open ? 'translate-x-0 opacity-100' : `${dir === 'rtl' ? 'translate-x-4' : '-translate-x-4'} opacity-0`
       }`}
       style={{ transitionDelay: open ? `${60 + i * 30}ms` : '0ms' }}
