@@ -25,6 +25,16 @@ export function keepFresh(): void {
     immediate: true,
     onRegisteredSW(_url, registration) {
       if (!registration) return;
+      // A worker found waiting is told to go ahead — the belt to the
+      // worker's own skipWaiting, for a copy built before it had one.
+      const nudge = (w: ServiceWorker | null) => w?.postMessage({ type: 'SKIP_WAITING' });
+      nudge(registration.waiting);
+      registration.addEventListener('updatefound', () => {
+        const w = registration.installing;
+        w?.addEventListener('statechange', () => {
+          if (w.state === 'installed' && navigator.serviceWorker.controller) nudge(w);
+        });
+      });
       const check = () => registration.update().catch(() => undefined);
       window.setInterval(check, 60_000);
       document.addEventListener('visibilitychange', () => {

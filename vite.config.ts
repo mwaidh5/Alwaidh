@@ -66,6 +66,13 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // A newer worker takes over the moment it is installed and claims
+        // the pages already open. Without these the generated worker only
+        // stepped forward when sent SKIP_WAITING, and nothing sent it: the
+        // live site sat with a newer copy stuck in "waiting" while every
+        // browser kept the old one, refresh or no refresh.
+        skipWaiting: true,
+        clientsClaim: true,
         // The app talks to Firebase live; only precache the shell.
         navigateFallback: '/index.html',
         // …but never for /__/*. Firebase Hosting serves the sign-in handler
