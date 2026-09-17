@@ -100,7 +100,7 @@ export async function sameAs(emails: Iterable<string>): Promise<Set<string>> {
 function prettyHandle(email: string): string {
   const handle = (email.split('@')[0] ?? '').replace(/[._-]+/g, ' ').trim();
   if (!handle) return email;
-  return handle.replace(/\w/g, (c) => c.toUpperCase());
+  return handle.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 let nameBook: { at: number; names: Record<string, string> } | null = null;
