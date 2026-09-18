@@ -1,3 +1,5 @@
+import { nudgeConnection } from './liveConnection';
+
 /**
  * Notifications for staff.
  *
@@ -524,11 +526,20 @@ export async function handlePushTaps(navigate: (path: string) => void): Promise<
   try {
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
     const handle = await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+      // The app was asleep while this arrived; make sure the thread it
+      // opens is the current one, not the one from before the nap.
+      void nudgeConnection();
       const link = (event.notification?.data as Record<string, unknown> | undefined)?.link;
       if (typeof link === 'string' && link.startsWith('/')) navigate(link);
     });
+    // A notification arriving while the app is in front means new data
+    // exists — if the socket has silently died, this is when it shows.
+    const arrived = await FirebaseMessaging.addListener('notificationReceived', () => {
+      void nudgeConnection();
+    }).catch(() => null);
     return () => {
       handle.remove().catch(() => {});
+      arrived?.remove().catch(() => {});
     };
   } catch {
     return () => {};
