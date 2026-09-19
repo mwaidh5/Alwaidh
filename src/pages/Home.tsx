@@ -482,7 +482,7 @@ function BigTileCard({ tile, img, tall }: { tile: PromoTile; img: string; tall?:
       to={tile.buttonLink}
       className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 ${tall ? 'h-full' : ''}`}
     >
-      <div className={`relative overflow-hidden bg-slate-900 ${tall ? 'min-h-[16rem] flex-1' : 'h-44'}`}>
+      <div className={`relative overflow-hidden bg-slate-100 ${tall ? 'min-h-[16rem] flex-1' : 'h-44'}`}>
         <img
           src={img}
           alt=""
@@ -520,9 +520,11 @@ function SplitTileCard({ tile, img }: { tile: PromoTile; img: string }) {
   return (
     <TileLink
       to={tile.buttonLink}
-      className="group grid grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+      className="group grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
     >
-      <div className="relative min-h-[7.5rem] overflow-hidden bg-slate-900 sm:min-h-[10rem]">
+      {/* Picture on top on a phone and beside the words from tablets up:
+          a wide product line-up needs a wide box, not the old 112px sliver. */}
+      <div className="relative h-36 overflow-hidden bg-slate-100 sm:h-auto sm:min-h-[10rem]">
         <img
           src={img}
           alt=""
